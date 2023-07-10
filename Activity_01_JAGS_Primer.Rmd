@@ -11,6 +11,8 @@ library(coda)
 
 # Bayesian Regression using Gibbs Sampling
 
+Note: This primer is based on https://github.com/EcoForecast/EF_Activities Exercise_05B. The most up-to-date version of this primer will be maintained there.
+
 Linear regression is a good place to continue our exploration of Bayesian numerical methods because it is the foundation for the large majority of the data analysis that occurs using classical methods (recall that ANOVA models are just a special case of regression) and because it gives us a foundation to build off of for exploring more complex models.
 
 The standard Bayesian regression model assumes a Normal likelihood, a multivariate Normal prior on the vector of regression parameters, and an Inverse Gamma prior on the variance.
