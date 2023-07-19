@@ -19,7 +19,7 @@ The standard Bayesian regression model assumes a Normal likelihood, a multivaria
 
 $$P(b,\sigma^2 \vert X, y) \propto N_n(y \vert Xb,\sigma^2 I) N_p(b \vert b_0, V_b) IG(\sigma^2 \vert s_1,s_2)$$
 
-As a reminder, a Normal prior is not used on the variance because variances must be non-negative. The inverse gamma prior on the variance (equivalent to a gamma prior on the precision) has the advantage of being conjugate and having relatively interpretable parameters (s_1 and s_2 are proportional to the prior sample size and sum of squares, respectively; see Box 5.1) 
+As a reminder, a Normal prior is not used on the variance because variances must be non-negative. The inverse gamma prior on the variance (equivalent to a gamma prior on the precision) has the advantage of being conjugate and having relatively interpretable parameters ($s_1$ and $s_2$ are proportional to the prior sample size and sum of squares, respectively; see Box 5.1) 
 
 Within the Gibbs sampler we will be iteratively sampling from each of the conditional posterior distributions:
 
