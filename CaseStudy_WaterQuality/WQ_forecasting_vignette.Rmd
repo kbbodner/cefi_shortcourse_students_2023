@@ -105,7 +105,7 @@ One important step to overcome when thinking about generating forecasts is to in
 * stage_2: a processed version of Stage 1 in which fluxes are standardized to per second rates, fluxes and states are interpolated to 1 hour intervals and variables are renamed to match conventions. We recommend this for obtaining future weather. Future weather forecasts include a 30-member ensemble of equally likely future weather conditions.
 * stage_3: can be viewed as the "historical" weather and is combination of day 1 weather forecasts (i.e., when the forecasts are most accurate). 
 
-This code create a connection to the dataset hosted on the eco4cast server. To download the data you have to tell the function to `collect()` it. These data set can be subsetted and filtered using `dplyr` functions prior to download to limit the memory usage.
+This code create a connection to the data set hosted on the eco4cast server. To download the data you have to tell the function to `collect()` it. These data set can be subsetted and filtered using `dplyr` functions prior to download to limit the memory usage.
 
 You can read more about the NOAA forecasts available for the NEON sites [here:](https://projects.ecoforecast.org/neon4cast-docs/Shared-Forecast-Drivers.html)
 
@@ -147,12 +147,12 @@ noaa_past_mean <- noaa_past |>
 
 ```
 
-We can then look at the future weather forecasts in the same way but using the `noaa_stage2()`. The forecast becomes available from NOAA at 5am UTC the following day, so if we were producing realtime forecasts we would need take the NOAA forecast from yesterday to make the water quality forecasts. But for this example we will produce forecasts from the end of the targets for the next 35 days. The stage 2 NOAA forecast is all an ensemble of 31 simulations which we can use to produce an estimate of driver uncertainty in the chlorophyll forecast. 
+We can then look at the future weather forecasts in the same way but using the `noaa_stage2()`. The forecast becomes available from NOAA at 5am UTC the following day, so if we were producing real-time forecasts we would need take the NOAA forecast from yesterday to make the water quality forecasts. But for this example we will produce forecasts from the end of the targets for the next 35 days. The stage 2 NOAA forecast is all an ensemble of 31 simulations which we can use to produce an estimate of driver uncertainty in the chlorophyll forecast. 
 
 ### Download future weather forecasts
 
 ```{r, message=FALSE}
-# Note: New forecast only available at 5am UTC the next day - so if forecasting in realtime look for yesterday's forecast
+# Note: New forecast only available at 5am UTC the next day - so if forecasting in real-time look for yesterday's forecast
 
 # generate forecast(s) for June 2023
 forecast_date <- as_date(max(targets$datetime))
@@ -185,7 +185,7 @@ noaa_future_daily <- noaa_future |>
 
 noaa_future_daily[1:10,]
 ```
-Now we have a timeseries of historic data and a 30 member ensemble forecast of future air temperatures.
+Now we have a time series of historic data and a 30 member ensemble forecast of future air temperatures.
 
 ```{r echo = T, fig.cap = c('Figure: historic and future NOAA air temeprature forecasts at lake sites', 'Figure: last two months of historic air temperature forecasts and 35 day ahead forecast')}
 ggplot(noaa_future_daily, aes(x=datetime, y=air_temperature)) +
@@ -369,7 +369,7 @@ for(i in 1:num_samples){
     
   }
   
-  #Build formated forecast
+  #Build formatted forecast
   df <- tibble(datetime = noaa_future_site_ens$datetime,
                site_id = example_site,
                variable = "chla",
@@ -407,9 +407,9 @@ forecast_df %>%
 
 ## Convert to EFI standard 
 
-Forecast standards are useful for maintaining consistent formats across forecast generations. For an ensemble forecast the standards specifthe y following columns:
+Forecast standards are useful for maintaining consistent formats across forecast generations. For an ensemble forecast the standards specie the y following columns:
 
-* `datetime`: forecast timestamp for each time step
+* `datetime`: forecast time stamp for each time step
 * `reference_datetime`: The start of the forecast; this should be 0 times steps in the future. This should only be one value of reference_datetime in the file
 * `site_id`: NEON code for site
 * `family`: name of probability distribution that is described by the parameter values in the parameter column; only `normal` or `ensemble` are currently allowed.
@@ -418,7 +418,7 @@ Forecast standards are useful for maintaining consistent formats across forecast
 * `prediction`: forecasted value (from the `.sim` column in fable output)
 * `model_id`: model name (no spaces)
 
-We need to make sure the dataframe is in the correct format.  This is an ensemble forecast (specified in the `family` column). 
+We need to make sure the data frame is in the correct format.  This is an ensemble forecast (specified in the `family` column). 
 
 ```{r}
 # Remember to change the model_id when you make changes to the model structure!
@@ -447,14 +447,14 @@ What: Freshwater surface water temperature, oxygen, and chlorophyll-a.
 
 Where: 7 lakes and 27 river/stream NEON sites.
 
-When: Daily forecasts for at least 30-days in the future. New forecast submissions, that use new data to update the forecast, are accepted daily. The only requirement is that submissions are predictions of the future at the time the forecast is submitted. To submit a forecast to the Challenge these need to be __realtime__ (actual forecasts of the future)!
+When: Daily forecasts for at least 30-days in the future. New forecast submissions, that use new data to update the forecast, are accepted daily. The only requirement is that submissions are predictions of the future at the time the forecast is submitted. To submit a forecast to the Challenge these need to be __real-time__ (actual forecasts of the future)!
 Real-time data are available for submissions to the Challenge. See [documentation](https://projects.ecoforecast.org/neon4cast-docs/Aquatics.html).
 
-Today we looked at just two of the lake sites and forecasted chlorophyll concentration of a historic time period. For the challenge, you can chose to submit to any/all of the sites! You can also chose to submit any of the three focal variables (temperature, oxygen, and chlorophyll). But should be acutal forecasts of the future! Find more information about the aquatics challenge [here](https://projects.ecoforecast.org/neon4cast-docs/Aquatics.html).
+Today we looked at just two of the lake sites and forecasted chlorophyll concentration of a historic time period. For the challenge, you can chose to submit to any/all of the sites! You can also chose to submit any of the three focal variables (temperature, oxygen, and chlorophyll). But should be actual forecasts of the future! Find more information about the aquatics challenge [here](https://projects.ecoforecast.org/neon4cast-docs/Aquatics.html).
 
 ## Submission requirements
 
-For the Challange, forecasts must include quantified uncertainty. The file can represent uncertainty using an ensemble forecast (multiple realizations of future conditions) or a distribution forecast (with mean and standard deviation), specified in the family and parameter columns of the forecast file. 
+For the Challenge, forecasts must include quantified uncertainty. The file can represent uncertainty using an ensemble forecast (multiple realizations of future conditions) or a distribution forecast (with mean and standard deviation), specified in the family and parameter columns of the forecast file. 
 
 For an ensemble forecast, the `family` column uses the word `ensemble` to designate that it is a ensemble forecast and the parameter column is the ensemble member number (1, 2, 3 …).  For a distribution forecast, the `family` column uses the word `normal` to designate a normal distribution and the parameter column must have the words mu and sigma for each forecasted variable, site_id, and datetime. For forecasts that don't have a normal distribution we recommend using the ensemble format and sampling from your non-normal distribution to generate a set of ensemble members that represents your distribution. I will go through examples of both `ensemble` and `normal` forecasts as examples. 
 
@@ -507,7 +507,7 @@ Remember to change the `model_id` so you can differentiate different forecasts!
 It's really important that once you start submitting forecasts to the Challenge that you register your participation. We ask that you complete this [form](https://nd.qualtrics.com/jfe/form/SV_9MJ29y2xNrBOjqZ) which asks you some simple questions about your forecast and team. This is crucial for a couple of reasons:
 
 1. We can keep track different forecast submissions during the scoring process to see which forecast is performing the best. Your `model_id` will be used to track the submissions so any new forecast model requires a new `model_id`.
-2. The form gives consent for submissions to be included in Challenge-wide syntheses being carried out by the Challenge organisers. Partipants in the Challenge will be invited to join the synthesis projects on an opt-in basis. 
+2. The form gives consent for submissions to be included in Challenge-wide syntheses being carried out by the Challenge organisers. Participants in the Challenge will be invited to join the synthesis projects on an opt-in basis. 
 
 Questions about Challenge registration and synthesis participation can be directed to [Freya Olsson](mailto:freyao@vt.edu).
 
@@ -519,7 +519,7 @@ Lake and reservoir managers could use forecasts of chlorophyll concentrations in
 * To inform swimming/boating restrictions for safe recreation (given the toxin production by some algae species - chlorophyll a can be a useful proxy)
 * Prepare water treatment processes - buy/replace filters, buy chemicals, change staffing levels, switch to an alternate drinking water supply
 
-Using the baseline model introduced above, the lake managers are interested in a 1-30 day ahead forecast for July 2023 (and beyond if you like) to understand when a bloom might occur in the next month to inform the open/close status of the lake for swimming and to organise the drinking water treatment processes. A lake will be closed for swimming if concentrations go above 20 mg/L. 
+The lake managers are interested in a 1-30 day ahead forecast for July 2023 (and beyond if you like) to understand when a bloom might occur in the next month to inform the open/close status of the lake for swimming and to organise the drinking water treatment processes. A lake will be closed for swimming if concentrations go above 20 mg/L. 
 
 The forecasts should address the following questions:
 
