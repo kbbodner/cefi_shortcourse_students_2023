@@ -35,6 +35,8 @@
         modifications to the simple model:</a>
     -   <a href="#register-your-participation"
         id="toc-register-your-participation">6.5 Register your participation</a>
+-   <a href="#decision-makers-request" id="toc-decision-makers-request">7
+    <strong>Decision makers’ request</strong></a>
 
 # 1 This R markdown document
 
@@ -76,53 +78,41 @@ It’s also worth checking your Rtools is up to date and compatible with R
 version$version.string
 ```
 
-    ## [1] "R version 4.2.0 (2022-04-22 ucrt)"
+    ## [1] "R version 4.2.2 (2022-10-31)"
 
 ``` r
+library(tidybayes)
 library(tidyverse)
 ```
 
-    ## Warning: package 'tidyverse' was built under R version 4.2.3
-
-    ## Warning: package 'ggplot2' was built under R version 4.2.3
-
-    ## Warning: package 'tibble' was built under R version 4.2.1
-
-    ## Warning: package 'tidyr' was built under R version 4.2.2
-
-    ## Warning: package 'readr' was built under R version 4.2.1
-
-    ## Warning: package 'purrr' was built under R version 4.2.2
-
-    ## Warning: package 'dplyr' was built under R version 4.2.1
-
-    ## Warning: package 'stringr' was built under R version 4.2.2
-
-    ## Warning: package 'forcats' was built under R version 4.2.3
-
-    ## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-    ## ✔ dplyr     1.0.10     ✔ readr     2.1.3 
-    ## ✔ forcats   1.0.0      ✔ stringr   1.5.0 
-    ## ✔ ggplot2   3.4.2      ✔ tibble    3.1.8 
-    ## ✔ lubridate 1.8.0      ✔ tidyr     1.3.0 
-    ## ✔ purrr     1.0.1      
+    ## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.2 ──
+    ## ✔ ggplot2 3.4.0      ✔ purrr   0.3.5 
+    ## ✔ tibble  3.1.8      ✔ dplyr   1.0.10
+    ## ✔ tidyr   1.2.1      ✔ stringr 1.4.1 
+    ## ✔ readr   2.1.3      ✔ forcats 0.5.2 
     ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
     ## ✖ dplyr::filter() masks stats::filter()
     ## ✖ dplyr::lag()    masks stats::lag()
-    ## ℹ Use the ]8;;http://conflicted.r-lib.org/conflicted package]8;; to force all conflicts to become errors
 
 ``` r
 library(lubridate)
+```
+
+    ## Loading required package: timechange
+    ## 
+    ## Attaching package: 'lubridate'
+    ## 
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     date, intersect, setdiff, union
+
+``` r
 library(rjags)
 ```
 
     ## Loading required package: coda
-    ## Linked to JAGS 4.3.1
+    ## Linked to JAGS 4.3.0
     ## Loaded modules: basemod,bugs
-
-``` r
-library(tidybayes)
-```
 
 If you do not wish to run the code yourself you can follow along via the
 rendered markdown which can be viewed from the [Github
@@ -260,19 +250,20 @@ noaa_past[1:10,]
 ```
 
     ## # A tibble: 10 × 9
-    ##    datetime            site_id longitude latitude family   parameter variable   
-    ##    <dttm>              <chr>       <dbl>    <dbl> <chr>        <int> <chr>      
-    ##  1 2020-09-25 00:00:00 BARC        -82.0     29.7 ensemble         1 air_temper…
-    ##  2 2020-09-25 00:00:00 BARC        -82.0     29.7 ensemble         2 air_temper…
-    ##  3 2020-09-25 00:00:00 BARC        -82.0     29.7 ensemble         3 air_temper…
-    ##  4 2020-09-25 00:00:00 BARC        -82.0     29.7 ensemble         4 air_temper…
-    ##  5 2020-09-25 00:00:00 BARC        -82.0     29.7 ensemble         5 air_temper…
-    ##  6 2020-09-25 00:00:00 BARC        -82.0     29.7 ensemble         6 air_temper…
-    ##  7 2020-09-25 00:00:00 BARC        -82.0     29.7 ensemble         7 air_temper…
-    ##  8 2020-09-25 00:00:00 BARC        -82.0     29.7 ensemble         8 air_temper…
-    ##  9 2020-09-25 00:00:00 BARC        -82.0     29.7 ensemble         9 air_temper…
-    ## 10 2020-09-25 00:00:00 BARC        -82.0     29.7 ensemble        10 air_temper…
-    ## # ℹ 2 more variables: height <chr>, prediction <dbl>
+    ##    datetime            site_id longitude latitude family  param…¹ varia…² height
+    ##    <dttm>              <chr>       <dbl>    <dbl> <chr>     <int> <chr>   <chr> 
+    ##  1 2020-09-27 18:00:00 BARC        -82.0     29.7 ensemb…       1 air_te… 2 m a…
+    ##  2 2020-09-27 18:00:00 BARC        -82.0     29.7 ensemb…       2 air_te… 2 m a…
+    ##  3 2020-09-27 18:00:00 BARC        -82.0     29.7 ensemb…       3 air_te… 2 m a…
+    ##  4 2020-09-27 18:00:00 BARC        -82.0     29.7 ensemb…       4 air_te… 2 m a…
+    ##  5 2020-09-27 18:00:00 BARC        -82.0     29.7 ensemb…       5 air_te… 2 m a…
+    ##  6 2020-09-27 18:00:00 BARC        -82.0     29.7 ensemb…       6 air_te… 2 m a…
+    ##  7 2020-09-27 18:00:00 BARC        -82.0     29.7 ensemb…       7 air_te… 2 m a…
+    ##  8 2020-09-27 18:00:00 BARC        -82.0     29.7 ensemb…       8 air_te… 2 m a…
+    ##  9 2020-09-27 18:00:00 BARC        -82.0     29.7 ensemb…       9 air_te… 2 m a…
+    ## 10 2020-09-27 18:00:00 BARC        -82.0     29.7 ensemb…      10 air_te… 2 m a…
+    ## # … with 1 more variable: prediction <dbl>, and abbreviated variable names
+    ## #   ¹​parameter, ²​variable
 
 This is a stacked ensemble forecast of the one day ahead forecasts. To
 get an estimate of the historic conditions we can take a mean of these
@@ -314,8 +305,7 @@ s3_future <- arrow::s3_bucket(bucket = bucket, endpoint_override = 'data.ecofore
 variables <- c("air_temperature")
 
 noaa_future <- arrow::open_dataset(s3_future) |> 
-  dplyr::filter(#reference_datetime == forecast_date,
-                datetime >= forecast_date,
+  dplyr::filter(datetime >= forecast_date,
                 site_id %in% target_sites,
                 variable %in% variables) |> 
   collect()
@@ -675,42 +665,7 @@ forecast_df_efi <- forecast_df %>%
 ```
 
 For the NEON forecast Challenge (including the aquatics theme) the
-following standards are needed for a forecast submission. \# Decision
-makers’ request
-
-Lake and reservoir managers could use forecasts of chlorophyll
-concentrations in surface waters for a number of reasons. For example, a
-forecast at 1-30 days ahead could be used to:
-
--   To inform swimming/boating restrictions for safe recreation (given
-    the toxin production by some algae species - chlorophyll a can be a
-    useful proxy)
--   Prepare water treatment processes - buy/replace filters, buy
-    chemicals, change staffing levels, switch to an alternate drinking
-    water supply
-
-Using the baseline model introduced above, the lake managers are
-interested in a 1-30 day ahead forecast for July 2023 (and beyond if you
-like) to understand when a bloom might occur in the next month to inform
-the open/close status of the lake for swimming and to organise the
-drinking water treatment processes. A lake will be closed for swimming
-if concentrations go above XXX SOME THRESHOLD.
-
-The forecasts should address the following questions:
-
--   should one lake be chosen for drinking water this month over the
-    other? (how do the forecasts of chlorophyll concentration differ
-    between the sites? which is higher/lower?)
--   what are the maximum concentrations that will occur in the next 30
-    days? And when will this maximum level occur?
--   are chlorophyll concentrations likely to be higher or lower than
-    normal for the time of year? (comparison with a climatology
-    forecast)
--   what are the chances that the lake(s) will be closed in the next
-    month for swimming?
-
-New data will be available later in the week to assess the success of
-your forecasts.
+following standards are needed for a forecast submission.
 
 # 6 Introduction to NEON forecast challenge
 
@@ -863,3 +818,42 @@ crucial for a couple of reasons:
 
 Questions about Challenge registration and synthesis participation can
 be directed to [Freya Olsson](mailto:freyao@vt.edu).
+
+# 7 **Decision makers’ request**
+
+Lake and reservoir managers could use forecasts of chlorophyll
+concentrations in surface waters for a number of reasons. For example, a
+forecast at 1-30 days ahead could be used to:
+
+-   To inform swimming/boating restrictions for safe recreation (given
+    the toxin production by some algae species - chlorophyll a can be a
+    useful proxy)
+-   Prepare water treatment processes - buy/replace filters, buy
+    chemicals, change staffing levels, switch to an alternate drinking
+    water supply
+
+Using the baseline model introduced above, the lake managers are
+interested in a 1-30 day ahead forecast for July 2023 (and beyond if you
+like) to understand when a bloom might occur in the next month to inform
+the open/close status of the lake for swimming and to organise the
+drinking water treatment processes. A lake will be closed for swimming
+if concentrations go above 20 mg/L.
+
+The forecasts should address the following questions:
+
+-   should one lake be chosen for drinking water this month over the
+    other? (how do the forecasts of chlorophyll concentration differ
+    between the sites? which is higher/lower?)
+-   what are the maximum concentrations that will occur in the next 30
+    days? And when will this maximum level occur?
+-   are chlorophyll concentrations likely to be higher or lower than
+    normal for the time of year? (comparison with a climatology
+    forecast)
+-   what are the chances that the lake(s) will be closed in the next
+    month for swimming?
+
+New data will be available later in the week to assess the success of
+your forecasts.
+
+Note: These lakes monitored by NEON are not used for drinking water and
+the threshold indicated above is for illustrative purposes only!
