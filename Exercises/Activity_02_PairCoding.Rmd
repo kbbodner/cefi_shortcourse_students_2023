@@ -10,11 +10,13 @@ Note: This primer is based on the NEON-focused version of https://github.com/Eco
 
 Before beginning this exercise, you should have the following three packages installed, which you may not already have installed. If you don't have them installed, you should run the following commands **in your console** to install them. The reason for this is RMarkdown really doesn't like when you try to install packages while knitting a document. So, while you *can* run the code chunk by chunk in RMarkdown, if you go to knit it, you will receive an error.
 
-        devtools::install_github('eco4cast/neon4cast')
+```{r, eval=F}
+devtools::install_github('eco4cast/neon4cast')
         
-        install.packages('rMR')
+install.packages('rMR')
         
-        devtools::install_github('eco4cast/EFIstandards')
+devtools::install_github('eco4cast/EFIstandards')
+```
         
 ## Objectives
 
@@ -22,7 +24,7 @@ The primary goal of this exercise is to gain experience working collaboratively 
 
 ## neon4cast workflow
 
-The goal of this analysis is to develop a basic forecasting workflow. Specifically, we will be forecasting water temperature and dissolved oxygen concentration for a set of lakes and streams monitored by the National Ecological Observatory Network (NEON) as part of the Ecological Forecasting Initiative's NEON Forecasting Challenge. This analysis is based on the example developed by Quinn Thomas (EFI-RCN lead PI) at https://github.com/eco4cast/neon4cast-example but refactored to focus on teaching Github and team code development. The data processing steps here draw upon concepts covered in Activity 3.
+The goal of this analysis is to develop a basic forecasting workflow. Specifically, we will be forecasting water temperature and dissolved oxygen concentration for a set of lakes and streams monitored by the National Ecological Observatory Network (NEON) as part of the Ecological Forecasting Initiative's NEON Forecasting Challenge. This analysis is based on the example developed by Quinn Thomas (EFI-RCN lead PI) at [this link](https://github.com/eco4cast/neon4cast-example) but refactored to focus on teaching Github and team code development. The data processing steps here draw upon concepts covered in Activity 3.
 
 
 The workflow for this analysis with have three components: 
@@ -83,7 +85,7 @@ download_met_forecast <- function(forecast_date)
 
 Most of the above design choices should be fairly straightforward. The possible exception is the decision to have the function that downloads the historical weather data also automatically merge that with the targets data. This was done to both simplify the overall workflow, and to simplify the arguments passed to the function, which implicitly downloads data for the sites and dates needed to match the target data, rather than needing to be passed a list of sites and dates. Note that these are all subjective decisions, and different people could come up with different designs.
 
-Our second step is then to calibrate a set of models to predict water temperature at different NEON lakes. Because we merged the Y and X data into one data frame, target, which also includes site and time information, the calibration function just needs this one argument. Since we're going to end up using basic linear models in our simple forecast, we're going to have the function return a list of regression objects, one for each site and using NEON standard site IDs as the names in the list.
+Our second step is then to calibrate a set of models to predict water temperature at different NEON lakes. Because we merged the `Y` and `X` data into one data frame, target, which also includes site and time information, the calibration function just needs this one argument. Since we're going to end up using basic linear models in our simple forecast, we're going to have the function return a list of regression objects, one for each site and using NEON standard site IDs as the names in the list.
 ```
 ##' Calibrate aquatic forecast model
 ##' @param target dataframe containing historical data and covariates
@@ -101,7 +103,7 @@ Our third step is to make the actual forecasts. For this we'll need the list of 
 run_forecast <- function(model,met_forecast,site_data)
 ```
 
-Our forth and final step is to write a function that save the forecast and it's metadata in EFI standard and then submits the forecast to the EFI challenge. The two obvious arguments to this function are the forecast and team-specific metadata. We'll also all a third argument, `submit` that determines whether the forecast is actually submitted or not, and set this argument to FALSE by default. This argument will be useful when we're building and testing our workflow, so as to not inundate the NEON challenge with junk, and can be switched to TRUE when everything is ready.
+Our forth and final step is to write a function that save the forecast and it's metadata in EFI standard and then submits the forecast to the EFI challenge. The two obvious arguments to this function are the forecast and team-specific metadata. We'll also all a third argument, `submit` that determines whether the forecast is actually submitted or not, and set this argument to FALSE by default. This argument will be useful when we're building and testing our workflow, so as to not inundate the NEON challenge with junk, and can be switched to `TRUE` when everything is ready.
 ```
 ##' Save forecast and metadata to file, submit forecast to EFI
 ##' @param forecast dataframe
@@ -219,10 +221,10 @@ download_met_forecast <- function(forecast_date){
 
 1. In RStudio, click File > New File > R Script
 2. Copy and Paste the above function into this file
-3. Save the file as "01_download_data.R"
-4. From the Git tab, click the box next to the file you just created. This is equivalent to _git add_
-5. Click Commit, enter a log message, and click Commit. This is equivalent to _git commit_
-6. To push the change up to Github click on the green up arrow. This is equivalent to _git push_
+3. Save the file as `01_download_data.R`
+4. From the Git tab, click the box next to the file you just created. This is equivalent to `git add`
+5. Click Commit, enter a log message, and click Commit. This is equivalent to `git commit`
+6. To push the change up to Github click on the green up arrow. This is equivalent to `git pus`
 
 ## Task 3: Collaborator adds model calibration and forecast
 
@@ -233,7 +235,7 @@ With the first function complete, let's now imagine that a **COLLABORATOR** has 
 1. Go to Github and navigate to the project repository within the OWNER's workspace.
 2. Click Fork, which will make a copy of the repository to your own workspace.
 3. Copy the URL to your own version and follow the instructions above for cloning the repository in RStudio.
-4. Open a new file, enter the code below, and then save the file as "02_calibrate_forecast.R"
+4. Open a new file, enter the code below, and then save the file as `2_calibrate_forecast.R`
 ```{r}
 ##' Calibrate aquatic forecast model
 calibrate_forecast <- function(target){
@@ -252,7 +254,7 @@ calibrate_forecast <- function(target){
   return(fit)
 }
 ```
-5. Open another new file, enter the code below, and then save the file as "03_run_forecast.R"
+5. Open another new file, enter the code below, and then save the file as `03_run_forecast.R`
 ```{r}
 ##' run aquatic forecast into the future
 ##' @param model site-specific list of forecast models
@@ -477,7 +479,7 @@ forecast %>%
 submit_forecast(forecast,team_info,submit=FALSE)
 ```
 
-3. Save this file as "Main.R". 
+3. Save this file as `Main.R`. 
 4. Within RStudio's Git tab, add the file and Commit. Use the Push (up arrow) button to push this to your own repository
 5. On Github.com, submit a pull request
 
