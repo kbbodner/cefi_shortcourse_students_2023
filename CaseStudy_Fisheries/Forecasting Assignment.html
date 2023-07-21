@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.353">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Fraser Sockeye Forecasting Challenge</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="Forecasting Assignment_files/libs/clipboard/clipboard.min.js"></script>
+<script src="Forecasting Assignment_files/libs/quarto-html/quarto.js"></script>
+<script src="Forecasting Assignment_files/libs/quarto-html/popper.min.js"></script>
+<script src="Forecasting Assignment_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="Forecasting Assignment_files/libs/quarto-html/anchor.min.js"></script>
+<link href="Forecasting Assignment_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="Forecasting Assignment_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="Forecasting Assignment_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="Forecasting Assignment_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="Forecasting Assignment_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Fraser Sockeye Forecasting Challenge</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<section id="forecasting-fraser-sockeye-returns-in-2022" class="level2">
+<h2 class="anchored" data-anchor-id="forecasting-fraser-sockeye-returns-in-2022">Forecasting Fraser Sockeye Returns in 2022</h2>
+<p>It’s November 1, 2021. Stock assessment programs counting spawning salmon are wrapping up for the season, technicians have hung up their waders, and pulling out their laptops to enter data for the year. Outlook notification: “FraserSockeyeData2022.csv” from the data manager. It’s that time of year again! Time to put together the forecast for 2022. You and your manager have been discussing new ways to run the forecast, and both agree that the old methods are getting a little dusty, and it’s time to explore some new approaches. As a proof of concept, you’ve been asked to choose one stock (but your ambitious, so you might try more), and develop a new suite of potential models, compare their performance, and provide a proof-of-concept forecast for 2022.</p>
+<p>The following elements should be included in your analysis:</p>
+<ol type="1">
+<li><p>A baseline model, which will be based on a Ricker relationship between spawners and returns. Assume this is what has been done in the past, and what you’re trying to improve upon.</p></li>
+<li><p>At least two other candidate models. Some potential avenues you could go down:</p>
+<p>a) Using supplementary data – check out the set of environmental covariates provided in FC_Environmental_Data.csv!</p>
+<p>b) Employing a sibling model, where the age-4 return from 2021 (2017 brood year) informs the age-5 portion of the 2023 return.</p>
+<p>c) Make changes to the way age proportions are implemented. This is currently done very crudely, assuming the average age-4 proportion seen in the entire time series. Look for changes over time, or potential covariates.</p>
+<p>d) An alternative model form – this can be anything! A different discrete population model, a model-free approach, a model that allows parameters to change over time, or accounts for a breakpoint in productivity. If you can code it, you can try it!</p></li>
+<li><p>An analysis comparing the performance of your 3+ candidate models.</p></li>
+<li><p>A suggestion on which model you think should be used, and why.</p></li>
+<li><p>Your final forecast (with associated uncertainty) for 2022 for your chosen stock(s).</p></li>
+</ol>
+</section>
+<section id="code-ive-provided" class="level2">
+<h2 class="anchored" data-anchor-id="code-ive-provided">Code I’ve Provided</h2>
+<p>I’ve included a number of pieces of code that might be useful (but feel free to go rogue!). Some alternative stock-recruitment model forms, a sample of a sibling model, and some “naive” models that can be surprisingly effective.</p>
+<section id="stock-recruitment-model-forms" class="level3">
+<h3 class="anchored" data-anchor-id="stock-recruitment-model-forms">Stock-Recruitment model forms</h3>
+<section id="basic-ricker" class="level4">
+<h4 class="anchored" data-anchor-id="basic-ricker"><u>Basic Ricker</u></h4>
+<p>I already covered the basics of this model in the first vignette, but here’s some details on the JAGS implementation.</p>
+<p>In this model I use a lognormal likelihood, remembering that JAGS parameterizes normal distributions using precision <span class="math inline">\(\tau = 1/\sigma^2\)</span>.</p>
+<p><span class="math display">\[
+\widehat{lnR_i} \sim normal(ln(R_i), \tau)
+\]</span></p>
+<p>Lognormal priors on <span class="math inline">\(\alpha\)</span> and <span class="math inline">\(S_{max}\)</span>:</p>
+<p><span class="math display">\[
+ln(\alpha) \sim normal(\mu_{\alpha}, \tau{\alpha})
+\]</span> <span class="math display">\[
+ln(S\_{max}) \sim normal(\mu_{Smax}, \tau_{Smax})
+\]</span></p>
+<p>We put an inverse gamma prior on variance, implemented as a gamma prior on precision <span class="math inline">\(\tau\)</span>.</p>
+<p><span class="math display">\[
+\tau \sim gamma(\theta, \theta)
+\]</span></p>
+</section>
+<section id="ricker-environmental-covariate" class="level4">
+<h4 class="anchored" data-anchor-id="ricker-environmental-covariate"><u>Ricker + Environmental Covariate</u></h4>
+<p>There are many ways to add environmental covariates, the way it is currently carried out for the forecast is pretty simple, and only allows for a single covariate, and takes the following form:</p>
+<p>Starting from the linearized form, parameterized with <span class="math inline">\(S_{max}\)</span>:</p>
+<p><span class="math display">\[
+R_i = \alpha S_i e^{-S_i/S_{max}}
+\]</span></p>
+<p>we add a simple exponential covariate:</p>
+<p><span class="math display">\[
+R_i = \alpha S_i e^{-S_i/S_{max}+gE_i}
+\]</span></p>
+<p>which is linearized to: <span class="math display">\[
+ln(R_i) = ln(\alpha)+ ln(S_i)-S_i/S_{max}+gE_i
+\]</span></p>
+<p>We use the same lognormal likelihood, and priors as the basic Ricker model, but need to add a prior for g: <span class="math display">\[
+g \sim normal(\mu_g, \tau_g )
+\]</span></p>
+</section>
+<section id="power-model" class="level4">
+<h4 class="anchored" data-anchor-id="power-model"><u>Power Model</u></h4>
+<p>An alternative stock-recruit model is a simple power model, which does not assume density dependence.</p>
+<p><span class="math display">\[
+R_i = A S_i^B
+\]</span> which is linearized to: <span class="math display">\[
+ln(R_i) = A+B*ln(S_i)
+\]</span></p>
+<p>This model form uses the same lognormal likelihood as above, and has normal priors on both A and B: <span class="math display">\[
+A \sim normal(\mu_{A}, \tau_{A})
+\]</span> <span class="math display">\[
+B \sim normal(\mu_{B}, \tau_{B})
+\]</span> And the same gamma prior on precision as the above models.</p>
+</section>
+<section id="larkin-model" class="level4">
+<h4 class="anchored" data-anchor-id="larkin-model"><u>Larkin Model</u></h4>
+<p>The Larkin model is sometimes used for populations that show cyclic behaviour, of which there are many among Fraser Sockeye stocks. The form here assumes density-dependent effects for cohorts up to 3 years prior.</p>
+<p>It’s linearized form is:</p>
+<p><span class="math display">\[
+ln(R_i) = ln(\alpha) + ln(S_i) - \beta_0S_i - \beta_1S_{i-1} - \beta_2S_{i-2} - \beta_3S_{i-3}
+\]</span>It uses the same lognormal likelihood as above, and the same lognormal priors on <span class="math inline">\(\alpha\)</span> as the above Ricker models, and normal priors are put on each beta term: <span class="math display">\[
+\beta_h \sim normal(\mu_{\beta_h}, \tau_{\beta_h}) \; for\;h \in (0:3)
+\]</span></p>
+</section>
+</section>
+<section id="sibling-model" class="level3">
+<h3 class="anchored" data-anchor-id="sibling-model">Sibling model</h3>
+<p>A sibling model can be used to predict age-5 returns based on age-4 returns from the same cohort, that would have returned the year prior. For example, when forecasting 2022 returns, we expect to see some proportion of age-5 returns from the 2017 cohort. We would have seen the age-4 component of their brood-mates returning in 2021. Since these fish would have experienced the same rearing, downstream migration, and ocean conditions for most of their lives, we might expect that there is some relationship between the two groups. These models are often used when a large age-5 cohort is expected, due to a notably large return 5 years prior. Alternatively, they are also favoured when an unusually low return is seen 4-years prior, to make sure we are tempering expectations for the age-5 component of the same cohort. Although this can be controversial, since others may see that as a sign that more fish are waiting until age-5 to return.</p>
+<p>The sibling model assumes a linear relationship between the natural logarithms of age-4 and age-5 recruits from the same brood year, with intercept <span class="math inline">\(a\)</span> and slope <span class="math inline">\(b\)</span>:</p>
+<p><span class="math display">\[
+ln(R_{5,y}) = a + b*ln(R_{4,y})
+\]</span> It is a convention that the entire time-series is not often used to fit this model, because some stocks have seen shifts in age-distributions over time. If you want to explore this type of model, it would be prudent to look how age-distributions have changed over time.</p>
+</section>
+<section id="naive-models" class="level3">
+<h3 class="anchored" data-anchor-id="naive-models">Naive Models</h3>
+<p>I’ve included some very basic “naive” models to the library of provided functions (see Run.Naive.Mods in the Functions.R file). . They simply take some sort of average or recent observed recruits-per-spawner and apply it to the applicable brood’s spawner numbers. These can sometimes perform surprisingly well, and can be interesting to throw into the mix. They are often used in scenarios where no biologically-based model is capturing a collapse in productivity that is being observed. A historical collapse in productivity was seen in 2009, triggering the <a href="https://publications.gc.ca/site/eng/432516/publication.html">Cohen Commission</a> and unfortunately, in the last several years we have observed similar collapses in productivity for certain stocks.</p>
+</section>
+<section id="performance-metrics" class="level3">
+<h3 class="anchored" data-anchor-id="performance-metrics"><strong>Performance Metrics</strong></h3>
+<p>The manner in which the individual models are chosen for Fraser Sockeye stocks has changed a bit over time. Until recently, a jack-knife (leave-one-out) analysis was used to assess performance. More recently we have moved towards a one-step-ahead approach. The function RunModRetro() should get you started if this is how you wish to assess your models in this way. I have also provided a suite of potential performance metrics you can try.</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

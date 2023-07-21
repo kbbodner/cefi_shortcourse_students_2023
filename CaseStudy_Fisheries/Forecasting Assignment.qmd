@@ -1,0 +1,129 @@
+---
+title: "Fraser Sockeye Forecasting Challenge"
+format: html
+editor: visual
+---
+
+## Forecasting Fraser Sockeye Returns in 2022
+
+It's November 1, 2021. Stock assessment programs counting spawning salmon are wrapping up for the season, technicians have hung up their waders, and pulling out their laptops to enter data for the year. Outlook notification: "FraserSockeyeData2022.csv" from the data manager. It's that time of year again! Time to put together the forecast for 2022. You and your manager have been discussing new ways to run the forecast, and both agree that the old methods are getting a little dusty, and it's time to explore some new approaches. As a proof of concept, you've been asked to choose one stock (but your ambitious, so you might try more), and develop a new suite of potential models, compare their performance, and provide a proof-of-concept forecast for 2022.
+
+The following elements should be included in your analysis:
+
+1)  A baseline model, which will be based on a Ricker relationship between spawners and returns. Assume this is what has been done in the past, and what you're trying to improve upon.
+
+2)  At least two other candidate models. Some potential avenues you could go down:
+
+    a\) Using supplementary data -- check out the set of environmental covariates provided in FC_Environmental_Data.csv!
+
+    b\) Employing a sibling model, where the age-4 return from 2021 (2017 brood year) informs the age-5 portion of the 2023 return.
+
+    c\) Make changes to the way age proportions are implemented. This is currently done very crudely, assuming the average age-4 proportion seen in the entire time series. Look for changes over time, or potential covariates.
+
+    d\) An alternative model form -- this can be anything! A different discrete population model, a model-free approach, a model that allows parameters to change over time, or accounts for a breakpoint in productivity. If you can code it, you can try it!
+
+3)  An analysis comparing the performance of your 3+ candidate models.
+
+4)  A suggestion on which model you think should be used, and why.
+
+5)  Your final forecast (with associated uncertainty) for 2022 for your chosen stock(s).
+
+## Code I've Provided
+
+I've included a number of pieces of code that might be useful (but feel free to go rogue!). Some alternative stock-recruitment model forms, a sample of a sibling model, and some "naive" models that can be surprisingly effective.
+
+### Stock-Recruitment model forms
+
+#### [Basic Ricker]{.underline}
+
+I already covered the basics of this model in the first vignette, but here's some details on the JAGS implementation.
+
+In this model I use a lognormal likelihood, remembering that JAGS parameterizes normal distributions using precision $\tau = 1/\sigma^2$.
+
+$$
+\widehat{lnR_i} \sim normal(ln(R_i), \tau)
+$$
+
+Lognormal priors on $\alpha$ and $S_{max}$:
+
+$$
+ln(\alpha) \sim normal(\mu_{\alpha}, \tau{\alpha}) 
+$$ $$
+ln(S\_{max}) \sim normal(\mu_{Smax}, \tau_{Smax})
+$$
+
+We put an inverse gamma prior on variance, implemented as a gamma prior on precision $\tau$.
+
+$$
+\tau \sim gamma(\theta, \theta)
+$$
+
+#### [Ricker + Environmental Covariate]{.underline}
+
+There are many ways to add environmental covariates, the way it is currently carried out for the forecast is pretty simple, and only allows for a single covariate, and takes the following form:
+
+Starting from the linearized form, parameterized with $S_{max}$:
+
+$$
+R_i = \alpha S_i e^{-S_i/S_{max}} 
+$$
+
+we add a simple exponential covariate:
+
+$$
+R_i = \alpha S_i e^{-S_i/S_{max}+gE_i}
+$$
+
+which is linearized to: $$
+ln(R_i) = ln(\alpha)+ ln(S_i)-S_i/S_{max}+gE_i
+$$
+
+We use the same lognormal likelihood, and priors as the basic Ricker model, but need to add a prior for g: $$
+g \sim normal(\mu_g, \tau_g )
+$$
+
+#### [Power Model]{.underline}
+
+An alternative stock-recruit model is a simple power model, which does not assume density dependence.
+
+$$
+R_i = A S_i^B
+$$ which is linearized to: $$
+ln(R_i) = A+B*ln(S_i)
+$$
+
+This model form uses the same lognormal likelihood as above, and has normal priors on both A and B: $$
+A \sim normal(\mu_{A}, \tau_{A}) 
+$$ $$
+B \sim normal(\mu_{B}, \tau_{B})
+$$ And the same gamma prior on precision as the above models.
+
+#### [Larkin Model]{.underline}
+
+The Larkin model is sometimes used for populations that show cyclic behaviour, of which there are many among Fraser Sockeye stocks. The form here assumes density-dependent effects for cohorts up to 3 years prior.
+
+It's linearized form is:
+
+$$
+ln(R_i) = ln(\alpha) + ln(S_i) - \beta_0S_i - \beta_1S_{i-1} - \beta_2S_{i-2} - \beta_3S_{i-3} 
+$$It uses the same lognormal likelihood as above, and the same lognormal priors on $\alpha$ as the above Ricker models, and normal priors are put on each beta term: $$
+\beta_h \sim normal(\mu_{\beta_h}, \tau_{\beta_h}) \; for\;h \in (0:3)
+$$
+
+### Sibling model
+
+A sibling model can be used to predict age-5 returns based on age-4 returns from the same cohort, that would have returned the year prior. For example, when forecasting 2022 returns, we expect to see some proportion of age-5 returns from the 2017 cohort. We would have seen the age-4 component of their brood-mates returning in 2021. Since these fish would have experienced the same rearing, downstream migration, and ocean conditions for most of their lives, we might expect that there is some relationship between the two groups. These models are often used when a large age-5 cohort is expected, due to a notably large return 5 years prior. Alternatively, they are also favoured when an unusually low return is seen 4-years prior, to make sure we are tempering expectations for the age-5 component of the same cohort. Although this can be controversial, since others may see that as a sign that more fish are waiting until age-5 to return.
+
+The sibling model assumes a linear relationship between the natural logarithms of age-4 and age-5 recruits from the same brood year, with intercept $a$ and slope $b$:
+
+$$
+ln(R_{5,y}) = a + b*ln(R_{4,y})
+$$ It is a convention that the entire time-series is not often used to fit this model, because some stocks have seen shifts in age-distributions over time. If you want to explore this type of model, it would be prudent to look how age-distributions have changed over time.
+
+### Naive Models
+
+I've included some very basic "naive" models to the library of provided functions (see Run.Naive.Mods in the Functions.R file). . They simply take some sort of average or recent observed recruits-per-spawner and apply it to the applicable brood's spawner numbers. These can sometimes perform surprisingly well, and can be interesting to throw into the mix. They are often used in scenarios where no biologically-based model is capturing a collapse in productivity that is being observed. A historical collapse in productivity was seen in 2009, triggering the [Cohen Commission](https://publications.gc.ca/site/eng/432516/publication.html) and unfortunately, in the last several years we have observed similar collapses in productivity for certain stocks.
+
+### **Performance Metrics**
+
+The manner in which the individual models are chosen for Fraser Sockeye stocks has changed a bit over time. Until recently, a jack-knife (leave-one-out) analysis was used to assess performance. More recently we have moved towards a one-step-ahead approach. The function RunModRetro() should get you started if this is how you wish to assess your models in this way. I have also provided a suite of potential performance metrics you can try.
