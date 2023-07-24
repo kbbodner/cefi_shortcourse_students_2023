@@ -55,7 +55,7 @@ Sim_Ricker_SR_Data <- function( leng=20, age=4, Sig_Ricker = 0.2, true_a = 3, tr
 
   
   # get "true" values to plot curve from
-  true_S = seq(from=min(esc), to=max(esc),length.out=50)
+  true_S = seq(from=min(esc), to=max(esc),length.out=leng)
   true_R = true_a * true_S * exp(-true_S*true_b)
   
   DF_Out <- data.frame(S = round(esc[1:leng]), R = rec[(age+1):(leng+age)], Year = 1:leng, 
