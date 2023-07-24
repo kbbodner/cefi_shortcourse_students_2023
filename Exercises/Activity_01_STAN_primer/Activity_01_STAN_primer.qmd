@@ -212,9 +212,10 @@ When running an MCMC analysis the first question to ask with any output is "has 
 
 ```{r}
 mcmc_trace(stan.out, pars = c("mu"),n_warmup = 500)
+mcmc_dens(stan.out, pars = c("mu"),n_warmup = 500)
 ```
 
-For every variable you are tracking this will spit out two plots, a trace plot and a density plot. The traceplot looks like a time-series with the parameter value on the Y-axis and the iterations on the X-axis. Each chain is plotted in a different color. In a model that has converged these chains will be overlapping and will bounce around at random, preferably looking like white noise but sometimes showing longer term trends. 
+For the variables given in the `pars` argument this will spit out two plots, a trace plot and a density plot. The traceplot looks like a time-series with the parameter value on the Y-axis and the iterations on the X-axis. Each chain is plotted in a different color. In a model that has converged these chains will be overlapping and will bounce around at random, preferably looking like white noise but sometimes showing longer term trends. 
 
 To help make the assessment of convergence more objective, `posterior` offers a number of diagnostics, with the most common being the R-hat statistic. R-hat requires that you have run multiple chains because it compares the among chain variance to the within change variance. If a model has converged, then these two should be identical and the R-hat should be 1. There's no hard-and-fast rule for the threshold that this statistic needs to hit but in general values less than 1.01 are excellent, 1.05 is good, and >1.1 is generally held to be not yet converged.
 
