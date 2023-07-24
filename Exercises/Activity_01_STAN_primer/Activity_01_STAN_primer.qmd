@@ -1,0 +1,351 @@
+---
+title: "Introduction to STAN"
+output: html_document
+---
+
+```{r,echo=FALSE}
+library(rstan)
+library(bayesplot)
+library(tidybayes)
+library(coda)
+```
+
+
+# Introduction
+
+The aim of this activity is to provide a tutorial on STAN, a statistical software package designed specifically to do Bayesian analyses using Markov Chain Monte Carlo (MCMC) numerical simulation methods. STAN is one of a set of generalized software tools for doing Bayesian computation, with JAGS, BUGS, and NIMBLE being other popular options. These tools use very similar and simple scripting languages that focus on specifying data and process models. The great thing about these tools is that they keeps a lot of the mathematical and computational details “under the hood” so that you can focus on the structure of your model at a high level rather than being bogged down in the details. Also, since STAN is designed just to do Bayesian MCMC computation it is very efficient at this, which is nice since Bayesian MCMC computations can be time consuming. In this tutorial we will work through the basics of using STAN: writing and compiling a model, loading data, executing the model, and evaluating the numerical output of the model.
+
+While tools like STAN can be run by themselves, they are not really designed for managing or manipulating data, and thus it is common to use R packages to interface with these tools. In the example below we will use the `rstan` package to call STAN. To be able to install `rstan` you will need to first [install STAN itself](https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started). For this exercise you can start up a [`rocker`](https://rocker-project.org/) [Docker container](https://colinfay.me/docker-r-reproducibility/) in order to start working in an environment that has `rstan` and other packages installed already.
+
+The reason for choosing STAN in this course is that it provides modern tools for sampling from a posterior, can be used with other programming languages such as Python, and works across different operating systems. As STAN is written in the programming language C++ it does have some particular idiosyncrasies to get used to coming from R, such as having to declare the length of arrays and their types.
+
+
+### Resources
+STAN itself provides a User's guide, as well as a reference manual and a language functions reference that is useful for looking up the syntax for distributions and functions, but isn't particularly useful for learning how to code.
+
+There’s a large amount of info in both the STAN manuals but I wanted to point out a few sections that you’ll find yourself coming back to repeatedly. One of these topics is the STAN [Language manual](https://mc-stan.org/docs/reference-manual/language.html#language) which provides a lot of detail on how to write models and how data must be formatted. The naming convention for distributions in STAN is similar to the convention in R, but there are a few cases where the parameterization is different so it is always good to check the [Functions Reference](https://mc-stan.org/docs/functions-reference/index.html) that the values you are passing to a STAN distribution are what you think they are. One very important example of this is that the Normal distribution in STAN, `normal`, is parameterized in terms of a mean and standard deviation rather than a mean and precision (1/variance), which is the parameterization in JAGS. 
+
+Within the [Part 1. Example models](https://mc-stan.org/docs/stan-users-guide/example-models.html#example-models.part) page you'll find 16 chapters of examples that provided written explanations of analyses with the STAN code. Working through these is a great way to learn more about how STAN works. When you first start analyzing your own data it is often easiest to start from an existing example and modify it to meet your needs rather than starting from scratch.
+
+
+# A Simple STAN model
+
+As our first example, let’s consider the simple case of finding the mean of a Normal distribution with a known variance and Normal prior on the mean:
+
+$$\text{prior} = P(\mu) = N(\mu | \mu_0 , \sigma)$$
+$$\text{Likelihood} = P(X | \mu) = N( X | \mu, \sigma^2)$$ 
+
+Let's define the prior standard deviation as $T$ and the data standard deviation as $S$. Let's also switch from the conditional notation for PDFs to the tilde notation (~ is read as "is distributed as"). Given this we can rewrite the above model as:
+
+$$ \mu \sim N(\mu_0,T) $$
+$$ X \sim N(\mu, S) $$
+
+This problem has an exact analytical solution so we can compare the numerical results to the analytical one (Dietze 2017, Eqn 5.7). 
+
+$$ P(\mu | X) \sim N \left( \frac{\frac{1}{S^2}}{ \frac{1}{S^2} + \frac{1}{T^2}} X + \frac{\frac{1}{T^2}}{ \frac{1}{S^2} + \frac{1}{T^2}}\mu_0,S+T\right) $$
+
+
+
+  In STAN the specification of any model begins with the word “model” and then encapsulates the rest of the model code in curly brackets:
+```
+model {
+## model goes here ##
+}
+```
+When writing models in STAN we have to specify the data model, process model, and parameter model using the tilde notation. However, we don't need to specify explicitly the connections between them — STAN figures this out based on the conditional probabilities involved. As STAN is based on C++ code, it requires a semi-colon at the end of each line. STAN also uses double-forward slashes to indicate comments as opposed to `#`, which is used in R. Deterministic calculations (e.g. process model) always make use of the assignment operator ( = ) for assignment (similar to C syntax). Assignment of random variables is always done with a tilde (~). For example, a regression model where we're trying to predict data y based on observation x might include
+
+```
+mu = b0 + b1* x; // process model 
+y ~ normal(mu,sigma); // data model
+```
+
+
+
+Putting this all together, to specify our first model of a normal likelihood and normal prior, the STAN code is:
+
+```
+model {
+mu ~ normal(mu0,T); // prior on the mean 
+X ~ normal(mu,S); // data model
+}
+```
+
+The first line of this model specifies the prior and says that `mu` is a random variable (`~`) that is Normally distributed (`normal`) with an expected value of `mu0` and a standard deviation of `T`. The second line specifies the likelihood and says that there is a single data point `X` that is a random variable that has a Normal distribution with expected value `mu` and standard deviation `S`.
+
+Hopefully the above STAN code seems pretty clear. However, there are a few quirks to how STAN evaluates a model that can often be misleading to newcomers. One of the more disorienting features is that, because STAN isn't evaluating the code sequentially, the order of the code doesn't matter -- the above model is equivalent to
+
+```
+model {
+X ~ normal(mu,S); // data model
+mu ~ normal(mu0,T); // prior on the mean
+}
+```
+
+If you're used to R the above seems 'wrong' because you're using mu in the data model before you've 'defined' it. But STAN models are not a set of sequential instructions, rather they are the definition of a problem which STAN will parse into a graph and then analyze to how to best sample from. Furthermore, even if the code were evaluated sequentially, MCMC is a cyclic algorithm and thus, after initial conditions are provided, it doesn't really matter what order thing are in.
+
+The other major "quirk" of STAN is that what STAN does with a model can depend a LOT on what's passed in as knowns! Understanding how this works will help you considerably when writing and debug models. As opposed to BUGS/JAGS STAN requires you to specify explicitly which variables
+are "knowns", which are treated as data and which are "unkowns" which are treated as parameters
+to be sampled over. STAN also requires that a data and parameters block be specified so a full model may looks something like
+
+```
+data {
+// declaration of data goes here
+}
+parameters {
+// declaration of parameters goes here
+}
+model {
+// model code
+}
+```
+
+The `data` block is used for the declaration of variables that are treated like 
+constants and are not sampled over. Each variable’s value is validated against its declaration as it is read. For example, if a variable `sigma` is declared as `real<lower=0>`, then trying to assign it a negative value will raise an error.
+
+The `parameters` block is used for the declaration of variables that are treated like
+random variables that will be sampled over.
+
+STAN also uses the `transformed data`, `transformed parameters`, and `generated quantities` blocks. we won't use them for the tasks below, but they're useful to be aware of as you progress onto more complex examples.
+
+# Evaluating a STAN model
+
+OK, so how do we now use STAN to fit our model to data? To start with, we need to realize that STAN code is not identical to R code, so if we write it in R as is, R will throw an error. Therefore, we either need to write this code in a separate file or treat it as text within R. In general, I prefer the second option because I feel it makes coding and debugging simpler. Here I define the above STAN model as a text string in R:
+
+```{r}
+NormalMean = "
+data {
+int <lower = 1> N; // sample size
+vector[N] X; // outcome
+real mu0; // mean of the prior
+real <lower = 0> T; // standard deviation of prior
+real <lower = 0> S; // standard deviation of normal data
+}
+
+parameters {
+real mu;
+}
+
+model {
+mu ~ normal(mu0,T); // prior on the mean 
+X ~ normal(mu,S); // data model
+}
+"
+```
+
+You can see that the code is divided into different *blocks* using curly braces `\{\}`. The data block defines all the inputs to the model ahead of performing inference and is where we have entered the data and any constants such as sample size and standard deviation of the prior. The data also need to be *typed* where we specify what the data should look like. For example `int <lower = 1>` indicates that the input should be an integer and should be at least 1. If it is not then the code will throw an error when we perform the sampling step. This is a helpful way of validating our data are in the correct format. The `parameters` block defines and variables that will be sampled over, in this case it is just the mean `mu`. The model block defines the prior and likelihood. You can see that the code looks quite similar to how we defined the model above. In addition STAN also requires semi-colons after each line. This means you can write multiple statements on a single line although this is not recommended as can lead to code being harder to read.
+To pass this model to STAN we'll use the `rstan` function `stan`, which has required arguments of the model and the data, and optional arguments for specifying initial conditions and the number of chains (I encourage you to read the man page for this function!). So before running this function let's first set up these other inputs
+
+### Data as lists
+
+In a nutshell, pass data to STAN using R's _list_ data type. STAN models don't have a function interface, and as noted before the code can be polymorphic, so the order that data is specified is meaningless. However, **the NAMES of the variables in the list and in the code have to match EXACTLY (this is a common bug)**. The other thing to remember is that all constants in the code that are not defined inline (which is generally discouraged), need to be passed in with the data list. In the example above our data is X and our constants are mu0, S, and T. These can be defined in a list as follows
+```{r}
+sigma = 5  ## prior standard deviation
+data = list(
+            N = 1, ## number of data points
+            X = as.array(42), ## data
+            mu0 = 53, ## prior mean
+            S = sigma, ## prior standard deviation
+            T = 185) ## data standard deviation
+```
+The exact numeric values used for the data and priors are not important here and are just for illustration -- how priors are chosen is discussed elsewhere.
+
+### Initial conditions: lists, lists of lists, functions
+
+The next step is to specify the initial conditions. In STAN this is optional because if initial conditions are not specified then the code will draw them randomly from the priors. If you use informative priors this is not usually a problem. If you use uninformative priors, however, the initial parameter value can start far from the center of the distribution and take a long time to converge, just like in maximum likelihood optimization. Initial conditions are also specified using a list, but in this case, we want to name the parameter variable names instead of the data variable names. A nice feature in STAN is that we only have to specify some of the variable names, and those that we don't specify will be initialized based on the priors. Therefore, we can often get away with only initializing a subset of variables. 
+
+As an example, if we wanted to specify an initial condition for $\mu$ we would do this with a list, same as we did with the data.
+```{r}
+inits = list(mu=50)
+```
+Unlike priors, which strictly cannot be estimated from data, it is perfectly fair (and in most cases encouraged) to use the available data to construct the initial guess at model parameters. Good initial conditions improve convergence by reducing the time spent exploring low probability parameter combinations. In more complex models, bad choices of initial conditions can cause the model to blow up immediately. Indeed, if they start getting really funky results out of MCMC's many people's first reaction is to change the priors, which is generally the wrong thing to do (unless the priors really did have a bug in them). A better place to start is to check the initial conditions, especially if parameters are not being specified.
+
+In STAN we will commonly want to run multiple independent MCMC chains, as this better allows us to assess whether all chains have converged to the same part of parameter space. As with numerical optimization, it is best practice to start each chain from different initial conditions, but the above example would give all the chains the same initial mu. To specify multiple initial conditions, we need to construct a list of lists, with each sub-list providing one initial condition list for each chain. In this example we’ll run three chains starting at three different values for . We specify this in R as:
+
+```{r}
+inits <- list()
+inits[[1]] <- list(mu = 40)
+inits[[2]] <- list(mu = 45)
+inits[[3]] <- list(mu = 50)
+```
+
+Finally, it is also possible to pass a function that returns a list of initial values
+
+### Running STAN
+
+Now that we've got the data and initial conditions set up, we can call STAN. The stan function does all of the work of fitting a Stan model and returning the results as an instance
+of stanfit. The steps are roughly as follows:
+1. Translate the Stan model to C++ code. ( __stanc__ )
+2. Compile the C++ code into a binary shared object, which is loaded into the current R session. ( __stan_model__ )
+3. Draw samples and wrap them in an object of S4 class stanfit. ( __sampling__ )
+
+The call to `stan` is fairly straightforward
+```{r}
+fit <- stan(model_code = NormalMean, 
+            data = data, 
+            warmup = 500, 
+            iter = 1000, 
+            chains = 3, 
+            cores = 3, 
+            thin = 1,
+            init = inits)
+```
+`chains` sets the number of chains. We’ll use three for this example; 3-5 is typical.
+
+If you have any bugs in your model, this is the step that will most likely throw an error.
+
+Once the model is correctly compiled and sampled you can extract the posterior samples from the `stanfit` object either
+using `extract` and specifying the parameters or by converting to a `matrix` object,
+
+```{r}
+stan.out   <- extract (fit, pars=c("mu"), inc_warmup = TRUE, permuted = FALSE)
+posterior <- as.matrix(fit)
+```
+
+
+# Evaluating MCMC outputs
+
+The R library `posterior`, `bayesplot` and `tidybayes` provide a whole set of functions for assessing and visualizing outputs of an rstan object. 
+
+### MCMC convergence
+
+When running an MCMC analysis the first question to ask with any output is "has it converged yet?" This usually starts with a visual assessment of the output:
+
+```{r}
+mcmc_trace(stan.out, pars = c("mu"),n_warmup = 500)
+```
+
+For every variable you are tracking this will spit out two plots, a trace plot and a density plot. The traceplot looks like a time-series with the parameter value on the Y-axis and the iterations on the X-axis. Each chain is plotted in a different color. In a model that has converged these chains will be overlapping and will bounce around at random, preferably looking like white noise but sometimes showing longer term trends. 
+
+To help make the assessment of convergence more objective, `posterior` offers a number of diagnostics, with the most common being the R-hat statistic. R-hat requires that you have run multiple chains because it compares the among chain variance to the within change variance. If a model has converged, then these two should be identical and the R-hat should be 1. There's no hard-and-fast rule for the threshold that this statistic needs to hit but in general values less than 1.01 are excellent, 1.05 is good, and >1.1 is generally held to be not yet converged.
+
+```{r}
+
+mcmc_rhat(rhat = rhat(fit)) + yaxis_text(hjust = 0)
+```
+
+In addition to having checked for overall convergence, it is important to remove any samples from before convergence occurred. Determining when this happened is done both visually and by plotting the R-hat statistic versus sample
+
+```{r}
+rhats <- rhat(fit)
+```
+
+The point up to where the R-hat drops below 1.05 is termed the "burn in" period and should be discarded. In STAN you can specify the burn-in or "warm-up" period at the sampling stage
+and then specify to discard samples from the warm up period as indicated below
+
+```{r}
+stan.out   <- extract (fit, pars=c("mu"), inc_warmup = FALSE, permuted = FALSE)
+mcmc_trace(stan.out, pars = c("mu")) ## check diagnostics post burn-in
+```
+
+After discarding burn-in, you should work with the trimmed object for subsequent analyses
+
+### Sample size
+
+The previous section raises an obvious question, "How many samples is enough?" Unfortunately, there's no single right answer to this question because it depends on how well your model is mixing (i.e. how independent the samples are from one step to the next) and what output statistics you are interested in.
+
+To address the first question, the independence of samples is largely a question of autocorrelation. `bayesplot` provides a simple autocorrelation plot
+
+```{r}
+mcmc_acf(posterior, pars = "mu", lags = 10)
+```
+
+Autocorrelation is always 1 by definition at lag 0 and then typically decays toward 0 roughly exponentially. The faster the decay the greater the independence. One way of approximating the number of independent samples you have is to divide the actual number of samples by the lag distance at which samples are approximately independent. A slightly more analytically rigorous way of achieving the same thing is to perform an **effective sample size calculation**
+```{r}
+summary(fit)$summary["mu", "n_eff"]
+```
+
+For the second question, the number of samples required increases with the tails of the posterior distribution. For example, if you only care about the posterior mean or median, then you can get a stable estimate with an effective sample size of only a few hundred points. The standard deviation and interquartile range are more extreme and thus require more samples to estimate, while the 95% CI requires even more -- **a common rule of thumb would be an effective size of 5000 samples**. Recall that the CI is determined by the most exteme values, so at n=5000 it is only the 125 largest and 125 smallest values that determine the value. If you need to work with even larger CI or even lower probability events you'll require more samples. This phenomenon can be shown graphically (and diagnosed) by looking at plots of how different statistics change as a function of sample size:
+
+```{r}
+coda::cumuplot(posterior[,"mu"],probs=c(0.025,0.25,0.5,0.75,0.975),auto.layout=FALSE)
+```
+
+**Thinning**
+
+Older texts will advise that you thin your posterior samples to account for autocorrelation. Current thinking is that this is unnecessary unless you need to reduce the size of the output you save. Hamiltonian-based Monte Carlo sampling methods such as NUTS, which is the default
+sampler in STAN don't require thinning and reducing the size of output is more easily 
+accomplished by running fewer chains or for fewer steps after warm-up.
+
+
+### MCMC Statistics
+
+Once your model has converged, and has enough samples after burn-in, you can calculate any summary statistics you want to describe your posterior output
+
+```{r}
+summary(fit)
+```
+
+The first part of this table is the mean, standard deviation, and two different standard errors. Knowing how to interpret the last three of this is important. The first, SD, describes the spread of the posterior distribution -- in this case it is the **uncertainty about the parameter** mu (which, in other contexts, we usually refer to as the standard error). The SD doesn't decrease as you run the MCMC longer, it just converges on the value determined by the number and distribution of data points. By contrast, the SE declines asymptotically with MCMC length. In this context, this makes it an **indicator of the numerical precision of your results** -- the longer the MCMC the higher the numerical precision of the posterior statistics. Between the two alternative SE values you should always use the Time-series SE, which has been corrected for autocorrelation, rather than the Naive SE, which has not.
+
+The second part of the summary table is the sample quantiles for the posterior -- the default is the 95% CI, interquartile range, and median.
+
+In addition, there are a number of stats/diagnostics that you'll want to perform for multivariate models to assess the correlations among parameters. Watch for the _corr_ statistic and _pairs_ diagnostics in later examples
+
+Finally, if you need to work with the MCMC output itself, either to perform additional analyses (e.g. uncertainty analysis, prediction) or generate additional statistics/diagnostics, you can use the `tidybayes` package to convert the MCMC output into a `tibble` format
+```{r}
+out <- tidybayes::spread_draws(fit,mu)
+```
+
+# Case Study: Forest Stand Characteristics
+
+For the next few examples we'll be using a dataset on the diameters of loblolly pine trees at the Duke FACE experiment. In this example we'll just be looking at the diameter data in order to characterize the stand itself. Let's begin by expanding the model we specified above to account for a large dataset (rather than a single observation), in order to estimate the mean stem diameter at the site. As a first step let's still assume that the variance is known. Our data set has 297 values, so when specifying the model in STAN we'll need to loop over each value to calculate the likelihood of each data point and use the vector index notation, [i] , to specify which value we're computing.
+
+```{r}
+NormalMeanN <- "
+data {
+int <lower = 1> N; // sample size
+vector[N] X; // outcome
+real mu0; // mean of the prior
+real <lower = 0> T; // standard deviation of prior
+real <lower = 0> S; // standard deviation of normal data
+}
+
+parameters {
+real mu;
+}
+
+model {
+mu ~ normal(mu0,T); // prior on the mean 
+  for(i in 1:N){
+    X[i] ~ normal(mu,S); // data model
+  }
+}
+"
+```
+
+The data for fitting this model are:
+
+```{r}
+data = list(
+  N = 297, 
+  mu0=20, 
+  T=0.01, 
+  S = 5.2, 
+  X = c(20.9, 13.6, 15.7, 6.3, 2.7, 25.6, 4, 20.9, 7.8, 27.1, 25.2, 19, 17.8, 22.8, 12.5, 21.1, 22, 22.4, 5.1, 16, 20.7, 15.7, 5.5, 18.9, 22.9, 15.5, 18.6, 19.3, 14.2, 12.3, 11.8, 26.8, 17, 5.7, 12, 19.8, 19, 23.6, 19.9, 8.4, 22, 18.1, 21.6, 17, 12.4, 2.9, 22.6, 20.8, 18.2, 14.2, 17.3, 14.5, 8.6, 9.1, 2.6, 19.8, 20, 22.2, 10.2, 12.9, 20.9, 21.1, 7.3, 5.8, 23.1, 17, 21.5, 10.1, 18.4, 22.6, 21.2, 21.5, 22.4, 17.3, 16, 25, 22.4, 23.9, 23, 21.9, 19, 28.6, 16, 22.5, 23.2, 8.7, 23.4, 15.3, 25.6, 19.2, 17.4, 23.8, 20.4, 19, 3.6, 23.4, 19.6, 17.5, 16.5, 22, 19.7, 7.35, 18, 17.8, 9.6, 15, 12, 17.7, 21.4, 17, 22.1, 18.9, 15.05, 12.9, 19.3, 15.3, 13.6, 15.4, 10.6, 11.3, 11.8, 22.2, 22.2, 13.1, 7.4, 4.5, 11.7, 19.5, 19.9, 11.6, 13.9, 15.5, 11, 18.6, 17.6, 12.7, 20.9, 18.8, 22.4, 21.2, 18.2, 15.3, 13.6, 7.3, 17.4, 17.4, 10.5, 22.9, 23.2, 13.8, 14.8, 22.2, 20.9, 13, 18.9, 19, 15.2, 16.8, 18, 24.6, 15.4, 17.2, 23.2, 22.8, 25.5, 7.8, 6, 6.4, 19, 13.5, 23.7, 18, 22.2, 22.4, 9.3, 13.7, 18.9, 20.5, 23.3, 20.8, 18.4, 4.5, 12.2, 16.9, 13.5, 17.8, 16.9, 20.4, 19.5, 22.2, 24.5, 21.2, 16.5, 18, 16.4, 3.9, 17.9, 22, 12.9, 21, 18, 9.2, 15.9, 8.1, 8.3, 10.7, 12, 19.9, 13.6, 17.3, 11.5, 12.4, 15.1, 22, 19.3, 17.5, 14.5, 14.7, 17.5, 19.6, 12.9, 20.3, 17.9, 20.2, 18.3, 9.5, 19, 21, 13.1, 20.4, 16.3, 18.3, 11.8, 23.3, 15.2, 20, 17.9, 12, 19.6, 18.5, 16.2, 10.9, 17.8, 13.8, 10, 17.9, 15.6, 20.3, 14.9, 18.6, 12.5, 18.2, 16, 18.7, 18, 15.3, 19, 17.9, 15.8, 17.7, 14.4, 19.6, 18.3, 18.7, 17.8, 18, 10.1, 18.8, 16.4, 21.2, 16.6, 16.7, 17.8, 16.5, 19.3, 16.3, 14.2, 13, 9.4, 19.7, 13.4, 2.6, 17.6, 16.7, 17.6, 5.8, 17.6, 20.1, 18.2, 16.7, 14, 13.9, 5.1, 16.6, 3.9, 17.5, 18)
+  )
+```
+
+### Activity Task 1
+
+Run the unknown mean/fixed variance model to estimate mean tree diameter. Include the following in your results:
+
+* Table of summary statistics for the posterior estimate of the mean
+* Graph of parameter density
+* Plot of MCMC “history”
+* Length of your MCMC (i.e. the total number of “updates”), the number of chains, the burnin values you used, the effective sample size, and any graphs/statistics/rationale you used to justify those settings
+
+### Activity Task 2
+
+Modify the model to account for the uncertainty in the variance. This only requires adding one line — a prior on S outside the loop.
+
+Run the unknown mean/unknown variance model to simultaneously estimate both the mean tree diameter and the standard deviation. Include the following in your results:
+
+* Explanation of your choice of prior on the standard deviation
+* Table of summary statistics for the posterior mean and standard deviation
+* Graph of parameter densities
+* Plot of MCMC “history”
+* Length of your MCMC (i.e. the total number of “updates”), the number of chains, burn-in, effective sample size, and any graphs/statistics/rationale you used to justify those settings
+* Also describe any changes in the distribution of the mean (shape, location, tails) compared to Task 1.
+  
+
+
