@@ -21,11 +21,11 @@ $$
 This equation is often linearized to the following form, for quick parameter estimation:
 
 $$
-ln(R_i/S_i) = \alpha - \beta S_i 
+ln(R_i/S_i) = ln(\alpha) - \beta S_i 
 $$
 
 It's also common to parameterize this model using $S_{max} = 1/\beta$, which is the number of spawners that produces the maximum number of recruits (the peak of the curve,) since it is more intuitive to put priors around. $$
-ln(R_i/S_i) = \alpha - S_i/S_{max}
+ln(R_i/S_i) = ln(\alpha) - S_i/S_{max}
 $$
 
 ```{r}
