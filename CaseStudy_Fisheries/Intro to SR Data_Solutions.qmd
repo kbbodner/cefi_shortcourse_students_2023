@@ -1,0 +1,216 @@
+---
+title: "Getting Familiar with Stock-Recruit Data"
+format: html
+editor: visual
+---
+
+## Welcome to Salmon Forecasting!
+
+Because of their anadromous lifecycle, salmon often have different-looking data than many other fish species we model in fisheries science. For most marine fish, we only have samples of their population at random points in time, either from surveys or commercial catches. From this we get a "snapshot" of a small subset of the population at a given moment in time. Oftentimes, for these populations, we have to guess at how many fish in this snapshot are going to spawn or are going to die in that year, based on what we know about their demographics and biology. Following this, we can try to estimate how many fish will be born in the next generation. Because salmon migrate into freshwater to spawn and die, we can directly sample that important subset of the population each year. Also, because they are travelling along a linear path, upstream to their natal spawning sites, they are much easier to count and sample. In some special cases we can even get close to having a full census of the spawning population \-- something that never would be available in a population that only lives in the open ocean. This also simplifies the type of models we can use for these populations, since stock-recruitment dynamics are directly observed. Stock-recruitment dynamics refers to the process by which new fish are "recruited" into the population. Since we directly observe the spawning stock, we are closer to observing the expected recruitment, and therefore, have a better shot at guessing the size of the next run of spawning fish that will return one generation later. Because most fisheries happen in "terminal" areas (targeting fish on their way to spawn), this is the number we want to estimate \-- the number of mature fish that are returning to their natal areas to spawn (recruits). This specific type of forecasting is unique in that we are only really interested in looking one year ahead, to plan the next fishing season.One might think that only needing to forecast one generation ahead would make this an easy task, but it's been deceivingly difficult to do, especially in recent years, with major ocean changes taking place.
+
+Let's do a couple of easy exercises to get ourselves acquainted with salmon data and stock-recruitment modelling.
+
+### The Ricker Model
+
+ThThe Ricker model is a commonly used discrete stock-recruitment model used for Pacific Salmon. It includes two parameters (\$\\alpha\$ and \$\\beta\$) that capture the population's growth rate and carrying capacity. Fun fact: DFO's Pacific Biological Station in Nanaimo, BC, has a road looping through it called "Ricker's Curve", named after Bill Ricker, who worked at the station.
+
+$$
+R_i = \alpha S_i e^{-\beta S_i} 
+$$
+
+This equation is often linearized to the following form, for quick parameter estimation:
+
+$$
+ln(R_i/S_i) = ln(\alpha) - \beta S_i 
+$$
+
+It's also common to parameterize this model using $S_{max} = 1/\beta$, which is the number of spawners that produces the maximum number of recruits (the peak of the Ricker curve,) since it is more intuitive to put priors around. $$
+ln(R_i/S_i) = ln(\alpha) - S_i/S_{max}
+$$
+
+```{r}
+#| label: load-packages
+#| include: false
+
+library(tidyverse)
+library(gsl) # need for lambert's W
+source("Code/Functions.R")
+```
+
+Let's take a look at Ricker model in action
+
+```{r}
+#| label: Sim and plot Ricker data
+#| echo: false
+#| warning: false
+#| fig-cap: |
+#|  Simulated Ricker curve data
+
+SimData <- Sim_Ricker_SR_Data(leng=50, age=4, Sig_Ricker = 0.15, true_a = rnorm(1, 5, 2), true_b=1/100000, hr_min = 0.2, hr_max = 0.8, lnorm_corr = FALSE)
+
+ggplot(data=SimData$DF_Out) + 
+  geom_point(aes(x=S, y=R)) + 
+  geom_line(aes(x=S_Fit, y=R_Fit), col="blue") +
+  theme_bw()
+```
+
+#### Warm-up Task 1
+
+Use the function "Sim_Ricker_SR_Data" found in the Functions.R file to play with the Ricker model. Simulate some data with different parameter values, plot them, then fit a simple linear model (you can just use lm()) to confirm that the data you simulated gives you back the same values.
+
+```{r}
+#| label: Warm up task 1
+#| include: false
+
+#hint: You'll want to create a vector (or column in a data frame) to hold values of log(Recruits/Spawner), then model that as a function of Spawners. It will look something like this: logRPS ~ S
+
+#Solution:
+
+SimDF <- SimData$DF_Out %>% mutate(logRPS = log(R/S))
+lm_Fit <- lm(logRPS ~ S, data=SimDF)
+alpha_est <- exp( as.numeric(coef(lm_Fit)[1]) )
+# compare to
+SimData$true_a
+
+beta_est <- -1 * as.numeric( coef(lm_Fit)[2] )
+#compare to
+SimData$true_b
+
+```
+
+### **Common Reference Points Used for Salmon**
+
+Reference points are used in fisheries management to glean population health and status, and also as trigger points for fisheries management actions (ie change fishing regulations). Two often-used reference points for salmon, are \$S\_{MSY}\$ and \$S\_{gen}\$. To understand these two reference points, let's start with the idea of maximum sustainable yield. Maximum sustainable yield is highest catch that can be taken from a population indefinitely, at equilibrium population conditions. This is considered a "sweet spot" of productivity, and usually occurs at a stock size just before the peak of the stock-recruit curve, which occurs at \$S\_{Max}\$, or the number of spawners that leads to maximum recruitment (often considered "habitat capacity", since beyond this point we start to see density dependence occur). In most fisheries we talk about \$B\_{MSY}\$ or \$F\_{MSY}\$ which are biomass and fishing mortality at MSY, but for salmon, since we are usually managing spawners, we use \$S\_{MSY}\$. \$S\_{MSY}\$ is generally used as an upper benchmark, or a goal, for a fish stock. On the opposite end, an often-used lower benchmark or limit reference point (LRP) for salmon is \$S\_{gen}\$, the number of spawners required to reach \$S\_{MSY}\$ in one generation, in the absence of fishing.Neither of these values have straight-forward solutions when using a Ricker curve. Up until a few years ago \$S\_{MSY}\$ was generally solved using the following approximation, which was introduced by Hilborn (1985).
+
+$$
+S_{MSY} \approx  \frac{log(\alpha)*(0.5-0.07*log(\alpha))}{\beta}
+$$ In 2016 an explicit solution was found for $S_{MSY}$ using the Lambert W function:
+
+$$
+W(z)e^{W(z)}=z
+$$ Where: $$
+S_{MSY} = \frac{1-W(e^{1-log(\alpha)})}{\beta}
+$$
+
+If you do stock-recruitment analysis you will commonly see both estimation techniques used.
+
+Once we know (or approximate) S\_{MSY} we can estimate $S_{gen}$ by numerically, solving the equation:
+
+$$
+S_{MSY} = \alpha  S_{gen}  e^{-\beta S{gen}}
+$$ In the supplied code I use optim to do this.
+
+```{r}
+#| label: Ricker Curve with BMs
+#| echo: false
+#| warning: false
+#| fig-cap: |
+#|  Ricker curve with $S_{gen}$ (red) and $S_{MSY}$ (green) overlaid
+
+# Get Ricker parameters based on known Ricker params
+
+BMs_out <- GetRickerBMs(SRDat=NA, a=SimData$true_a, B=SimData$true_b)
+
+ggplot(data=SimData$DF_Out) + geom_point(aes(x=S, y=R)) + 
+  geom_line(aes(x=S_Fit, y=R_Fit), col = "blue") + 
+  geom_vline(Data = BMs_out$SMSY, aes(xintercept=BMs_out$SMSY), color="green", size=1.5 ) +
+  geom_vline(Data = BMs_out$Sgen, aes(xintercept=BMs_out$Sgen), color="red", size=1.5) +
+  theme_bw()
+
+```
+
+#### Warm-up Task 2
+
+Open the real Fraser Sockeye data found in file "FraserSockeyeData2022.csv" and inspect it, and cross reference with "DataDescriptions.docx" found in the same folder. Remember that "yr" here is brood year. So the corresponding recruitment information (rec4, rec5, and their sum: R) is collected in subsequent year. Choose a random population, and fit a Ricker model to this data using the simple linearized form and lm() (check out my function GetRickerBMs). Based on these parameter estimates, estimate $S_{gen}$ and $S_{MSY}$ for the population. Looking at the most recent generational average spawner numbers (average from last 4 years), what is the status of the population? How well does the Ricker curve approximate this stock's stock-recruit dynamics? You can do this by plotting and eye-balling or looking at residuals, or any other fit metrics you prefer.
+
+```{r}
+#| label: Warm up task 2
+#| include: false
+
+#hint: You can step through this yourself, or use my function GetRickerBMs
+
+#Solution:
+
+# read in real data
+DataIn <- read.csv("DataIn/FraserSockeyeData2022.csv")
+# let's just choose the first population 
+ESData <- DataIn %>% filter(Pop_Name == "Early Stuart")
+
+# This is data available to forecast 2022, so what would have been available in the fall of 2021
+# the last complete brood is 2016, who's age-5s would have returned in 2021
+# the last spawner estimate is 2020, because there is often a delay in these estimates
+
+# let's use my function GetRickerBMs
+
+RickerEsts <- GetRickerBMs(SRDat=ESData, a=NA, B=NA, Hilborn_approx=F)
+
+# Let's see how these look on top of the population
+ggplot(data=RickerEsts$dat) + geom_point(aes(x=S, y=R)) + 
+  geom_line(aes(x=S, y=R_Est), col = "blue") + 
+  geom_vline(Data = RickerEsts$SMSY, aes(xintercept=RickerEsts$SMSY), color="green", size=1.5 ) +
+  geom_vline(Data = RickerEsts$Sgen, aes(xintercept=RickerEsts$Sgen), color="red", size=1.5) +
+  theme_bw()
+
+# Fit doesn't look great, being skewed by a few very high returns, which are skewing benchmarks high
+
+# what is most recent average spawner numbers?
+
+mean(ESData$S[ESData$yr %in% c(2017:2020)])
+
+# Way below Sgen. Not looking great for this population. This population was heavily impacted by a landslide in 2019, so has seen historically low spawner numbers since.
+
+# You'd have to go back to 2001 to see a spawner count above the lower benchmark
+
+# Sadly this is the case for many Fraser stocks, that are facing warmer ocean and freshwater temperatures, habitat alteration, and continued exploitation.
+
+
+
+
+```
+
+#### Warm-up Task 3
+
+Now that you've got feel for the Ricker model, let's forecast something! We can actually use the outputs from the GetRickerBMs function to do this (Look out the output data frame, and column R_Est). Assume the average proportion of age-4 and age-5 returns, to guess what 2021 returns would have been.
+
+```{r}
+#| label: Warm up task 3
+#| include: false
+
+# Let's look at our outputs from above
+RickerEsts$dat
+
+# from this we have estimates of total recruits from the 2016 and 2017 brood years, everything we need to forecast 2021 returns
+
+# Let's start by estimating average age proportions
+
+Prop_Age4 <- mean(ESData$rec4/ESData$R, na.rm=T)
+
+# This stock is mostly age-4's!
+
+Age_4_2021_Est <- Prop_Age4 * RickerEsts$dat$R_Est[RickerEsts$dat$yr == 2017] 
+Age_5_2021_Est <- (1-Prop_Age4) * RickerEsts$dat$R_Est[RickerEsts$dat$yr == 2016]
+
+Total_2021_Est <- Age_4_2021_Est + Age_5_2021_Est
+
+True_2021_Return <- ESData$rec4[ESData$yr == 2017] + ESData$rec5[ESData$yr == 2016]
+
+# Looks like we actually would have under-forecast in 2021, 
+
+
+```
+
+#### Warm-up Task 4
+
+Now that you've done that, check out my function RunModRetro. It is set up to create a simple forecast for a given year, assuming average age-proportions (ie. the average split of age-4 and age-5 returns seen up to a given year are used to determine the age proportions of the return). This function is designed to be used to create a simple one-step-ahead assessment, by stepping over this function for a given number of time steps. Use it to forecast 2021 returns (which will be made up of age-4's from 2017 and age-5s from 2016) and see how well it does. Does it estimate either age-group's return well? Does it estimate the total well?
+
+```{r}
+#| label: Warm up task 4
+#| include: false
+library(R2jags)
+Forecast2021 <- RunModRetro(Dat=ESData, Pred_Year=2021)
+Forecast2021$Preds_Out
+# Looks pretty similar to our crude estimate
+
+# This function is still pretty crude -- can you fix it up a bit to give estimates with uncertainty around them?
+
+```

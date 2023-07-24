@@ -1,30 +1,36 @@
-FROM rocker/tidyverse:devel
+FROM rocker/verse:latest
 
-RUN apt update
-RUN apt install software-properties-common -y
 
-RUN add-apt-repository ppa:marutter/rrutter4.0 -y
-RUN add-apt-repository ppa:c2d4u.team/c2d4u4.0+ -y
-RUN apt update
-RUN apt install r-cran-rstan -y
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends apt-utils ed libnlopt-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/
 
-RUN apt install libudunits2-dev -y
-RUN apt install libgdal-dev -y
+# Install rstan
+RUN install2.r --error --deps TRUE \
+    rstan \
+    && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
 
-RUN R -e 'Sys.setenv(DOWNLOAD_STATIC_LIBV8 = 1)'
+# Global site-wide config -- neeeded for building packages
+RUN mkdir -p $HOME/.R/ \
+    && echo "CXXFLAGS=-O3 -mtune=native -march=native -Wno-unused-variable -Wno-unused-function -flto -ffat-lto-objects  -Wno-unused-local-typedefs \n" >> $HOME/.R/Makevars
 
-# install developer tools
-RUN R -e 'install.packages(c("devtools","remotes","testthat","here","styler"))'
+# Config for rstudio user
+RUN mkdir -p $HOME/.R/ \
+    && echo "CXXFLAGS=-O3 -mtune=native -march=native -Wno-unused-variable -Wno-unused-function -flto -ffat-lto-objects  -Wno-unused-local-typedefs -Wno-ignored-attributes -Wno-deprecated-declarations\n" >> $HOME/.R/Makevars \
+    && echo "rstan::rstan_options(auto_write = TRUE)\n" >> /home/rstudio/.Rprofile \
+    && echo "options(mc.cores = parallel::detectCores())\n" >> /home/rstudio/.Rprofile
 
-# install Bayes packages
-RUN R -e 'install.packages(c("rstan","tidybayes","bayesplot","rstantools","brms"))'
+RUN R -e 'install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))'
 
-# install covidseir (depracated)
-# RUN R -e 'remotes::install_github("seananderson/covidseir")'
-
-# install bcdata
-RUN R -e 'remotes::install_github("bcgov/bcdata")'
-
-EXPOSE 8787
-
-CMD ["/init"]
+# Install rstan dependencies and other necessary packages
+RUN install2.r --error --deps TRUE \
+    rstan \
+	  loo \
+	  bayesplot \
+	  tidybayes \
+    rstanarm \
+    rstantools \
+    brms \
+    here \
+    && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
