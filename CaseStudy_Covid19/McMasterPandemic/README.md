@@ -1,10 +1,12 @@
-Files for the COVID-19 case studies using the `McMasterPandemic` model (groups 5 & 6). Start with the [Introduction to `McMasterPandemic`]() vignette, and then proceed to the [case study]() document.
+Files for the COVID-19 case studies using the `McMasterPandemic` model (groups 5 & 6). Start with the [Introduction to `McMasterPandemic`](https://github.com/kbbodner/cefi_shortcourse_students_2023/blob/main/CaseStudy_Covid19/McMasterPandemic/intro-to-macpan.qmd) vignette, and then proceed to the [case study](https://github.com/kbbodner/cefi_shortcourse_students_2023/blob/main/CaseStudy_Covid19/McMasterPandemic/case-study.qmd) document.
 
 # Setup instructions
 
 In order to complete this case study, we need to perform some software setup. Please note that there are two sets of instructions, depending on the machine you're using.
 
-If you're running into issues trying to follow these instructions, please alert your instructor to troubleshoot.
+Once you complete the setup instructions below, test whether it worked by trying to Render the [Introduction to `McMasterPandemic`](https://github.com/kbbodner/cefi_shortcourse_students_2023/blob/main/CaseStudy_Covid19/McMasterPandemic/intro-to-macpan.qmd) vignette in RStudio (using the "Render" button).
+
+If you running into issues, please alert your instructor to troubleshoot.
 
 # For Windows or Macs (Intel) machines
 
