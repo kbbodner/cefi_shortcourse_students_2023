@@ -1,4 +1,4 @@
-Files for the COVID-19 case studies using the `McMasterPandemic` model (groups 5 & 6). Start with the [Introduction to `McMasterPandemic`]() vignette, and then proceed to the [case study]() document.
+Files for the COVID-19 case studies using the `McMasterPandemic` model (groups 5 & 6). Start with the [Introduction to `McMasterPandemic`](https://github.com/kbbodner/cefi_shortcourse_students_2023/blob/main/CaseStudy_Covid19/McMasterPandemic/intro-to-macpan.qmd) vignette, and then proceed to the [case study](https://github.com/kbbodner/cefi_shortcourse_students_2023/blob/main/CaseStudy_Covid19/McMasterPandemic/case-study.qmd) document.
 
 # Setup instructions
 
