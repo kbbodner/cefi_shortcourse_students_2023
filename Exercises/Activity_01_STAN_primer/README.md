@@ -8,13 +8,13 @@ Note, on Windows you will also need to [install Windows Subsystem for Linux (WSL
 
 On Windows, make sure Docker Desktop is running and then go through the following steps:
 
-1. Open a terminal (or in Windows open Powershell) and navigate to the parent directory `/covidseir` that
-contains the file `Dockerfile`. i.e. run the command ```cd path/to/covidseir/```
+1. Open a terminal (or in Windows open Powershell) and navigate to the parent directory `/Activity_01_STAN_primer` that
+contains the file `Dockerfile`. i.e. run the command ```cd path/to/Activity_01_STAN_primer/```
 1. Build with docker by running
-   ```docker build -t covidseir .```
+   ```docker build -t stan_primer .```
    1. Note: You may run into an issue here where it says that the dockerfile isn't found. Can be resolved from this [issue](https://github.com/docker/buildx/issues/426#issuecomment-732980948)
 1. Run the image with the following command by changing "apassword" to an alternative password. Alternatively if a password is not included one will be assigned (check logs). 
-    ```docker run -d -e PASSWORD=apassword -p 8787:8787 -v ${PWD}:/home/rstudio/Documents covidseir:latest```
+    ```docker run -d -e PASSWORD=apassword -p 8787:8787 -v ${PWD}:/home/rstudio/Documents stan_primer:latest```
 1. Open your web browser (e.g. Chrome or Firefox) and type the following in the address bar `localhost:8787`. 
 1. Log in with user/password `rstudio/apassword`.
 1. At any time you can check what containers are running with the following
