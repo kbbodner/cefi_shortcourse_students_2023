@@ -1,0 +1,104 @@
+---
+title: "COVID-19 case study using the `McMasterPandemic` modelling software"
+subtitle: "Prepared for the 2023 Canadian Ecological Forecasting Initiative's Short Course on Forecasting for Decision-Making"
+author: "Irena Papst"
+format: 
+  html:
+    toc: true
+    self-contained: true
+    code-overflow: wrap
+editor: visual
+---
+
+## Goal
+
+The goal of this document is to present the COVID-19 case study for those using the `McMasterPandemic` model software. Please review the introduction to `McMasterPandemic` vignette first (`intro_to_macpan.qmd`) before attempting to work on the case study outlined here.
+
+## Background
+
+The COVID-19 pandemic presented a significant challenge to public health. It also revealed the strength of mathematical and statistical modelling of infectious disease, which is to provide scientific support for decision-making under substantial uncertainty.
+
+In this case study, we will simulate the conditions under which disease forecasters worked at the beginning of the pandemic to help inform public health decisions. The setting of this case study will be Ontario during the spring of 2020.
+
+Part of the challenge of forecasting is not seeing future outcomes as you work. **We ask that you do not seek out COVID-19 case data for Ontario beyond what is provided to you by your instructor in the [short course Github repository](https://github.com/kbbodner/cefi_shortcourse_students_2023).** "Case data" means data on case reports, hospitalizations, and deaths, but it does not include data on public health interventions and stringency, demographic information, clinical testing, etc.
+
+In general, **imagine you only have access to information up to and including the last date available in the given case data**. For instance, the initial data is provided up to 31 March 2020. Any additional data (from external sources) up to that date are fair game, but please don't look at "future" data past that date. Once the validation data is released, which goes up to 30 April 2020, you can look at the external data up to that new end date.
+
+## Technical setup
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+library(here)
+library(readr)
+library(ggplot2)
+theme_set(
+  theme_bw(base_size = 16)
+)
+```
+
+## Data
+
+The initial data that you will be fitting to can be found in `data/initial.csv`:
+
+```{r}
+#| label: data
+#| message: false
+
+cases = read_csv(here("data", "fitting.csv"))
+head(cases)
+```
+
+These are COVID case reports in the province of Ontario. The `date` column gives the report date, and the `new_cases` column gives the count of new cases on that report date. The data comes from clinical testing: for instance, if you took a provincially-administered COVID-19 PCR test and it came back as positive on 15 March, you would be included in the new case count reported on that date.
+
+```{r}
+#| label: fig_data
+
+(ggplot(cases, aes(x = date, y = new_cases))
+  + geom_point(size = 2)
+  + labs(title = "New COVID-19 cases reported in Ontario")
+  + theme(axis.title = element_blank())
+)
+```
+
+## Challenge
+
+Use the COVID-19 case data for Ontario provided up to 31 March 2020 to forecast cases for 1-30 April 2020 (inclusive).
+
+## Decision-makers' request
+
+Once you have made an initial, "status quo" forecast in response to the above challenge, consider the following decision makers' request:
+
+> What impact could a mandatory mask policy have on projected case reports?
+
+## Suggestions
+
+Start by using the SEIR model as implemented in the `McMasterPandemic` software in the `intro-to-macpan.qmd` vignette. You may want to or need to consider model extensions to get a good fit. Some suggestions can be found below in the [Extensions] section.
+
+Be sure to examine MCMC diagnostics and posterior distributions in determining whether your model fit is reliable. You may also want to look at ensemble simulations of the model state variables (not just incidence) to determine whether the fit is plausible.
+
+Note that decision-makers are likely non-techincal folks that are primarily interested in model predictions of target outcomes, like case reports. Bear this in mind when writing briefs for decision-makers.
+
+## Extensions
+
+### Changes in transmission over time
+
+The initial version of the model assumes all parameters are fixed over time. However, the transmission rate is likely to vary over time, as public health measures get introduced, the population modifies its behaviour in response to the disease, and new variants of the virus are introduced, among other factors. Use information about the initial COVID-19 response, such as those compiled in the [CIHI intervention scan](https://www.cihi.ca/en/canadian-covid-19-intervention-timeline) for each province or from [Our World in Data](https://ourworldindata.org/policy-responses-covid) for Canada as a whole, to model changes in transmission over time.
+
+### Sampling fraction
+
+The incidence data we've been working with is not exactly *disease* incidence (as extracted from the model), which is what we've been fitting. It is actually a sample of incidence, as reported after testing. Some infected individuals may not seek out or be eligible for a test, depending on the severity of their infection. Some infected people may not even suspect they're infected, given that some COVID-19 infections are asymptomatic. Expand the model to assume some undercount in the reported incidence and explore its effect on predicted outcomes.
+
+On a related note, the current model assumes that incidence is observed with Poisson noise. Explore the possibility that the variance in observation noise is independent of the mean by assuming a different statistical model for the observation noise.
+
+### Reporting delay
+
+In reporting known cases, there is a delay induced by both the disease and the reporting process. Individuals generally get prompted for testing after developing symptoms, and then there may also be delays between developing symptoms, booking a test, getting a sample taken, having your sample processed by a lab, and having the lab report your positive result to public health. Research and incorporate such delays in your model and explore how that impacts your response to the decision-makers' request.
+
+### Downstream disease outcomes
+
+Case counts are just one indicator that public health decision-makers are be interested in during a pandemic. Disease severity and additional burdens on the health care system are also of great concern. Modify the model to include hospitalizations and/or deaths. Fit the model to these outcomes, in addition to case reports, asking your instructor to provide the hospitalization and/or death data in the focal time period.
+
+*Hint:* Don't try to fit two new outcomes at once. Start with the addition of one, get a good calibration, and then progress to the addition of the other outcome. You will likely have to fit more than just the transmission rate!
