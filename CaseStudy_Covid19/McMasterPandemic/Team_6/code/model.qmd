@@ -1,0 +1,28 @@
+---
+title: "Replicate model"
+format: html
+editor: visual
+---
+
+# Read Case data
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+library(here)
+library(readr)
+library(ggplot2)
+theme_set(
+  theme_bw(base_size = 16)
+)
+```
+
+```{r}
+#| label: data
+#| message: false
+
+cases = read_csv('../data/fitting.csv')
+head(cases)
+```
