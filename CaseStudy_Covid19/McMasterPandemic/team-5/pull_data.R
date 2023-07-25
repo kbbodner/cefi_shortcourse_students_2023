@@ -12,7 +12,6 @@ cases = read_csv(here("data", "fitting.csv"))
 #----------------------------------------------------------------------------------------------
 #prep simulation data - this is for modelling, but good to look at/know
 
-
 # initial state, in units of individuals
 state = c(
   S = 2000, #S = susceptible
@@ -21,12 +20,8 @@ state = c(
   R = 0 #R = recovered
 )
 
-# parameters
-params = c(
-  beta = 0.7,
-  N = sum(state),
-  alpha = 0.05,
-  gamma = 0.06
-)
+#----------------------------------------------------------------------------------------------
+#data prep
+
 
 #----------------------------------------------------------------------------------------------
