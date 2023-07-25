@@ -1,2 +1,21 @@
 This is a readme file for the team-5 McMaster forecasting project.
 
+## Group 5 members:
+
+-   Deepit Bhatia
+
+-   Erica Fellin
+
+-   Pranav Sadana
+
+-   Allison Simmons
+
+## Challenge (from `case-study.qmd` file)
+
+Use the COVID-19 case data for Ontario provided up to 31 March 2020 to forecast cases for 1-30 April 2020 (inclusive).
+
+## Decision-makers' request:
+
+Once you have made an initial, "status quo" forecast in response to the above challenge, consider the following decision makers' request:
+
+> What impact could a mandatory mask policy have on projected case reports?
