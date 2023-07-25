@@ -48,6 +48,10 @@ Let's take a look at Ricker model in action
 
 SimData <- Sim_Ricker_SR_Data(leng=50, age=4, Sig_Ricker = 0.15, true_a = rnorm(1, 5, 2), true_b=1/100000, hr_min = 0.2, hr_max = 0.8, lnorm_corr = FALSE)
 
+# look at time series of spawners
+ggplot(data=SimData$DF_Out) +
+  geom_line(aes(x=Year, y=S))
+
 ggplot(data=SimData$DF_Out) + 
   geom_point(aes(x=S, y=R)) + 
   geom_line(aes(x=S_Fit, y=R_Fit), col="blue") +
@@ -69,12 +73,20 @@ Use the function "Sim_Ricker_SR_Data" found in the Functions.R file to play with
 SimDF <- SimData$DF_Out %>% mutate(logRPS = log(R/S))
 lm_Fit <- lm(logRPS ~ S, data=SimDF)
 alpha_est <- exp( as.numeric(coef(lm_Fit)[1]) )
+# look at alpha_est
+alpha_est
 # compare to
 SimData$true_a
+# should be the same!
 
 beta_est <- -1 * as.numeric( coef(lm_Fit)[2] )
+# look at beta_est
+beta_est
 #compare to
 SimData$true_b
+# should be the same!
+
+
 
 ```
 
@@ -117,6 +129,10 @@ ggplot(data=SimData$DF_Out) + geom_point(aes(x=S, y=R)) +
   geom_vline(Data = BMs_out$Sgen, aes(xintercept=BMs_out$Sgen), color="red", size=1.5) +
   theme_bw()
 
+# Can also just give this function the time series
+BMs_out_ts <- GetRickerBMs(SRDat=SimData$DF_Out, a=NA, B=NA)
+# come out pretty much the same
+
 ```
 
 #### Warm-up Task 2
@@ -154,6 +170,7 @@ ggplot(data=RickerEsts$dat) + geom_point(aes(x=S, y=R)) +
 # Fit doesn't look great, being skewed by a few very high returns, which are skewing benchmarks high
 
 # what is most recent average spawner numbers?
+# as a convention, we tend to use a "generational average" but you can also compare this to most recent one year of spawners
 
 mean(ESData$S[ESData$yr %in% c(2017:2020)])
 
