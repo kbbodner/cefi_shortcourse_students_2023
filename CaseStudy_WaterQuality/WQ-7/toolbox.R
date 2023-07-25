@@ -1,4 +1,4 @@
-bayesian_inference <- function(data) {
+bayesian_inference <- function(data, site_id) {
   jags_code <- "
 model{
 
@@ -99,7 +99,7 @@ for (i in 1:num_samples) {
   # Build formatted forecast
   df <- tibble(
     datetime = noaa_future_site_ens$datetime,
-    site_id = example_site,
+    site_id = site_id,
     variable = "chla",
     parameter = i,
     prediction = y[i, ]
