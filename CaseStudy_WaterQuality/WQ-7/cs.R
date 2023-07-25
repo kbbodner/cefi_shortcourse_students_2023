@@ -20,15 +20,14 @@ targets_lm %>%
 
 
 # Bayesian inference ------------------------------------------------------
-data_all <- targets_lm %>% 
+site_all <- targets_lm %>% 
   pull(site_id) %>% 
-  unique() %>% 
+  unique()
+data_all <- site_all %>% 
   map(function(site_name){
     site_target <- targets_lm |> 
       filter(site_id == site_name)
     
-    #Find when the data for the site starts and filter to only 
-    #more recent datetimes with no NAs
     first_no_na <- site_target |> 
       filter(!is.na(air_temperature) & !is.na(chla)) |> 
       summarise(min = min(datetime)) |> 
@@ -47,5 +46,11 @@ data_all <- targets_lm %>%
     )
   )
 
-forecast_df <- data_all %>% 
-  map(bayesian_inference)
+forecast_df <- 1:2 %>% 
+  map(~bayesian_inference(data_all[[.]], site_all[[.]]))
+
+forecast_df %>% 
+  bind_rows() %>% 
+  ggplot(aes(datetime, prediction)) +
+  geom_line() +
+  facet_wrap(~site_id)
