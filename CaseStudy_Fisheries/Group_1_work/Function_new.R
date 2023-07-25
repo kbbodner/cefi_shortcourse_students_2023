@@ -173,7 +173,7 @@ RunModRetro_new <- function(Dat, Pred_Year, Model, CovData=NA) {
     FitsDF <- RunMCMC_Ricker(Data_Retro, Scale)
   }else if(Model=="RickerCov"){
     FitsDF <- RunMCMC_RickerCov(Data_Retro, Scale, CovData)
-  }else if(Model=="Power")
+  }else if(Model=="Power"){
     FitsDF <- RunMCMC_Power(Data_Retro, Scale)
   }else{
     print("Cannot recognize the model")
