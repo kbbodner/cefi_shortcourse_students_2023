@@ -26,3 +26,91 @@ theme_set(
 
 library(here)
 library(readr)
+
+
+#------------------------------------------------------------
+
+# functions
+
+# plotting simulation results
+plot_sim = function(model, sim_result, title){
+  (sim_result
+   # drop any columns where a flow rate is returned
+   %>% select(-matches("to"))
+   # switch to long form for ease of use with ggplot
+   %>% pivot_longer(-Date, names_to = "State", values_to = "Population")
+   # sort state into a factor variable to enforce legend ordering based on
+   # flow through the model
+   %>% mutate(State = factor(State, 
+                             levels = order_vars(model)))
+   %>% ggplot(aes(x = Date, y = Population, colour = State))
+   + geom_line(linewidth = 1.25)
+   + labs(title = title)
+   + theme(
+     axis.title.x = element_blank(),
+     legend.justification = c(1,1),
+     legend.position = c(1,1),
+     legend.background = element_rect(fill = NA),
+     legend.key = element_rect(fill = NA)
+   )
+  )
+}
+
+
+
+#plotting ensemble fit
+plot_ensemble <- function(ens, obs){
+  value_type_labels <- c("Model fit", "Observed data")
+  
+  df = (ens
+        %>% filter(var == "incidence")
+        %>% mutate(value_type = value_type_labels[1])
+        %>% bind_rows(
+          obs %>% mutate(value_type = value_type_labels[2])
+        )
+  )
+  
+  colour_palette = c("dodgerblue", "black")
+  names(colour_palette) = value_type_labels
+  
+  (ggplot(df, aes(x = date))
+    # observed points
+    + geom_point(
+      data = df %>% filter(value_type == value_type_labels[2]),
+      mapping = aes(y = value, colour = value_type), 
+      shape = 1, size = 2
+    )
+    # simulation from fitted model
+    + geom_ribbon(
+      data = df %>% filter(value_type == value_type_labels[1]),
+      mapping = aes(ymin = lwr, ymax = upr,
+                    fill = value_type), alpha = 0.3
+    )
+    + geom_line(
+      data = df %>% filter(value_type == value_type_labels[1]),
+      mapping = aes(y = value, colour = value_type),
+      linewidth = 1.25
+    )
+    + scale_colour_manual(values = colour_palette,
+                          limits = value_type_labels)
+    + scale_fill_manual(values = colour_palette,
+                        limits = value_type_labels)
+    + labs(title = "Incidence over time")
+    + guides(
+      color =
+        guide_legend(override.aes = list(
+          shape = c(NA, 1),
+          linewidth = c(1.25, NA),
+          fill = c(colour_palette[[1]], NA))
+        )
+    )
+    + theme(
+      axis.title = element_blank(),
+      legend.title = element_blank(),
+      legend.justification = c(0,1),
+      legend.position = c(0,1),
+      legend.background = element_rect(fill = NA),
+      legend.key = element_rect(fill = NA)
+    )
+  )
+}
