@@ -1,6 +1,6 @@
 ### model start and end dates ###
-start_date = "2020-03-01"
-end_date = "2020-05-01"
+start_date = "2020-02-08"
+end_date = "2020-03-31"
 
 
 ### seir model set up ###
