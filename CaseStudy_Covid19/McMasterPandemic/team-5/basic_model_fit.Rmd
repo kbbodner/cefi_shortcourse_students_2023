@@ -1,0 +1,6 @@
+## Purpose: To fit case data up to March 31 2020 to a model, get model params, and then predict out from April 1 2020 to April 30 2020.
+
+```{r}
+
+```
+
