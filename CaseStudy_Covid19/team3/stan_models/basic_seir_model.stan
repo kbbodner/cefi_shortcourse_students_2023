@@ -75,6 +75,7 @@ parameters {
   real R0;
   real i0;
   real<lower=0, upper=1> sample_frac;
+  real <lower=0> phi;
 }
 // Transformed parameters stores any variables that depends on anything
 // defined in the parameters block. For example since the number of initial
@@ -105,9 +106,11 @@ model {
   R0 ~ lognormal(R0_prior[1], R0_prior[2]);
   i0 ~ lognormal(i0_prior[1], i0_prior[2]);
   sample_frac ~ normal(0.2,0.01);
+  phi ~ normal(0, 1000);
   
   // likelihood
-  y ~ poisson(sample_frac * col(to_matrix(y_hat), 3));
+  // y ~ poisson(sample_frac * col(to_matrix(y_hat), 3)); // maybe make a negative binomial, negbin2 for mean and overdispersion
+  y ~ neg_binomial_2(sample_frac * col(to_matrix(y_hat), 3), phi);
 }
 
 // Generated quantities are produced for each sample of the posterior and 
@@ -121,17 +124,22 @@ generated quantities{
   real y_forecast[forecast_T,4];
   real theta_forecast[1];
   
-  // Set reduced theta for forecast for masking
-  theta_forecast[1] = R0 * 0.5;
-
+  
+    // Pass any SEIR parameters that are not fixed into the theta vector
+  theta_forecast[1] = R0*0.5;
+  
+  
   // generate the output of each state and the cases for 
   // each sample of the posterior
-  cases = poisson_rng(sample_frac * col(to_matrix(y_hat), 3));
+  //cases = poisson_rng(sample_frac * col(to_matrix(y_hat), 3)); // Change this line if we use a neg binomial
+  cases = neg_binomial_2_rng(sample_frac * col(to_matrix(y_hat), 3), phi);
   
   // generate output for the forecasted days
   // new initial conditions are for the final day of inference
   y0_forecast = to_array_1d(row(to_matrix(y_hat), T));
   // integrate forward from final day of inference
-  y_forecast = integrate_ode_rk45(seir_rhs, y0_forecast, ts[T], forecast_ts, theta, x_r, x_i);
-  forecasted_cases = poisson_rng(sample_frac * col(to_matrix(y_forecast), 3));
+  y_forecast = integrate_ode_rk45(seir_rhs, y0_forecast, ts[T], forecast_ts, theta_forecast, x_r, x_i);
+  //forecasted_cases = poisson_rng(sample_frac * col(to_matrix(y_forecast), 3));
+  forecasted_cases = neg_binomial_2_rng(sample_frac * col(to_matrix(y_forecast), 3), phi);
+  
 }
