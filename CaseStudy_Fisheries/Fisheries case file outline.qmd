@@ -1,0 +1,43 @@
+---
+title: "Outline for fisheries case"
+format: html
+editor: visual
+---
+
+## Sockeye Salmon Returns Group 1
+
+Group members:
+
+Stock chosen: Early Stewart
+
+## 1. Basic Ricker Model
+
+```{r}
+
+```
+
+## 2. Alternate Models
+
+### Ricker Model with environmental covariates
+
+Environmental Covariates:
+
+### Alternate 2
+
+## 3. Model Comparisons
+
+### Create retroactive predictions
+
+Between Years:
+
+### Performance Metrics
+
+Metrics Used:
+
+## 4. Model Suggestion
+
+Which?
+
+Why?
+
+## 5. Final Forecast
