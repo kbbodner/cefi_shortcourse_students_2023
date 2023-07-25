@@ -21,11 +21,11 @@ $$
 This equation is often linearized to the following form, for quick parameter estimation:
 
 $$
-ln(R_i/S_i) = \alpha - \beta S_i 
+ln(R_i/S_i) = ln(\alpha) - \beta S_i 
 $$
 
 It's also common to parameterize this model using $S_{max} = 1/\beta$, which is the number of spawners that produces the maximum number of recruits (the peak of the curve,) since it is more intuitive to put priors around. $$
-ln(R_i/S_i) = \alpha - S_i/S_{max}
+ln(R_i/S_i) = ln(\alpha) - S_i/S_{max}
 $$
 
 ```{r}
@@ -47,8 +47,13 @@ Let's take a look at Ricker model in action
 #| fig-cap: |
 #|  Simulated Ricker curve data
 
-SimData <- Sim_Ricker_SR_Data(leng=50, age=4, Sig_Ricker = 0.15, true_a = rnorm(1, 5, 2), true_b=1/100000, hr_min = 0.2, hr_max = 0.8, lnorm_corr = FALSE)
+SimData <- Sim_Ricker_SR_Data(leng=50, age=4, Sig_Ricker = 0.15, true_a = 4, true_b=1/100000, hr_min = 0.2, hr_max = 0.8, lnorm_corr = FALSE)
 
+# look at time series of spawners
+ggplot(data=SimData$DF_Out) +
+  geom_line(aes(x=Year, y=S))
+
+# Look at stock-recruit (or spawner-return) curve
 ggplot(data=SimData$DF_Out) + 
   geom_point(aes(x=S, y=R)) + 
   geom_line(aes(x=S_Fit, y=R_Fit), col="blue") +
