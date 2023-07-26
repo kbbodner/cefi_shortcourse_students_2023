@@ -222,8 +222,7 @@ RunMCMC_PowerCov <- function(Dat_MCMC, Scale, CovData){
                        Pred_low = R_Preds_Jags$X2.5. * Scale,
                        Pred_up = R_Preds_Jags$X97.5. * Scale,
                        A_Post = A_Post,
-                       B_Post = B_Post,
-                       Smax_Post = Smax_Post, g = g)
+                       B_Post = B_Post, g = g)
   return(FitsDF)
 }
 
@@ -249,6 +248,8 @@ RunModRetro_new <- function(Dat, Pred_Year, Model, CovData=NA) {
     FitsDF <- RunMCMC_RickerCov(Data_Retro, Scale, CovData)
   }else if(Model=="Power"){
     FitsDF <- RunMCMC_Power(Data_Retro, Scale)
+  }else if(Model=="PowerCov"){
+    FitsDF <- RunMCMC_PowerCov(Data_Retro, Scale, CovData)
   }else{
     print("Cannot recognize the model")
     return()
@@ -270,8 +271,8 @@ RunModRetro_new <- function(Dat, Pred_Year, Model, CovData=NA) {
   out <- list()
   out$Preds_Out <- Preds_Out
   out$Fit <- FitsDF
-  out$A_Post <- A_Post
-  out$Smax_Post <- Smax_Post
+  # out$A_Post <- A_Post
+  # out$Smax_Post <- Smax_Post
   out
   
 }
