@@ -1,3 +1,4 @@
+
 # MCMC with Basic Ricker Model
 RunMCMC_Ricker <- function(Dat_MCMC, Scale){
   
