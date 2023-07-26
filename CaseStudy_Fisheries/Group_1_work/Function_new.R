@@ -42,10 +42,9 @@ RunMCMC_Ricker <- function(Dat_MCMC, Scale){
                        CI_low = R_Ests_Jags$X2.5. * Scale,
                        Pred = R_Preds_Jags$X50. * Scale,
                        Pred_low = R_Preds_Jags$X2.5. * Scale,
-                       Pred_up = R_Preds_Jags$X97.5. * Scale,
-                       A_Post = A_Post,
-                       Smax_Post = Smax_Post)
-  return(FitsDF)
+                       Pred_up = R_Preds_Jags$X97.5. * Scale)
+  out <- list(FitsDF=FitsDF, A_Post=A_Post, Smax_Post=Smax_Post)
+  return(out)
 }
 
 # MCMC with RickerCov Model
@@ -97,10 +96,9 @@ RunMCMC_RickerCov <- function(Dat_MCMC, Scale, CovData){
                        CI_low = R_Ests_Jags$X2.5. * Scale,
                        Pred = R_Preds_Jags$X50. * Scale,
                        Pred_low = R_Preds_Jags$X2.5. * Scale,
-                       Pred_up = R_Preds_Jags$X97.5. * Scale,
-                       A_Post = A_Post,
-                       Smax_Post = Smax_Post, g = g)
-  return(FitsDF)
+                       Pred_up = R_Preds_Jags$X97.5. * Scale)
+  out <- list(FitsDF=FitsDF, A_Post=A_Post, Smax_Post=Smax_Post, g=g)
+  return(out)
 }
 
 # MCMC with Power Model
@@ -142,15 +140,14 @@ RunMCMC_Power <- function(Dat_MCMC, Scale){
   R_Preds_Jags <- All_Ests[grepl("R_Pred", All_Ests$Param),  ]
   
   FitsDF <- data.frame(S = Dat_MCMC$S, R = Dat_MCMC$R, Fit = R_Ests_Jags$X50. * Scale, 
-                       Year = Dat_MCMC$yr,   Mod = "CovRicker",
+                       Year = Dat_MCMC$yr,   Mod = "Power",
                        CI_up = R_Ests_Jags$X97.5. * Scale,
                        CI_low = R_Ests_Jags$X2.5. * Scale,
                        Pred = R_Preds_Jags$X50. * Scale,
                        Pred_low = R_Preds_Jags$X2.5. * Scale,
-                       Pred_up = R_Preds_Jags$X97.5. * Scale,
-                       A_Post = A_Post,
-                       B_Post = B_Post)
-  return(FitsDF)
+                       Pred_up = R_Preds_Jags$X97.5. * Scale)
+  out <- list(FitsDF=FitsDF, A_Post=A_Post, B_Post=B_Post)
+  return(out)
 }
 
 # PowerCov model 
@@ -215,15 +212,14 @@ RunMCMC_PowerCov <- function(Dat_MCMC, Scale, CovData){
   R_Preds_Jags <- All_Ests[grepl("R_Pred", All_Ests$Param),  ]
   
   FitsDF <- data.frame(S = Dat_MCMC$S, R = Dat_MCMC$R, Fit = R_Ests_Jags$X50. * Scale, 
-                       Year = Dat_MCMC$yr,   Mod = "CovRicker",
+                       Year = Dat_MCMC$yr,   Mod = "CovPower",
                        CI_up = R_Ests_Jags$X97.5. * Scale,
                        CI_low = R_Ests_Jags$X2.5. * Scale,
                        Pred = R_Preds_Jags$X50. * Scale,
                        Pred_low = R_Preds_Jags$X2.5. * Scale,
-                       Pred_up = R_Preds_Jags$X97.5. * Scale,
-                       A_Post = A_Post,
-                       B_Post = B_Post, g = g)
-  return(FitsDF)
+                       Pred_up = R_Preds_Jags$X97.5. * Scale)
+  out <- list(FitsDF=FitsDF, A_Post=A_Post, B_Post=B_Post, g=g)
+  return(out)
 }
 
 
@@ -243,18 +239,18 @@ RunModRetro_new <- function(Dat, Pred_Year, Model, CovData=NA) {
   
 
   if(Model=="Ricker"){
-    FitsDF <- RunMCMC_Ricker(Data_Retro, Scale)
+    out <- RunMCMC_Ricker(Data_Retro, Scale)
   }else if(Model=="RickerCov"){
-    FitsDF <- RunMCMC_RickerCov(Data_Retro, Scale, CovData)
+    out <- RunMCMC_RickerCov(Data_Retro, Scale, CovData)
   }else if(Model=="Power"){
-    FitsDF <- RunMCMC_Power(Data_Retro, Scale)
+    out <- RunMCMC_Power(Data_Retro, Scale)
   }else if(Model=="PowerCov"){
-    FitsDF <- RunMCMC_PowerCov(Data_Retro, Scale, CovData)
+    out <- RunMCMC_PowerCov(Data_Retro, Scale, CovData)
   }else{
     print("Cannot recognize the model")
     return()
   }
-
+  FitsDF <- out$FitsDF
   
   # get age proportion estimates
   P4 <- mean(Data_Retro$rec4/Data_Retro$R, na.rm=T)
@@ -264,7 +260,7 @@ RunModRetro_new <- function(Dat, Pred_Year, Model, CovData=NA) {
   # apply to brood years 4 and 5 years before Pred_Year
   FitsDF$Pred[FitsDF$Year == Pred_Year-4]
   
-  Preds_Out <- data.frame(Pred_Year = Pred_Year, Mod = "Ricker",  ModType="Bio",
+  Preds_Out <- data.frame(Pred_Year = Pred_Year, Mod = Model,  ModType="Bio",
                           Pred4 = FitsDF$Pred[FitsDF$Year == Pred_Year-4]*P4, 
                           Pred5 = FitsDF$Pred[FitsDF$Year == Pred_Year-5]*(1-P4))
   
