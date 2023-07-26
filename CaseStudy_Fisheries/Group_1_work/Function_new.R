@@ -266,7 +266,7 @@ RunModRetro_new <- function(Dat, Pred_Year, Model, CovData=NA) {
   Preds_Out <- data.frame(Pred_Year = Pred_Year, Mod = Model,  ModType="Bio",
                           Pred4 = FitsDF$Pred[FitsDF$Year == Pred_Year-4]*P4, 
                           Pred5 = FitsDF$Pred[FitsDF$Year == Pred_Year-5]*(1-P4),
-                          Pred = Pred4 + Pred5,
+                          Pred = FitsDF$Pred[FitsDF$Year == Pred_Year-4]*P4 + FitsDF$Pred[FitsDF$Year == Pred_Year-5]*(1-P4),
                           Pred_low = FitsDF$Pred_low[FitsDF$Year == Pred_Year-4]*P4 + FitsDF$Pred_low[FitsDF$Year == Pred_Year-5]*(1-P4),
                           Pred_up = FitsDF$Pred_up[FitsDF$Year == Pred_Year-4]*P4 + FitsDF$Pred_up[FitsDF$Year == Pred_Year-5]*(1-P4))
   
