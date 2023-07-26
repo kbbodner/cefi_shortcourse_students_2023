@@ -327,7 +327,7 @@ Sibling.Model <- function(){
 
 # Naive models ======================================================================
 
-Run.Naive.Mods <- function(Data_Retro){
+Run.Naive.Mods <- function(Data_Retro, Pred_Year){
   
   Results <- data.frame(Year = numeric(), Mod = character(), ModType = character(), 
                         Pred4 = numeric(), Pred5 = numeric())
@@ -340,9 +340,9 @@ Run.Naive.Mods <- function(Data_Retro){
   m_p<-mean(logRPS, na.rm=T)
   s_p<-sd(logRPS, na.rm=T)
   #forecast
-  lMRS_Est4 <- P4*qlnorm(0.5, meanlog=m_p, sdlog=s_p)*Data_Retro$S[Data_Retro$Year == yr-4]
-  lMRS_Est5 <- (1-P4)*qnorm(0.5, m_p, s_p)*Data_Retro$S[Data_Retro$Year == yr-5]
-  new.row = data.frame(Year = yr, Mod = "MRS_Log", ModType = "Naive", Pred4 = lMRS_Est4, Pred5 = lMRS_Est5)
+  lMRS_Est4 <- P4*qlnorm(0.5, meanlog=m_p, sdlog=s_p)*Data_Retro$S[Data_Retro$yr == Pred_Year-4]
+  lMRS_Est5 <- (1-P4)*qnorm(0.5, m_p, s_p)*Data_Retro$S[Data_Retro$yr == Pred_Year-5]
+  new.row = data.frame(Year = Pred_Year, Mod = "MRS_Log", ModType = "Naive", Pred4 = lMRS_Est4, Pred5 = lMRS_Est5)
   Results <- bind_rows(Results, new.row)
   
   #Normal MRS - apply mean recruits-per-spawner
@@ -350,49 +350,53 @@ Run.Naive.Mods <- function(Data_Retro){
   m_p<-mean(RPS, na.rm=T)
   s_p<-sd(RPS, na.rm=T)
   #forecast
-  MRS_Est4 <- P4*qnorm(0.5, m_p, s_p)*Data_Retro$S[Data_Retro$Year == yr-4]
-  MRS_Est5 <- (1-P4)*qnorm(0.5, m_p, s_p)*Data_Retro$S[Data_Retro$Year == yr-5]
-  new.row = data.frame(Year = yr, Mod = "MRS", ModType = "Naive", Pred4 = MRS_Est4, Pred5 = MRS_Est5)
+  MRS_Est4 <- P4*qnorm(0.5, m_p, s_p)*Data_Retro$S[Data_Retro$yr == Pred_Year-4]
+  MRS_Est5 <- (1-P4)*qnorm(0.5, m_p, s_p)*Data_Retro$S[Data_Retro$yr == Pred_Year-5]
+  new.row = data.frame(Year = Pred_Year, Mod = "MRS", ModType = "Naive", Pred4 = MRS_Est4, Pred5 = MRS_Est5)
   Results <- bind_rows(Results, new.row)
   
   #RS1 - use last complete brood's recruits-per-spawner
-  RPS_Last <- Data_Retro$R[N_Obs-2]/Data_Retro$S[N_Obs-2]
-  RS1_Est4 <- P4*RPS_Last*Data_Retro$S[Data_Retro$Year == yr-4]
-  RS1_Est5 <- (1-P4)*RPS_Last*Data_Retro$S[Data_Retro$Year == yr-5]
-  new.row = data.frame(Year = yr, Mod = "RS1", ModType = "Naive", Pred4 = RS1_Est4 , Pred5 = RS1_Est5)
+  RPS_Last <- Data_Retro %>% filter(yr == (Pred_Year-5)) %>% mutate(RPS = R/S) %>% pull(RPS)   #Data_Retro$R[yr-5]/Data_Retro$S[yr-5]
+  RS1_Est4 <- P4*RPS_Last*Data_Retro$S[Data_Retro$yr == Pred_Year-4]
+  RS1_Est5 <- (1-P4)*RPS_Last*Data_Retro$S[Data_Retro$yr == Pred_Year-5]
+  new.row = data.frame(Year = Pred_Year, Mod = "RS1", ModType = "Naive", Pred4 = RS1_Est4 , Pred5 = RS1_Est5)
   Results <- bind_rows(Results, new.row)
   
   #RS2 - use last 2 complete brood's recruits-per-spawner
-  RPS_Last2 <- mean(Data_Retro$R[(N_Obs-3):(N_Obs-2)]/Data_Retro$S[(N_Obs-3):(N_Obs-2)])
-  RS2_Est4 <- P4*RPS_Last2*Data_Retro$S[Data_Retro$Year == yr-4]
-  RS2_Est5 <- (1-P4)*RPS_Last2*Data_Retro$S[Data_Retro$Year == yr-5]
-  new.row = data.frame(Year = yr, Mod = "RS2", ModType = "Naive", Pred4 = RS2_Est4 , Pred5 = RS2_Est5)
+  #RPS_Last2 <- mean(Data_Retro$R[(Pred_Year-5-1):(Pred_Year-5)]/Data_Retro$S[(Pred_Year-5-1):(Pred_Year-5)])
+  RPS_Last2 <- Data_Retro %>% filter(yr %in% c(Pred_Year-5-1, Pred_Year-5)) %>% 
+    mutate(RPS = R/S) %>% summarise(meanRPS = mean(RPS)) %>% pull(meanRPS)
+  RS2_Est4 <- P4*RPS_Last2*Data_Retro$S[Data_Retro$yr == Pred_Year-4]
+  RS2_Est5 <- (1-P4)*RPS_Last2*Data_Retro$S[Data_Retro$yr == Pred_Year-5]
+  new.row = data.frame(Year = Pred_Year, Mod = "RS2", ModType = "Naive", Pred4 = RS2_Est4 , Pred5 = RS2_Est5)
   Results <- bind_rows(Results, new.row)
   
   #RS4 - use last 4-year-cycle's recruits-per-spawner
-  RPS_Last4 <- mean(Data_Retro$R[(N_Obs-5):(N_Obs-2)]/Data_Retro$S[(N_Obs-5):(N_Obs-2)])
-  RS4_Est4 <- P4*RPS_Last4*Data_Retro$S[Data_Retro$Year == yr-4]
-  RS4_Est5 <- (1-P4)*RPS_Last4*Data_Retro$S[Data_Retro$Year == yr-5]
-  new.row = data.frame(Year = yr, Mod = "RS4", ModType = "Naive", Pred4 = RS4_Est4 , Pred5 = RS4_Est5)
+  RPS_Last4 <- Data_Retro %>% filter(yr %in% c((Pred_Year-5-3):(Pred_Year-5))) %>% 
+                mutate(RPS = R/S) %>% summarise(meanRPS = mean(RPS)) %>% pull(meanRPS)
+  RS4_Est4 <- P4*RPS_Last4*Data_Retro$S[Data_Retro$yr == Pred_Year-4]
+  RS4_Est5 <- (1-P4)*RPS_Last4*Data_Retro$S[Data_Retro$yr == Pred_Year-5]
+  new.row = data.frame(Year = Pred_Year, Mod = "RS4", ModType = "Naive", Pred4 = RS4_Est4 , Pred5 = RS4_Est5)
   Results <- bind_rows(Results, new.row)
   
   #RS8 - use last 2 4-year-cycle's (8 years) recruits-per-spawner
-  RPS_Last8 <- mean(Data_Retro$R[(N_Obs-9):(N_Obs-2)]/Data_Retro$S[(N_Obs-9):(N_Obs-2)])
-  RS8_Est4 <- P4*RPS_Last8*Data_Retro$S[Data_Retro$Year == yr-4]
-  RS8_Est5 <- (1-P4)*RPS_Last8*Data_Retro$S[Data_Retro$Year == yr-5]
-  new.row = data.frame(Year = yr, Mod = "RS8", ModType = "Naive", Pred4 = RS8_Est4 , Pred5 = RS4_Est5)
+  RPS_Last8 <- Data_Retro %>% filter(yr %in% c((Pred_Year-5-7):(Pred_Year-5))) %>% 
+    mutate(RPS = R/S) %>% summarise(meanRPS = mean(RPS)) %>% pull(meanRPS)
+  RS8_Est4 <- P4*RPS_Last8*Data_Retro$S[Data_Retro$yr == Pred_Year-4]
+  RS8_Est5 <- (1-P4)*RPS_Last8*Data_Retro$S[Data_Retro$yr == Pred_Year-5]
+  new.row = data.frame(Year = Pred_Year, Mod = "RS8", ModType = "Naive", Pred4 = RS8_Est4 , Pred5 = RS4_Est5)
   Results <- bind_rows(Results, new.row)
   
   # RSC - same but along cycle line
   # age 4 cycle line - will need to start 8 years ago, since 4 years ago brood won't be complete yet
-  Yrs4 <- seq(yr-8, min(Data_Retro$Year), -4)
+  Yrs4 <- seq(Pred_Year-8, min(Data_Retro$yr), -4)
   # can start 9 years ago, since 5 year ago brood won't be complete
-  Yrs5 <- seq(yr-9, min(Data_Retro$Year), -4)
-  RPS_4 <- mean(Data_Retro$R[Data_Retro$Year %in% Yrs4]/Data_Retro$S[Data_Retro$Year %in% Yrs4])
-  RPS_5 <- mean(Data_Retro$R[Data_Retro$Year %in% Yrs5]/Data_Retro$S[Data_Retro$Year %in% Yrs5])
-  RSC_Est4 <- P4*RPS_4*Data_Retro$S[Data_Retro$Year == yr-4]
-  RSC_Est5 <- (1-P4)*RPS_5*Data_Retro$S[Data_Retro$Year == yr-5]
-  new.row = data.frame(Year = yr, Mod = "RSC", ModType = "Naive", Pred4 = RSC_Est4 , Pred5 = RSC_Est5)
+  Yrs5 <- seq(Pred_Year-9, min(Data_Retro$yr), -4)
+  RPS_4 <- mean(Data_Retro$R[Data_Retro$yr %in% Yrs4]/Data_Retro$S[Data_Retro$yr %in% Yrs4])
+  RPS_5 <- mean(Data_Retro$R[Data_Retro$yr %in% Yrs5]/Data_Retro$S[Data_Retro$yr %in% Yrs5])
+  RSC_Est4 <- P4*RPS_4*Data_Retro$S[Data_Retro$yr == Pred_Year-4]
+  RSC_Est5 <- (1-P4)*RPS_5*Data_Retro$S[Data_Retro$yr == Pred_Year-5]
+  new.row = data.frame(Year = Pred_Year, Mod = "RSC", ModType = "Naive", Pred4 = RSC_Est4 , Pred5 = RSC_Est5)
   Results <- bind_rows(Results, new.row)
  
   Results 
