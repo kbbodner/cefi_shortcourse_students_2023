@@ -165,6 +165,25 @@ first_no_na <- site_target |>
 site_target <- site_target |> 
   filter(datetime >= first_no_na)
 
+# calculate precipitation previous week 
+site_target$precipitation_week <- NA
+
+for (i in 1:nrow(site_target)) {
+  if (i < 8) {
+    site_target$precipitation_week[i] <- sum(site_target$precipitation_flux[1:i])
+  } else {
+    site_target$precipitation_week[i] <- sum(site_target$precipitation_flux[(i-7):i])
+  }
+}
+
+noaa_future_daily$precipitation_week <- NA
+for (i in 1:nrow(noaa_future_daily)) {
+  if (i < 8) {
+    noaa_future_daily$precipitation_week[i] <- sum(noaa_future_daily$precipitation_flux[1:i])
+  } else {
+    noaa_future_daily$precipitation_week[i] <- sum(noaa_future_daily$precipitation_flux[(i-7):i])
+  }
+}
 
 ## -------------------------------------------------------------------------------------------------------
 jags_code <- "
@@ -174,6 +193,7 @@ model{
   beta1 ~ dnorm(0, 1/10000)
   beta2 ~ dnorm(0, 1/10000)
   beta3 ~ dnorm(0, 1/10000)
+  beta4 ~ dnorm(0, 1/10000)
   sd_process ~ dunif(0.00001, 100)
   
   #Convert Standard Deviation to precision
@@ -188,7 +208,7 @@ model{
   #Loop through data points
   for(i in 2:n){
       # Process model
-      chla_pred[i] <- beta1 * chla_latent[i-1] + beta2 * air_temp[i] + beta3 * precip[i]
+      chla_pred[i] <- beta1 * chla_latent[i-1] + beta2 * air_temp[i] + beta3 * precip[i] + beta4 * precip_week[i]
       chla_latent[i] ~ dnorm(chla_pred[i], tau_process)
 
       # Data model
@@ -202,6 +222,7 @@ model{
 ## -------------------------------------------------------------------------------------------------------
 data <- list(air_temp = site_target$air_temperature,
              precip = site_target$precipitation_flux,
+             precip_week = site_target$precipitation_week,
              y = site_target$chla,
              n = length(site_target$air_temperature),
              sd_obs = 0.1,
@@ -214,7 +235,7 @@ for(i in 1:nchain){
   inits[[i]] <- list(beta1 = rnorm(1, 0.34, 0.05), 
                      beta2 = rnorm(1, 0.11, 0.05),
                      beta3 = rnorm(1, 0.2, 0.05),
-                                   
+                     beta4 = rnorm(1, 0.2, 0.05),
                      sd_process = runif(1, 0.05, 0.15 ))
 }
 
@@ -230,6 +251,7 @@ jags.out   <- coda.samples(model = j.model,
                            variable.names = c("beta1", 
                                               "beta2",
                                               "beta3", 
+                                              "beta4",
                                               "chla_latent",
                                               "sd_process"),
                            n.iter = 5000)
@@ -239,7 +261,7 @@ jags.out   <- coda.samples(model = j.model,
 
 burn_in <- 1000
 chain <- jags.out %>%
-  tidybayes::spread_draws(beta1, beta2, beta3, sd_process, chla_latent[day]) |> 
+  tidybayes::spread_draws(beta1, beta2, beta3, beta4, sd_process, chla_latent[day]) |> 
   filter(.iteration > burn_in) |> 
   ungroup()
 
@@ -269,7 +291,6 @@ y <- matrix(NA, num_samples, n_days) #y is the forecasted observation
 forecast_df <- NULL
 
 
-
 #loop over posterior samples
 for(i in 1:num_samples){
   sample_index <- sample(x = 1:nrow(chain), size = 1, replace = TRUE)
@@ -284,7 +305,8 @@ for(i in 1:num_samples){
   for(j in 2:n_days){
     pred <- chla_latent[i,j-1] * chain$beta1[sample_index] + 
       noaa_future_site_ens$air_temperature[j] * chain$beta2[sample_index] +
-      noaa_future_site_ens$precipitation_flux[j] * chain$beta3[sample_index]
+      noaa_future_site_ens$precipitation_flux[j] * chain$beta3[sample_index] +
+      noaa_future_site_ens$precipitation_week[j] * chain$beta4[sample_index]
 
     chla_latent[i,j] <- rnorm(1, pred, chain$sd_process[sample_index])
 
@@ -300,6 +322,8 @@ for(i in 1:num_samples){
   
   forecast_df <- bind_rows(forecast_df, df)
 }
+
+
 
 
 ## ---- echo = T, warning = F-----------------------------------------------------------------------------
