@@ -126,7 +126,7 @@ RunMCMC_Power <- function(Dat_MCMC, Scale){
     param
   }
   
-  JagsFit <- jags(data, inits = list(inits(), inits(), inits()), model.file = RickerCov.model.MCMC, 
+  JagsFit <- jags(data, inits = list(inits(), inits(), inits()), model.file = Power.model.MCMC, 
                   n.chains =3, n.iter=10000, n.burnin = 4000, n.thin = 3, 
                   parameters.to.save = c("R_Fit", "R_Pred", "A", "B", "sigma"))
   
@@ -150,6 +150,80 @@ RunMCMC_Power <- function(Dat_MCMC, Scale){
                        Pred_up = R_Preds_Jags$X97.5. * Scale,
                        A_Post = A_Post,
                        B_Post = B_Post)
+  return(FitsDF)
+}
+
+# PowerCov model 
+PowerCov.model.MCMC <- function(){
+  for (i in 1:N) {                             # loop over N sample points
+    R_Obs[i] ~ dlnorm(logR_Fit[i], tau)          # likelihood -> predicted value for NA in data set
+    logR_Fit[i] <- A + B * log(S[i]) + g * env[i]       # power model with env covariate
+    R_Fit[i] <- exp(logR_Fit[i])
+    R_Pred[i] ~ dlnorm(logR_Fit[i],tau)
+  }
+  
+  g ~ dnorm(g_mean,g_tau)     #prior for g
+  A ~ dnorm(A_mean, A_tau)             # prior for alpha
+  B ~ dnorm(B_mean, B_tau)                # prior for beta
+  tau ~ dgamma(Sig_Gam_Dist,Sig_Gam_Dist)    # prior for precision parameter
+  sigma <- 1/sqrt(tau)   		                  	
+  
+}
+
+# MCMC with PowerCov Model
+RunMCMC_PowerCov <- function(Dat_MCMC, Scale, CovData){
+  
+  # Set up data and starting value lists list to go into model
+  data <- list()
+  data$S <- Dat_MCMC$S/Scale 
+  data$A_mean <- 1
+  data$A_tau <- 0.001
+  data$B_mean <- 1
+  data$B_tau <- 0.001
+  data$Sig_Gam_Dist <- 0.001
+  data$R_Obs <- Dat_MCMC$R/Scale
+  data$N <- length(CovData)
+  data$env <- CovData
+  data$g_mean <- 0
+  data$g_tau <- 0.001
+  
+  # function to set initial values
+  inits <- function(){
+    param <- list()
+    param$A <- rnorm(1, 1, 0.5)
+    param$B <- rnorm(1, 1, 0.5)
+    param$tau <- runif(1, 0.001, 10)
+    param$g <- rnorm(1,0,1000)
+    param
+  }
+  
+  JagsFit <- jags(data, inits = list(inits(), inits(), inits()), model.file = PowerCov.model.MCMC, 
+                  n.chains =3, n.iter=10000, n.burnin = 4000, n.thin = 3, 
+                  parameters.to.save = c("R_Fit", "R_Pred", "A", "B", "sigma","g"))
+  
+  # Turn into Data Frame
+  All_Ests <- data.frame(JagsFit$BUGSoutput$summary)
+  All_Ests$Param <- row.names(All_Ests)
+  
+  # Prep A and Smax posteriors for outputs
+  A_Post <- exp(JagsFit$BUGSoutput$sims.list$A)
+  B_Post <- exp(JagsFit$BUGSoutput$sims.list$B)
+  Smax_Post <- JagsFit$BUGSoutput$sims.list$Smax * Scale
+  g <- JagsFit$BUGSoutput$sims.list$g
+  
+  R_Ests_Jags <- All_Ests[grepl("R_Fit", All_Ests$Param),  ]
+  R_Preds_Jags <- All_Ests[grepl("R_Pred", All_Ests$Param),  ]
+  
+  FitsDF <- data.frame(S = Dat_MCMC$S, R = Dat_MCMC$R, Fit = R_Ests_Jags$X50. * Scale, 
+                       Year = Dat_MCMC$yr,   Mod = "CovRicker",
+                       CI_up = R_Ests_Jags$X97.5. * Scale,
+                       CI_low = R_Ests_Jags$X2.5. * Scale,
+                       Pred = R_Preds_Jags$X50. * Scale,
+                       Pred_low = R_Preds_Jags$X2.5. * Scale,
+                       Pred_up = R_Preds_Jags$X97.5. * Scale,
+                       A_Post = A_Post,
+                       B_Post = B_Post,
+                       Smax_Post = Smax_Post, g = g)
   return(FitsDF)
 }
 
