@@ -18,4 +18,38 @@ performance.functions <- list("MRE" = MRE,
                               "MAAPE" = MAAPE,
                               "MASE" = MASE)
 
-#TODO: implement performance on all models
+
+#created helper variables/added new column for naive predictions
+obs.2021 <- c(data$rec4[data$yr == pred.year-4], data$rec5[data$yr == pred.year-5])
+baseline.pred <- c(baseline.mod$Preds_Out$Pred4, baseline.mod$Preds_Out$Pred5)
+
+naive.mod.ext <- naive.mod |>
+  mutate(R_pred = Pred4 + Pred5)
+
+###Run the performance on all models:
+
+#Baseline
+perf.Ricker <- run.all.performances(sum(obs.2021), sum(baseline.pred),
+                                    performance.functions)
+
+#Naive models
+perf.naive <- list()
+for(i in 1:length(naive.mod.ext$Mod)) {
+  perf.naive[[i]] <- run.all.performances(sum(obs.2021), naive.mod.ext$R_pred[i],
+                                          performance.functions)
+}
+names(perf.naive) <- naive.mod.ext$Mod
+
+# sort model performance for naive model
+perf.naive.clean <- data.table::rbindlist(perf.naive, idcol = TRUE)
+
+#n best naive model
+best.naive.model <- perf.naive.clean |> 
+  filter(metric == "RMSE") |> 
+  arrange(desc(performance)) |> 
+  slice_min(performance)
+
+#Compare with other models:
+Ricker.RMSE <- perf.Ricker |>
+  filter(metric == "RMSE")
+
