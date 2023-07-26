@@ -8,11 +8,11 @@ editor: visual
 
 Group members: Jake Lawlor, Yiran Wang, Emmerson Wilson, and Garland Xie
 
-Stock chosen: Early Stewart
-
 ## 1. Basic Ricker Model
 
-The Ricker model is a discrete stock-recruitment model that incorporates population growth ($\alpha$) and carrying capacity ($\beta$) for Pacific Salmon. It assumes the chosen population experiences density dependence.
+The Ricker model is a discrete stock-recruitment model that incorporates population growth ($\alpha$) and carrying capacity ($\beta$) for Pacific Salmon. Of all the available stocks, Early Stewart population was randomly chosen since it is one of many that is sensitive to environmental changes (see below models).
+
+It assumes the chosen population experiences density dependence.
 
 Consider the following model:
 
@@ -48,7 +48,7 @@ $$ {#eq-6}
 
 ### Alternate 1: Ricker model with environmental covariates
 
-This alternate model is simple extension of the Ricker model that includes an environmental covariate (average sea surface temperature). Of all the available stocks, Early Stewart population was randomly chosen since it is one of many that is sensitive to environmental changes.
+This alternate model is simple extension of the Ricker model that includes an environmental covariate (average sea surface temperature).
 
 Brooke Davis suggested to take the average of April ($apesst$), May ($maesst$), and June ($jnesst$) sea surface temperatures. This average ($Esst$) is commonly employed by fisheries scientists.
 
