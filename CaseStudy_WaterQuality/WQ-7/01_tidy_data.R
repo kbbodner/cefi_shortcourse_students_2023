@@ -12,6 +12,15 @@ load(here(folder, "data_with_precipitation.RData"))
 noaa_past <- read_csv(here(folder, "noaa_past.csv"))
 noaa_future <- read_csv(here(folder, "noaa_future.csv"))
 
+noaa_past_mean <- noaa_past |> 
+  mutate(datetime = as_date(datetime)) |> 
+  group_by(datetime, site_id, variable) |> 
+  summarize(prediction = mean(prediction, na.rm = TRUE), .groups = "drop") |> 
+  pivot_wider(names_from = variable, values_from = prediction) |> 
+  # convert air temp to C
+  mutate(air_temperature = air_temperature - 273.15) |> 
+  filter(datetime <= as_date(max(targets$datetime)))
+
 noaa_future_daily <- noaa_future |> 
   mutate(datetime = as_date(datetime)) |> 
   # mean daily forecasts at each site per ensemble
