@@ -15,14 +15,14 @@ S = 14,686,092 #this is Q1 pop for 2020, for Q2 = 14,718,133
 #data prep
 
 #prep simulation data - this is for modelling, but good to look at/know
-
-# initial state, in units of individuals
-state = c(
-  S = 2000, #S = susceptible
-  E = 0,  #E = exposed,
-  I = 1,  #I = infected, first date of infection/known exposure is 2020-02-08
-  R = 0 #R = recovered
-)
+# 
+# # initial state, in units of individuals
+# state = c(
+#   S = 14865000, #S = susceptible
+#   E = 0,  #E = exposed,
+#   I = 1,  #I = infected, first date of infection/known exposure is 2020-02-08
+#   R = 0 #R = recovered
+# )
 
 # parameters
 params = c(
