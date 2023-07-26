@@ -6,7 +6,7 @@ editor: visual
 
 ## Sockeye Salmon Returns Group 1
 
-Group members:
+Group members: Jake Lawlor, Yiran Wang, Emmerson Wilson, and Garland Xie
 
 Stock chosen: Early Stewart
 
@@ -18,11 +18,41 @@ Stock chosen: Early Stewart
 
 ## 2. Alternate Models
 
-### Ricker Model with environmental covariates
+### Alternate 1: Power model
 
-Environmental Covariates:
+This alternate model is basically shows that log(recruiters) depends on log(spawners) in the form of a power model. Recall that an alternative stock-recruit model is a simple power model, which does not assume density dependence.
 
-### Alternate 2
+$$
+R_i = A S_i^B
+$$
+
+which is linearized to: $$
+ln(R_i) = A+B*ln(S_i)
+$$
+
+This model form uses the same lognormal likelihood as above, and has normal priors on both A and B: $$
+A \sim normal(\mu_{A}, \tau_{A}) 
+$$ $$
+B \sim normal(\mu_{B}, \tau_{B})
+$$ And the same gamma prior on precision as the above models.
+
+Note: Jake Lawlor wrote an exploratory R script where he found a significant 1:1 relationship using the lm() function. The explanatory power is 69% (R2).
+
+### Alternate 2: Power model with environmental covariates
+
+This alternate model is an extension to the previous power model using environmental covariates. Brooke Davis suggested the average ($esst$) of April ($apesst$), May ($maesst$), and June ($jnesst$) sea surface temperatures is an important environmental factor.
+
+Extending the power model to include this environmental covariate:
+
+$$
+R_i = A S_i^{B+esst}
+$$
+
+which is linearized to: $$
+ln(R_i) = A+B*ln(S_i)+ln(esst)
+$$
+
+## 
 
 ## 3. Model Comparisons
 
