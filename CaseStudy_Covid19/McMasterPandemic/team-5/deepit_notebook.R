@@ -10,20 +10,21 @@ params = c(
   alpha = 0.05,
   gamma = 0.06
 )
+# initial state, in units of individuals
+state = c(
+  S = 14865000, #S = susceptible
+  E = 0,  #E = exposed,
+  I = 1,  #I = infected, first date of infection/known exposure is 2020-02-08
+  R = 100 #R = recovered
+)
+
 
 source(here::here("team-5/models.R"))
 
 source(here::here("team-5/pull_data.R"))
 
-## basic SEIR model
-# initial state, in units of individuals
-# state = c(
-#   S = 14000000, 
-#   E = 0, 
-#   I = 10, 
-#   R = 0
-# )
-# 
+# basic SEIR model
+
 
 # # dates
 # start_date = "2020-03-01"
@@ -133,11 +134,27 @@ rstan::traceplot(fit, ncol = 1)
 exp(rstan::summary(fit)$summary["log_beta", "mean"])
 params[["beta"]]
 
-fit_ensemble_summary = (model_fit
-                        %>% ensemble_stan(n_cores = 4) # generate ensemble in parallel
-                        %>% summarise_ensemble_stan()
+# fit_ensemble_summary = (model_fit
+#                         %>% ensemble_stan(n_cores = 4) # generate ensemble in parallel
+#                         %>% summarise_ensemble_stan()
+# )
+# 
+# head(fit_ensemble_summary)
+# 
+# plot_ensemble(fit_ensemble_summary, cases2)
+
+
+# forecast:
+
+
+fcst_ensemble_summary = (model_fit
+                         %>% ensemble_stan(
+                           days_to_forecast = 30, # new! number of days to forecast
+                           n_cores = 4
+                         )
+                         %>% summarise_ensemble_stan() # can specify a different quantile vector here: see documentation
 )
 
-head(fit_ensemble_summary)
+plot_ensemble(fcst_ensemble_summary, observed)
 
-plot_ensemble(fit_ensemble_summary, cases2)
+View(fcst_ensemble_summary)
