@@ -40,4 +40,12 @@ for(i in 1:length(naive.mod.ext$Mod)) {
 }
 names(perf.naive) <- naive.mod.ext$Mod
 
+# sort model performance for naive model
+perf.naive.clean <- data.table::rbindlist(perf.naive, idcol = TRUE)
+
+#n best naive model
+best.naive.model <- perf.naive.clean |> 
+  filter(metric == "RMSE") |> 
+  arrange(desc(performance)) |> 
+  slice_min(performance)
 
