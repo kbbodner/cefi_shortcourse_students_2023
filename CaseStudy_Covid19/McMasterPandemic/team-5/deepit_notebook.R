@@ -7,8 +7,8 @@ source(here::here("team-5/utilities.R"))
 params = c(
   beta = 0.7,
   N = sum(state),
-  alpha = 0.05,
-  gamma = 0.06
+  alpha = 0.2,
+  gamma = 0.071
 )
 # initial state, in units of individuals
 state = c(
