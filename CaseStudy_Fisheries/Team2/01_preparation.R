@@ -25,3 +25,16 @@ selected.pop <- "Early Stuart"
 
 data <- data.raw |>
   filter(Pop_Name == selected.pop)
+
+
+###Load environmental data-----------
+data.env <- read_csv("../DataIn/FC_Environmental_Data.csv")
+
+#Join to stock data and remove real year
+
+data <- data |> 
+  left_join( data.env, by = "yr") |> 
+  select(-c(Real_Year))
+
+
+
