@@ -121,7 +121,6 @@ model{
   beta1 ~ dnorm(0, 1/10000)
   beta2 ~ dnorm(0, 1/10000)
   beta3 ~ dnorm(0, 1/10000)
-  beta4 ~ dnorm(0, 1/10000)
   sd_process ~ dunif(0.00001, 100)
 
   #Convert Standard Deviation to precision
@@ -135,8 +134,7 @@ model{
   #Loop through data points
   for(i in 2:n){
       # Process model
-      chla_pred[i] <- beta1 * chla_latent[i-1] + beta2 * air_temp[i] +beta3*precipitation_flux[i]
-      +beta4*air_temp[i]*precipitation_flux[i]
+      chla_pred[i] <- beta1 * chla_latent[i-1] + beta2 * air_temp[i] +beta3*(air_temp[i])^2
       chla_latent[i] ~ dnorm(chla_pred[i], tau_process)
 
       # Data model
@@ -150,6 +148,7 @@ for (i in 1:nchain) {
   inits[[i]] <- list(
     beta1 = rnorm(1, 0.34, 0.05),
     beta2 = rnorm(1, 0.11, 0.05),
+    beta3 = rnorm(1, 0.25, 0.05),
     sd_process = runif(1, 0.05, 0.15)
   )
 }
@@ -166,6 +165,7 @@ jags.out <- coda.samples(
   variable.names = c(
     "beta1",
     "beta2",
+    "beta3",
     "chla_latent",
     "sd_process"
   ),
@@ -174,7 +174,7 @@ jags.out <- coda.samples(
 
 burn_in <- 1000
 chain <- jags.out %>%
-  tidybayes::spread_draws(beta1, beta2, sd_process, chla_latent[day]) |>
+  tidybayes::spread_draws(beta1, beta2, beta3, sd_process, chla_latent[day]) |>
   filter(.iteration > burn_in) |>
   ungroup()
 
@@ -208,7 +208,8 @@ for (i in 1:num_samples) {
   # loop over forecast days
   for (j in 2:n_days) {
     pred <- chla_latent[i, j - 1] * chain$beta1[sample_index] +
-      noaa_future_site_ens$air_temperature[j] * chain$beta2[sample_index]
+      noaa_future_site_ens$air_temperature[j] * chain$beta2[sample_index] +
+      ((noaa_future_site_ens$air_temperature[j])^2) * chain$beta3[sample_index]
     
     chla_latent[i, j] <- rnorm(1, pred, chain$sd_process[sample_index])
     y[i, j] <- rnorm(1, chla_latent[i, j], sd = data$sd_obs)
