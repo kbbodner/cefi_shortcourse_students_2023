@@ -28,90 +28,12 @@ theme_set(
 )
 
 fig <- list()
+forecasts <- list()
+models <- list()
 ```
 
 ```{r}
-#| label: ome functions used
-# Function to plot the simulation ------------------
-plot_sim = function(model, sim_result, title){
-  (sim_result
-   # drop any columns where a flow rate is returned
-   %>% select(-matches("to"))
-   # switch to long form for ease of use with ggplot
-   %>% pivot_longer(-Date, names_to = "State", values_to = "Population")
-   # sort state into a factor variable to enforce legend ordering based on
-   # flow through the model
-   %>% mutate(State = factor(State, 
-                             levels = order_vars(model)))
-   %>% ggplot(aes(x = Date, y = Population, colour = State))
-   + geom_line(linewidth = 1.25)
-   + labs(title = title)
-   + theme(
-     axis.title.x = element_blank(),
-     legend.justification = c(1,1),
-     legend.position = c(1,1),
-     legend.background = element_rect(fill = NA),
-     legend.key = element_rect(fill = NA)
-   )
-)
-}
-
-# FUnction to plot the ensemble ------------
-plot_ensemble <- function(ens, obs, title = 'Incidence over time', subtitle = ''){
-  value_type_labels <- c("Model fit", "Observed data")
-  
-  df = (ens
-    %>% filter(var == "incidence")
-    %>% mutate(value_type = value_type_labels[1])
-    %>% bind_rows(
-      obs %>% mutate(value_type = value_type_labels[2])
-    )
-  )
-  
-  colour_palette = c("dodgerblue", "black")
-  names(colour_palette) = value_type_labels
-  
-  (ggplot(df, aes(x = date))
-    # observed points
-    + geom_point(
-      data = df %>% filter(value_type == value_type_labels[2]),
-      mapping = aes(y = value, colour = value_type), 
-      shape = 1, size = 2
-    )
-    # simulation from fitted model
-    + geom_ribbon(
-      data = df %>% filter(value_type == value_type_labels[1]),
-      mapping = aes(ymin = lwr, ymax = upr,
-                    fill = value_type), alpha = 0.3
-    )
-    + geom_line(
-      data = df %>% filter(value_type == value_type_labels[1]),
-      mapping = aes(y = value, colour = value_type),
-      linewidth = 1.25
-    )
-    + scale_colour_manual(values = colour_palette,
-                          limits = value_type_labels)
-    + scale_fill_manual(values = colour_palette,
-                        limits = value_type_labels)
-    + labs(title = title, subtitle = subtitle)
-    + guides(
-    color =
-        guide_legend(override.aes = list(
-          shape = c(NA, 1),
-          linewidth = c(1.25, NA),
-          fill = c(colour_palette[[1]], NA))
-      )
-    )
-    + theme(
-      axis.title = element_blank(),
-      legend.title = element_blank(),
-      legend.justification = c(0,1),
-      legend.position = c(0,1),
-      legend.background = element_rect(fill = NA),
-      legend.key = element_rect(fill = NA)
-    )
-  )
-}
+#| label: Some functions used
 ```
 
 
@@ -128,6 +50,7 @@ obs <- cases %>%
     date = as.Date(date), # convert to date
     var = 'incidence' # add a variable for the name of sim output
   ) %>% 
+  # mutate(new_cases = new_cases )
   select(date, var, value = new_cases) # order the variables to match the format
 ```
 
@@ -138,7 +61,7 @@ obs <- cases %>%
 #| label: Main model parameters
 # This is a list of the main parameters for the model
 pars <- list(
-  pop = 4e9, # Population size
+  pop = 14e9, # Population size
   beta = 0.7,
   log_m = -1,
   log_sd = 0.5
@@ -146,7 +69,7 @@ pars <- list(
 ```
 
 
-The next chink just runs the model with specified parameters
+The next chunk just runs the model with specified parameters
 
 ```{r}
 #| label: state-and-params
@@ -271,7 +194,7 @@ plot_ensemble(fit_ensemble_summary, observed)
 ## Generate ensemble
 
 ```{r}
-fcst_ensemble_summary = (model_fit
+forecasts$m1 <- (model_fit
   %>% ensemble_stan(
     days_to_forecast = 15, # new! number of days to forecast
     n_cores = 4
@@ -279,15 +202,127 @@ fcst_ensemble_summary = (model_fit
   %>% summarise_ensemble_stan() # can specify a different quantile vector here: see documentation
 )
 
-plot_ensemble(fcst_ensemble_summary, observed, title = 'model with 4M pop')
-
-# ggarrange(plotlist = fig)
+plot_ensemble(forecasts$m1, observed, title = 'Model forecast')
 ```
+
+```{r}
+m <- forecasts$m1 %>% 
+  filter(var == 'incidence')
+
+co <- 'red4'
+
+fig$curve <- ggplot() +
+  geom_ribbon(data = m, aes(x = date, ymin = lwr, ymax = upr), alpha = 0.5, fill = co) +
+  geom_line(data = m, aes(x = date, y = value), color = co) +
+  geom_point(data = obs, aes(x = date, y = value), alpha = 0.5) +
+  geom_vline(xintercept = max(obs$date), linetype = 'dashed') +
+  labs(title = 'Model forecast')
+
+stf <- m %>% 
+  filter(between(date, max(obs$date) - 7, max(obs$date) + 15))
+
+fig$stf <- fig$curve +
+  lims(x = range(stf$date), y = range(stf$value))
+
+fig$curve
+
+fig$curve +
+  lims(x = range(stf$date), y = range(stf$value)) +
+  annotation_custom(ggplotGrob(fig$curve),
+                    xmin = max(stf$upr)*0.5, xmax = max(stf$upr)*0.9, ymin = min(stf$date), ymax = min(stf$date) + 10)
+```
+
 
 This would be the distribution of beta
 
 ```{r}
 rlnorm(n = 1000, meanlog = pars$log_m, sdlog = pars$log_sd) %>% hist()
+```
+# Adding the time varying parameters
+
+```{r add a time varying beta}
+beta_new = 0.9 # Define a new beta
+
+# Format the time varying param
+param_schedule = data.frame(
+  Date = as.Date('2020-03-25'),
+  Symbol = 'beta',
+  Value = beta_new,
+  Type = 'rel_orig'
+)
+# Update the model
+seir_tv <- seir_obs_err_inc %>% 
+  update_piece_wise(param_schedule)
+
+seir_tv = (seir_obs_err_inc
+  %>% update_piece_wise(param_schedule)
+)
+
+seir_tv_result = simulation_history(seir_tv, obs_err = TRUE)
+
+observed_tv <- obs
+
+param_schedule_to_calibrate = param_schedule
+param_schedule_to_calibrate$Value = NA # setting all time-varying parameter values (just one!) to NA
+
+seir_tv_to_calibrate = (seir_tv
+  %>% update_observed(observed_tv)
+  %>% update_piece_wise(param_schedule_to_calibrate)
+  # still fit the initial beta value
+  %>% add_opt_params(
+   log_beta ~ log_normal(-1, 0.5)
+  )
+  # attach prior for beta change on 2023-04-01
+  %>% add_opt_tv_params(
+    tv_type = "rel_orig", # type of time-variation value, in this case absolute
+    log_beta ~ log_normal(-1, 0.5)
+  )
+)
+
+model_fit_tv = calibrate_stan(
+    model = seir_tv, # original model object
+    model_to_calibrate = seir_tv_to_calibrate, # model object with observed data and priors
+    chains = 2 # number of MCMC chains
+)
+
+fit = tidy_fit_stan(model_fit_tv)$fit # a simple utility to attach parameter names to stan output
+rstan::summary(fit)$summary
+rstan::traceplot(fit, ncol = 1)
+
+fit_ensemble_tv = (model_fit_tv
+ %>% ensemble_stan(n_cores = 4)
+ %>% summarise_ensemble_stan()
+)
+
+plot_ensemble(fit_ensemble_tv, observed_tv)
+```
+
+```{r}
+exp(-0.02228290)
+exp(0.02786054)
+```
+
+
+## Generate ensemble
+
+```{r}
+forecasts$m2 <- model_fit_tv %>% 
+  ensemble_stan(
+    days_to_forecast = 15, # new! number of days to forecast
+    n_cores = 4
+  ) %>% 
+  summarise_ensemble_stan() # can specify a different quantile vector here: see documentation
+
+
+ggplot() +
+  geom_ribbon(data = filter(forecasts$m1, var == 'incidence'), aes(x = date, ymin = lwr, ymax = upr), alpha = 0.5, fill = co) +
+  geom_line(data = filter(forecasts$m1, var == 'incidence'), aes(x = date, y = value), color = co) +
+  geom_ribbon(data = filter(forecasts$m2, var == 'incidence'), aes(x = date, ymin = lwr, ymax = upr), alpha = 0.5, fill = '#5F5FAF') +
+  geom_line(data = filter(forecasts$m2, var == 'incidence'), aes(x = date, y = value), color = '#5F5FAF') +
+  geom_point(data = obs, aes(x = date, y = value), alpha = 0.5) +
+  geom_vline(xintercept = max(obs$date), linetype = 'dashed') +
+  labs(title = 'Model forecast') +
+  lims(x = range(stf$date), y = range(stf$value)+ c(0, max(stf$upr)*0.1))
 ```
 
 
