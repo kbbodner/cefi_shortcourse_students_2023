@@ -386,7 +386,7 @@ The ensemble is plotted with a line for the median and a ribbon for the confiden
 #| label: fun_plot_ensemble
 
 # make a function because we'll reuse this in this doc
-plot_ensemble <- function(ens, obs){
+plot_ensemble <- function(ens, obs, title = 'Incidence over time'){
   value_type_labels <- c("Model fit", "Observed data")
   
   df = (ens
@@ -422,7 +422,7 @@ plot_ensemble <- function(ens, obs){
                           limits = value_type_labels)
     + scale_fill_manual(values = colour_palette,
                         limits = value_type_labels)
-    + labs(title = "Incidence over time")
+    + labs(title = title)
     + guides(
     color =
         guide_legend(override.aes = list(

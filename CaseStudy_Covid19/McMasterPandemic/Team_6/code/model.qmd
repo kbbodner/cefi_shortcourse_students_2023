@@ -138,7 +138,7 @@ obs <- cases %>%
 #| label: Main model parameters
 # This is a list of the main parameters for the model
 pars <- list(
-  pop = 2000, # Population size
+  pop = 2e9, # Population size
   beta = 0.7,
   log_m = -1,
   log_sd = 0.5
