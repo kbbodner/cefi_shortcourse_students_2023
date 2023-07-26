@@ -59,8 +59,8 @@ RunMCMC_RickerCov <- function(Dat_MCMC, Scale, CovData){
   data$logSmax_tau <- 1
   data$logSmax_mean <- log(quantile(Dat_MCMC$S, 0.8)/Scale)
   data$R_Obs <- Dat_MCMC$R/Scale
-  data$N <- length(CovData)
-  data$env <- CovData
+  data$N <- dim(Dat_MCMC)[1]
+  data$env <- CovData[1:dim(Dat_MCMC)[1]]
   data$g_mean <- 0
   data$g_tau <- 0.001
   
@@ -90,7 +90,8 @@ RunMCMC_RickerCov <- function(Dat_MCMC, Scale, CovData){
   R_Ests_Jags <- All_Ests[grepl("R_Fit", All_Ests$Param),  ]
   R_Preds_Jags <- All_Ests[grepl("R_Pred", All_Ests$Param),  ]
   
-  FitsDF <- data.frame(S = Dat_MCMC$S, R = Dat_MCMC$R, Fit = R_Ests_Jags$X50. * Scale, 
+  FitsDF <- data.frame(S = Dat_MCMC$S, R = Dat_MCMC$R,
+                       Fit = R_Ests_Jags$X50. * Scale, 
                        Year = Dat_MCMC$yr,   Mod = "CovRicker",
                        CI_up = R_Ests_Jags$X97.5. * Scale,
                        CI_low = R_Ests_Jags$X2.5. * Scale,
@@ -179,8 +180,8 @@ RunMCMC_PowerCov <- function(Dat_MCMC, Scale, CovData){
   data$B_tau <- 0.001
   data$Sig_Gam_Dist <- 0.001
   data$R_Obs <- Dat_MCMC$R/Scale
-  data$N <- length(CovData)
-  data$env <- CovData
+  data$N <- dim(Dat_MCMC)[1]
+  data$env <- CovData[1:dim(Dat_MCMC)[1]]
   data$g_mean <- 0
   data$g_tau <- 0.001
   
@@ -211,7 +212,8 @@ RunMCMC_PowerCov <- function(Dat_MCMC, Scale, CovData){
   R_Ests_Jags <- All_Ests[grepl("R_Fit", All_Ests$Param),  ]
   R_Preds_Jags <- All_Ests[grepl("R_Pred", All_Ests$Param),  ]
   
-  FitsDF <- data.frame(S = Dat_MCMC$S, R = Dat_MCMC$R, Fit = R_Ests_Jags$X50. * Scale, 
+  FitsDF <- data.frame(S = Dat_MCMC$S, R = Dat_MCMC$R,
+                       Fit = R_Ests_Jags$X50. * Scale, 
                        Year = Dat_MCMC$yr,   Mod = "CovPower",
                        CI_up = R_Ests_Jags$X97.5. * Scale,
                        CI_low = R_Ests_Jags$X2.5. * Scale,
