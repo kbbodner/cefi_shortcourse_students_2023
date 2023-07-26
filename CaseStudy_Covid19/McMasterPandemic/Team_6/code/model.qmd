@@ -62,7 +62,7 @@ obs <- cases %>%
 # This is a list of the main parameters for the model
 pars <- list(
   pop = 14e9, # Population size
-  beta = 0.7,
+  beta = 0.25,
   log_m = -1,
   log_sd = 0.5
 )
@@ -87,8 +87,8 @@ state = c(
 params = c(
   beta = pars$beta,
   N = sum(state),
-  alpha = 0.05,
-  gamma = 0.06
+  alpha = 0.2,
+  gamma =0.1
 )
 # Set the dates ---------------
 # start and end dates specified as strings,
@@ -314,16 +314,27 @@ forecasts$m2 <- model_fit_tv %>%
   summarise_ensemble_stan() # can specify a different quantile vector here: see documentation
 
 
-ggplot() +
+fig$intialFit <- ggplot() +
   geom_ribbon(data = filter(forecasts$m1, var == 'incidence'), aes(x = date, ymin = lwr, ymax = upr), alpha = 0.5, fill = co) +
   geom_line(data = filter(forecasts$m1, var == 'incidence'), aes(x = date, y = value), color = co) +
   geom_ribbon(data = filter(forecasts$m2, var == 'incidence'), aes(x = date, ymin = lwr, ymax = upr), alpha = 0.5, fill = '#5F5FAF') +
   geom_line(data = filter(forecasts$m2, var == 'incidence'), aes(x = date, y = value), color = '#5F5FAF') +
   geom_point(data = obs, aes(x = date, y = value), alpha = 0.5) +
   geom_vline(xintercept = max(obs$date), linetype = 'dashed') +
-  labs(title = 'Model forecast') +
+  labs(title = 'Initial model fit and forecast', y = 'Incidence') +
   lims(x = range(stf$date), y = range(stf$value)+ c(0, max(stf$upr)*0.1))
+
+fig$intialFit
+
+ggsave(fig$intialFit, filename = '../docs/figs/initialForecast.png', height = 5, width = 8)
 ```
+
+# Model validation
+
+```{r}
+
+```
+
 
 
 
