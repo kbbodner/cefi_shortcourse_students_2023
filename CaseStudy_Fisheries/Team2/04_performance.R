@@ -34,7 +34,7 @@ perf.Ricker <- run.all.performances(sum(obs.2021), sum(baseline.pred),
 
 #Naive models
 perf.naive <- list()
-for(i in 1:nrow(perf.Naive)) {
+for(i in 1:nrow(perf.naive)) {
   perf.naive[[i]] <- run.all.performances(sum(obs.2021), naive.mod.ext$R_pred[i],
                                           performance.functions)
 }
