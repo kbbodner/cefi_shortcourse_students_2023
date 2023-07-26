@@ -12,15 +12,43 @@ Stock chosen: Early Stewart
 
 ## 1. Basic Ricker Model
 
-```{r}
+The Ricker model is a discrete stock-recruitment model that incorporates population growth ($\alpha$) and carrying capacity ($\beta$) for Pacific Salmon. It assumes density dependence is important for population dynamics.
 
-```
+Consider the following model:
+
+$$
+R_i = \alpha S_i e^{-\beta S_i} 
+$$
 
 ## 2. Alternate Models
 
-### Alternate 1: Power model
+### Alternate 1: Ricker model with environmental covariates
 
-This alternate model is basically shows that log(recruiters) depends on log(spawners) in the form of a power model. Recall that an alternative stock-recruit model is a simple power model, which does not assume density dependence.
+This alternate model is simple extension of the Ricker model that includes an environmental covariate (average sea surface temperature). Of all the available stocks, Early Stewart population was randomly chosen since it is one of many that is sensitive to environmental changes.
+
+Brooke Davis suggested to take the average of April ($apesst$), May ($maesst$), and June ($jnesst$) sea surface temperatures. This average ($esst$) is commonly employed by fisheries scientists.
+
+Considering the following model where $esst$ is an additive term:
+
+$$
+R_i = \alpha S_i e^{-\beta S_i + esst} 
+$$
+
+This equation is then linearized for quick parameter estimation:
+
+$$
+ln(R_i/S_i) = ln(\alpha) - \beta S_i + ln(eest)
+$$
+
+Since $S_{max} = 1/\beta$, we can alter the previous equation to make it easier to place priors:
+
+$$
+ln(R_i/S_i) = ln(\alpha) - S_i/S_{max} + ln(eest)
+$$
+
+### Alternate 2: Power model
+
+This alternate model is basically shows that log(recruiters) depends on log(spawners). This is also known as a simple power model which does not assume density dependence.
 
 $$
 R_i = A S_i^B
@@ -38,11 +66,9 @@ $$ And the same gamma prior on precision as the above models.
 
 Note: Jake Lawlor wrote an exploratory R script where he found a significant 1:1 relationship using the lm() function. The explanatory power is 69% (R2).
 
-### Alternate 2: Power model with environmental covariates
+### Alternate 3: Power model with environmental covariates
 
-This alternate model is an extension to the previous power model using environmental covariates. Brooke Davis suggested the average ($esst$) of April ($apesst$), May ($maesst$), and June ($jnesst$) sea surface temperatures is an important environmental factor.
-
-Extending the power model to include this environmental covariate:
+This alternate model is an extension to the previous power model that includes the average sea surface temperatures as an environmental covariate:
 
 $$
 R_i = A S_i^{B+esst}
@@ -71,3 +97,7 @@ Which?
 Why?
 
 ## 5. Final Forecast
+
+Some other comments
+
+-   plot the outputs for all four models using ggplot2
