@@ -1,8 +1,30 @@
 
-# Simulate a single stock of Ricker SR data =============================================================================================
+#  =============================================================================================
+#' Simulate a single stock of Ricker SR data
+#'
+#' @param leng Length of time series to simulate
+#' @param Sig_Ricker SD around Ricker model
+#' @param true_a Underlying alpha parameter
+#' @param true_b Underlying beta parameter
+#' @param hr_min Minimum harvest rate, default 0.2
+#' @param hr_max Maximum harvest rate, default 0.8
+#' @param lnorm_corr Use lognormal correction TRUE/FALSE
+#' @param autoCorr Include temporal autocorrelation TRUE/FALSE
+#' @param rho Level of temporal autocorrelation
+#' @param covariate 
+#' @param age Generation length ie. what age do they return at
+#'
+#' @return A list with the following elements: 
+#'  - `true_a`: underlying alpha parameter
+#'  - `true_b`: underlying beta parameter
+#'  - `sigma`: simulated SD around Ricker
+#'  - `SMSY`: Estimated Spawners at max. sustainable yield, using Hilborn approximation
+#'  - `DF_Out`: data frame containing data, fitted values (useful to plot "true" relationship), and catch
+
+
+
 Sim_Ricker_SR_Data <- function( leng=20, age=4, Sig_Ricker = 0.2, true_a = 3, true_b=1/5000,
-                          hr_min = 0.2, hr_max = 0.8, lnorm_corr = F, autoCorr = F, rho=NA,
-                          covariate = F){
+                          hr_min = 0.2, hr_max = 0.8, lnorm_corr = F, autoCorr = F, rho=NA){
 
   
   # initiate population somwhere between 100 and Smax
