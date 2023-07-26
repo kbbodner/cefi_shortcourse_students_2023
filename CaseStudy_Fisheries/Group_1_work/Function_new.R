@@ -241,18 +241,18 @@ RunModRetro_new <- function(Dat, Pred_Year, Model, CovData=NA) {
   
 
   if(Model=="Ricker"){
-    out <- RunMCMC_Ricker(Data_Retro, Scale)
+    MCMC_out <- RunMCMC_Ricker(Data_Retro, Scale)
   }else if(Model=="RickerCov"){
-    out <- RunMCMC_RickerCov(Data_Retro, Scale, CovData)
+    MCMC_out <- RunMCMC_RickerCov(Data_Retro, Scale, CovData)
   }else if(Model=="Power"){
-    out <- RunMCMC_Power(Data_Retro, Scale)
+    MCMC_out <- RunMCMC_Power(Data_Retro, Scale)
   }else if(Model=="PowerCov"){
-    out <- RunMCMC_PowerCov(Data_Retro, Scale, CovData)
+    MCMC_out <- RunMCMC_PowerCov(Data_Retro, Scale, CovData)
   }else{
-    print("Cannot recognize the model")
+    print("Cannot recognize the model.")
     return()
   }
-  FitsDF <- out$FitsDF
+  FitsDF <- MCMC_out$FitsDF
   
   # get age proportion estimates
   P4 <- mean(Data_Retro$rec4/Data_Retro$R, na.rm=T)
