@@ -9,6 +9,7 @@ library(coda)
 library(tidyverse)
 library(gsl) # need for lambert's W
 library(R2jags)
+library(data.table)
 library("rstudioapi")
 
 
@@ -34,7 +35,7 @@ data.env <- read_csv("../DataIn/FC_Environmental_Data.csv")
 
 data <- data |> 
   left_join( data.env, by = "yr") |> 
-  select(-c(Real_Year))
+  select(-c(Real_Year)) 
 
 
 
