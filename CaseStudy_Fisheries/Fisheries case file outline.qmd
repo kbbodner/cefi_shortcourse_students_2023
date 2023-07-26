@@ -12,13 +12,37 @@ Stock chosen: Early Stewart
 
 ## 1. Basic Ricker Model
 
-The Ricker model is a discrete stock-recruitment model that incorporates population growth ($\alpha$) and carrying capacity ($\beta$) for Pacific Salmon. It assumes density dependence is important for population dynamics.
+The Ricker model is a discrete stock-recruitment model that incorporates population growth ($\alpha$) and carrying capacity ($\beta$) for Pacific Salmon. It assumes the chosen population experiences density dependence.
 
 Consider the following model:
 
 $$
 R_i = \alpha S_i e^{-\beta S_i} 
+$$ {#eq-1}
+
+We can linearize to obtain simpler parameters:
+
 $$
+ln(R_i) = ln(\alpha)+ ln(S_i)-S_i/S_{max}
+$$ {#eq-2}
+
+We place priors on the following:
+
+$$
+\widehat{lnR_i} \sim normal(ln(R_i), \tau)
+$$ {#eq-3}
+
+$$
+ln(\alpha) \sim normal(\mu_{\alpha}, \tau{\alpha}) 
+$$ {#eq-4}
+
+$$
+ln(S\_{max}) \sim normal(\mu_{Smax}, \tau_{Smax})
+$$ {#eq-5}
+
+$$
+\tau \sim gamma(\theta, \theta)
+$$ {#eq-6}
 
 ## 2. Alternate Models
 
@@ -26,25 +50,25 @@ $$
 
 This alternate model is simple extension of the Ricker model that includes an environmental covariate (average sea surface temperature). Of all the available stocks, Early Stewart population was randomly chosen since it is one of many that is sensitive to environmental changes.
 
-Brooke Davis suggested to take the average of April ($apesst$), May ($maesst$), and June ($jnesst$) sea surface temperatures. This average ($esst$) is commonly employed by fisheries scientists.
+Brooke Davis suggested to take the average of April ($apesst$), May ($maesst$), and June ($jnesst$) sea surface temperatures. This average ($Esst$) is commonly employed by fisheries scientists.
 
 Considering the following model where $esst$ is an additive term:
 
 $$
-R_i = \alpha S_i e^{-\beta S_i + esst} 
-$$
+R_i = \alpha S_i e^{-\beta S_i + gEsst_{i}} 
+$$ {#eq-7}
 
 This equation is then linearized for quick parameter estimation:
 
 $$
-ln(R_i/S_i) = ln(\alpha) - \beta S_i + ln(eest)
-$$
+ln(R_i) = ln(\alpha) - \beta S_i + gEsst_{i}
+$$ {#eq-8}
 
-Since $S_{max} = 1/\beta$, we can alter the previous equation to make it easier to place priors:
+The mode has the same priors as equations 3,-6, but also includes a normal (flat) prior for $g$:
 
 $$
-ln(R_i/S_i) = ln(\alpha) - S_i/S_{max} + ln(eest)
-$$
+g \sim normal(\mu_g, \tau_g )
+$$ {#eq-9}
 
 ### Alternate 2: Power model
 
@@ -52,33 +76,37 @@ This alternate model is basically shows that log(recruiters) depends on log(spaw
 
 $$
 R_i = A S_i^B
-$$
+$$ {#eq-10}
 
-which is linearized to: $$
+We can linearize equation 10 to the following: $$
 ln(R_i) = A+B*ln(S_i)
+$$ {#eq-11}
+
+This model form has normal priors for both $A$ and $B$:
+
 $$
-
-This model form uses the same lognormal likelihood as above, and has normal priors on both A and B: $$
 A \sim normal(\mu_{A}, \tau_{A}) 
-$$ $$
+$$ {#eq-12} $$
 B \sim normal(\mu_{B}, \tau_{B})
-$$ And the same gamma prior on precision as the above models.
+$$ {#eq-13}
 
-Note: Jake Lawlor wrote an exploratory R script where he found a significant 1:1 relationship using the lm() function. The explanatory power is 69% (R2).
+And the same gamma prior on precision as the above models (equation 6).
+
+Note: Jake Lawlor wrote an exploratory R script where he found a significant 1:1 relationship using the lm() function. The explanatory power is 69% (R2). Seems like a promising start for trying to forecast the Early Stewart population!
 
 ### Alternate 3: Power model with environmental covariates
 
 This alternate model is an extension to the previous power model that includes the average sea surface temperatures as an environmental covariate:
 
 $$
-R_i = A S_i^{B+esst}
-$$
+R_i = A S_i^{B+gEsst_{i}}
+$$ {#eq-14}
 
-which is linearized to: $$
-ln(R_i) = A+B*ln(S_i)+ln(esst)
-$$
+We can linearize this as the following: $$
+ln(R_i) = A+B*ln(S_i)+gEsst_{i}
+$$ {#eq-15}
 
-## 
+We used the same priors for $A$, $B$, and $g$ as previous above models.
 
 ## 3. Model Comparisons
 
@@ -99,5 +127,7 @@ Why?
 ## 5. Final Forecast
 
 Some other comments
+
+-   estimate recruits for a time step that we do have =\> compare between four different models
 
 -   plot the outputs for all four models using ggplot2
