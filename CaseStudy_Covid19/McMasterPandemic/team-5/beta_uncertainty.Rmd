@@ -1,0 +1,104 @@
+---
+title: "beta_uncertainty"
+output: html_notebook
+---
+
+## Purpose: use different values of standard deviation of the log-normal distribution to see what happens to our bounds
+
+```{r functions_calibrate}
+
+
+beta_std <- function(log_mean = -1, std = 0.5)
+{
+  seir_obs_err_inc_to_calibrate = (seir_obs_err_inc
+                                   # attach observed data
+                                   %>% update_observed(
+                                     cases2
+                                   )
+                                   # attach priors for parameters we're fitting
+                                   # ("optimizing" over)
+                                   %>% update_opt_params(
+                                     # fitting log beta
+                                     log_beta ~ log_normal(
+                                       as.numeric(log_mean), # log mean, so mean beta is exp(-1) = 0.36
+                                       as.numeric(std) # standard deviation of the log normal prior
+                                     )
+                                   )
+  )
+  
+  
+  model_fit = calibrate_stan(
+    model = seir_obs_err_inc, # original model object
+    model_to_calibrate = seir_obs_err_inc_to_calibrate, # model object with observed data and priors
+    chains = 2 # number of MCMC chains
+  )
+  
+  
+    fit = tidy_fit_stan(model_fit)$fit # a simple utility to attach parameter names to stan output
+    # return(paste(rstan::summary(fit)$summary))
+    #rstan::traceplot(fit, ncol = 1)
+    
+    #paste(exp(rstan::summary(fit)$summary["log_beta", "mean"]))
+    #params[["beta"]]
+    
+      fit_ensemble_summary = (model_fit
+                        %>% ensemble_stan(n_cores = 4) # generate ensemble in parallel
+                        %>% summarise_ensemble_stan()
+                        )
+
+      head(fit_ensemble_summary)
+
+      return(plot_ensemble(fit_ensemble_summary, cases2))
+  
+    
+    
+}
+
+```
+
+```{r beta_std_05}
+beta_05_plot <- beta_std(log_mean = -1, std = 0.5)
+```
+```{r beta_std_10, echo = FALSE}
+beta_10_plot <- beta_std(log_mean = -1, std = 1)
+```
+
+
+
+```{r std_05}
+# source(here::here("team-5/deepit-notebook.R"))
+
+
+seir_obs_err_inc_to_calibrate = (seir_obs_err_inc
+                                 # attach observed data
+                                 %>% update_observed(
+                                   cases2
+                                 )
+                                 # attach priors for parameters we're fitting
+                                 # ("optimizing" over)
+                                 %>% update_opt_params(
+                                   # fitting log beta
+                                   log_beta ~ log_normal(
+                                     -1, # log mean, so mean beta is exp(-1) = 0.36
+                                     0.5 # standard deviation of the log normal prior
+                                   )
+                                 )
+)
+
+
+
+model_fit = calibrate_stan(
+  model = seir_obs_err_inc, # original model object
+  model_to_calibrate = seir_obs_err_inc_to_calibrate, # model object with observed data and priors
+  chains = 2 # number of MCMC chains
+)
+
+# now look at model fit:
+
+fit = tidy_fit_stan(model_fit)$fit # a simple utility to attach parameter names to stan output
+rstan::summary(fit)$summary
+rstan::traceplot(fit, ncol = 1)
+
+exp(rstan::summary(fit)$summary["log_beta", "mean"])
+params[["beta"]]
+```
