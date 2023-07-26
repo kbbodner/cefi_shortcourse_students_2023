@@ -1,4 +1,8 @@
-# preparation, loading data, functions
+# Loads required libraries
+# Loads Functions.R
+# Loads data as data.raw
+# @data dataframe for specific population
+
 ###Load libraries-------------
 library(rjags)
 library(coda)
