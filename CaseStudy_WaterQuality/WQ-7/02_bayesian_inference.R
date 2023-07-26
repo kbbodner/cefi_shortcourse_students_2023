@@ -47,7 +47,7 @@ data_all <- site_all %>%
   )
 
 forecast_df <- 1:2 %>% 
-  map(~bayesian_inference_2(data_all[[.]], site_all[[.]]))
+  map(~bayesian_inference_3(data_all[[.]], site_all[[.]]))
 
 save(forecast_df, 
      file = here(folder, 'bayesian_prediction_m2.rda'))
