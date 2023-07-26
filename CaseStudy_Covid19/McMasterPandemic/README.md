@@ -20,19 +20,19 @@ To make the setup of this project as easy as possible, we'll be using Docker. Do
 1. Open Docker Desktop.
 1. Open a command line (Terminal on Mac, Powershell on Windows) and navigate to the parent directory `/McMasterPandemic` that
 contains the file `Dockerfile` by running the command ```cd path/to/McMasterPandemic/``` (Just replace `/path/to` with the path on your machine relative to your command line's current working directory, which can be revealed with the command `pwd`.)
-1. Build the image with `docker build -t macpan .` If it says that the dockerfile isn't found, see [here](https://github.com/docker/buildx/issues/426#issuecomment-732980948)
+1. Build the image with `docker build --platform linux/amd64 -t macpan-renv .` If it says that the dockerfile isn't found, see [here](https://github.com/docker/buildx/issues/426#issuecomment-732980948)
 
 ## Create and run a Docker container
 
-1. Again in the command line, working out of the `McMasterPandemic` directory, launch the container with 
-    ```docker run -d -e PASSWORD=apassword -p 8787:8787 -v ${PWD}:/home/rstudio/Documents macpan:latest```
+1. Again in the command line, working out of the `McMasterPandemic` directory, launch the container with
+    ```docker run -d -e PASSWORD=apassword -p 8787:8787 -v ${PWD}:/home/rstudio/Documents macpan-renv:latest```
 changing "apassword" to an alternative password (and remember it!)
-1. Open a web browser and navigate to the URL `localhost:8787`. 
-1. Log in with username/password `rstudio/apassword`. 
+1. Open a web browser and navigate to the URL `localhost:8787`.
+1. Log in with username/password `rstudio/apassword`.
 
 You should now see an RStudio session in your browser. If you click the "Documents" folder in the `Files` pane, you should see your project files.
 
-**Note:** If you're using `docker-ce` in `WSL2`, you may need to manually mount the drive that contains the git repo in order for the Docker image to see your files. For instance, if the drive name is `Z`, you'd do 
+**Note:** If you're using `docker-ce` in `WSL2`, you may need to manually mount the drive that contains the git repo in order for the Docker image to see your files. For instance, if the drive name is `Z`, you'd do
 ```sudo mount -t drvfs Z: /mnt/z```
 
 ## Stop and restart a Docker container
@@ -41,8 +41,8 @@ In order to stop or re-start a Docker container, you will need to find its name 
 
 Once you've identified the Docker container associated with the `McMasterPandemic` project (we will use the placeholder `container_name` here):
 
-1. Run ```docker stop container_name``` 
-when you're ready to stop your RStudio session. 
+1. Run ```docker stop container_name```
+when you're ready to stop your RStudio session.
 1. To restart the container again, simply run ```docker start container_name```. You can use `docker container ls --all` to see all available containers, even those not currently running.
 1. Now you can navigate to the URL `localhost:8787` and log in with username/password `rstudio/apassword` as before to continue your RStudio session.
 
