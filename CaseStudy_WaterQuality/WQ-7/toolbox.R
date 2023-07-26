@@ -121,6 +121,7 @@ model{
   beta1 ~ dnorm(0, 1/10000)
   beta2 ~ dnorm(0, 1/10000)
   beta3 ~ dnorm(0, 1/10000)
+  beta4 ~ dnorm(0, 1/10000)
   sd_process ~ dunif(0.00001, 100)
 
   #Convert Standard Deviation to precision
@@ -134,7 +135,8 @@ model{
   #Loop through data points
   for(i in 2:n){
       # Process model
-      chla_pred[i] <- beta1 * chla_latent[i-1] + beta2 * air_temp[i] +beta3*(air_temp[i])^2
+      chla_pred[i] <- beta1 * chla_latent[i-1] + beta2 * air_temp[i] +beta3*humid[i]
+      +beta4*(air_temp[i])*humid[i]
       chla_latent[i] ~ dnorm(chla_pred[i], tau_process)
 
       # Data model
@@ -149,6 +151,7 @@ for (i in 1:nchain) {
     beta1 = rnorm(1, 0.34, 0.05),
     beta2 = rnorm(1, 0.11, 0.05),
     beta3 = rnorm(1, 0.25, 0.05),
+    beta4 = rnorm(1, 0.25, 0.05),
     sd_process = runif(1, 0.05, 0.15)
   )
 }
@@ -166,6 +169,7 @@ jags.out <- coda.samples(
     "beta1",
     "beta2",
     "beta3",
+    "beta4",
     "chla_latent",
     "sd_process"
   ),
@@ -174,7 +178,7 @@ jags.out <- coda.samples(
 
 burn_in <- 1000
 chain <- jags.out %>%
-  tidybayes::spread_draws(beta1, beta2, beta3, sd_process, chla_latent[day]) |>
+  tidybayes::spread_draws(beta1, beta2, beta3, beta4,sd_process, chla_latent[day]) |>
   filter(.iteration > burn_in) |>
   ungroup()
 
@@ -186,7 +190,7 @@ chain <- chain |>
 
 num_samples <- 500
 
-noaa_future_site <- noaa_future_daily |>
+noaa_future_site <- air_humid_future |>
   filter(site_id == example_site)
 
 n_days <- length(unique(noaa_future_site$datetime))
@@ -209,7 +213,9 @@ for (i in 1:num_samples) {
   for (j in 2:n_days) {
     pred <- chla_latent[i, j - 1] * chain$beta1[sample_index] +
       noaa_future_site_ens$air_temperature[j] * chain$beta2[sample_index] +
-      ((noaa_future_site_ens$air_temperature[j])^2) * chain$beta3[sample_index]
+      noaa_future_site_ens$relative_humidity[j] * chain$beta3[sample_index]+
+      noaa_future_site_ens$relative_humidity[j] *
+      noaa_future_site_ens$air_temperature[j]*chain$beta4[sample_index]
     
     chla_latent[i, j] <- rnorm(1, pred, chain$sd_process[sample_index])
     y[i, j] <- rnorm(1, chla_latent[i, j], sd = data$sd_obs)
@@ -238,7 +244,6 @@ model{
   # Priors
   beta1 ~ dnorm(0, 1/10000)
   beta2 ~ dnorm(0, 1/10000)
-  beta3 ~ dnorm(0, 1/10000)
   sd_process ~ dunif(0.00001, 100)
 
   #Convert Standard Deviation to precision
@@ -252,8 +257,7 @@ model{
   #Loop through data points
   for(i in 2:n){
       # Process model
-      chla_pred[i] <- beta1 * chla_latent[i-1] + beta2 * air_temp[i] 
-      +beta3*(air_temp[i])*chla_latent[i-1]
+      chla_pred[i] <- beta1 * chla_latent[i-1] + beta2 * humid[i]
       
       chla_latent[i] ~ dnorm(chla_pred[i], tau_process)
 
@@ -268,7 +272,6 @@ for (i in 1:nchain) {
   inits[[i]] <- list(
     beta1 = rnorm(1, 0.34, 0.05),
     beta2 = rnorm(1, 0.11, 0.05),
-    beta3 = rnorm(1, 0.25, 0.05),
     sd_process = runif(1, 0.05, 0.15)
   )
 }
@@ -285,7 +288,6 @@ jags.out <- coda.samples(
   variable.names = c(
     "beta1",
     "beta2",
-    "beta3",
     "chla_latent",
     "sd_process"
   ),
@@ -294,7 +296,7 @@ jags.out <- coda.samples(
 
 burn_in <- 1000
 chain <- jags.out %>%
-  tidybayes::spread_draws(beta1, beta2, beta3, sd_process, chla_latent[day]) |>
+  tidybayes::spread_draws(beta1, beta2, sd_process, chla_latent[day]) |>
   filter(.iteration > burn_in) |>
   ungroup()
 
@@ -306,7 +308,7 @@ chain <- chain |>
 
 num_samples <- 500
 
-noaa_future_site <- noaa_future_daily |>
+noaa_future_site <- noaa_future_daily_humid |>
   filter(site_id == example_site)
 
 n_days <- length(unique(noaa_future_site$datetime))
@@ -328,8 +330,7 @@ for (i in 1:num_samples) {
   # loop over forecast days
   for (j in 2:n_days) {
     pred <- chla_latent[i, j - 1] * chain$beta1[sample_index] +
-      noaa_future_site_ens$air_temperature[j] * chain$beta2[sample_index] +
-      ((noaa_future_site_ens$air_temperature[j])^2) * chain$beta3[sample_index]
+      noaa_future_site_ens$relative_humidity[j] * chain$beta2[sample_index]
     
     chla_latent[i, j] <- rnorm(1, pred, chain$sd_process[sample_index])
     y[i, j] <- rnorm(1, chla_latent[i, j], sd = data$sd_obs)

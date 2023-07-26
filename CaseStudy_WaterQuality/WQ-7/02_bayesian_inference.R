@@ -29,7 +29,7 @@ data_all <- site_all %>%
       filter(site_id == site_name)
     
     first_no_na <- site_target |> 
-      filter(!is.na(air_temperature) & !is.na(chla)) |> 
+      filter(!is.na(air_temperature) & !is.na(chla) & !is.na(relative_humidity)) |> 
       summarise(min = min(datetime)) |> 
       pull(min)
     
@@ -39,16 +39,17 @@ data_all <- site_all %>%
   map(
     ~ list(
       air_temp = .$air_temperature,
+      humid= .$relative_humidity,
       y = .$chla,
-      n = length(.$air_temperature),
+      n = length(.$relative_humidity),
       sd_obs = 0.1,
       chla_init = .$chla[1]
     )
   )
 
 forecast_df <- 1:2 %>% 
-  map(~bayesian_inference_3(data_all[[.]], site_all[[.]]))
+  map(~bayesian_inference_2(data_all[[.]], site_all[[.]]))
 
 save(forecast_df, 
-     file = here(folder, 'bayesian_prediction_m2.rda'))
+     file = here(folder, 'bayesian_prediction_humid_air.rda'))
 

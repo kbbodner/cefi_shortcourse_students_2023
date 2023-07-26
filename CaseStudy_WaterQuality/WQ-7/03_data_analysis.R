@@ -9,7 +9,7 @@ folder <- here("CaseStudy_WaterQuality", "WQ-7")
 load(here(folder, "data.RData"))
 
 source(here(folder,"toolbox.r"))
-load(here(folder,"bayesian_prediction.rda"))
+load(here(folder,"bayesian_prediction_humid_air.rda"))
 # ggthemr::ggthemr("fresh")
 
 
