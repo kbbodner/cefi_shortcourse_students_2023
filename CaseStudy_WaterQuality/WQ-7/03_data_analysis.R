@@ -17,8 +17,8 @@ load(here(folder,"bayesian_prediction_humid_air.rda"))
  forecast_df %>% 
    bind_rows() %>% 
    ggplot(aes(datetime, prediction)) +
-   geom_line(aes(group = parameter), alpha = .3) +
-   facet_wrap(~site_id)
+   geom_line(aes(group = parameter), alpha = .3) + geom_hline(yintercept = 20, color = "red", linetype = "dashed") +
+   facet_wrap(~site_id) 
  
  forecast_df %>% 
    bind_rows() %>% 
