@@ -11,14 +11,14 @@ cases = read_csv(here("data", "fitting.csv"))
 
 #----------------------------------------------------------------------------------------------
 #prep simulation data - this is for modelling, but good to look at/know
-
-# initial state, in units of individuals
-state = c(
-  S = 2000, #S = susceptible
-  E = 0,  #E = exposed,
-  I = 1,  #I = infected, first date of infection/known exposure is 2020-02-08
-  R = 0 #R = recovered
-)
+# 
+# # initial state, in units of individuals
+# state = c(
+#   S = 14865000, #S = susceptible
+#   E = 0,  #E = exposed,
+#   I = 1,  #I = infected, first date of infection/known exposure is 2020-02-08
+#   R = 0 #R = recovered
+# )
 
 #----------------------------------------------------------------------------------------------
 #data prep
