@@ -134,14 +134,15 @@ rstan::traceplot(fit, ncol = 1)
 exp(rstan::summary(fit)$summary["log_beta", "mean"])
 params[["beta"]]
 
-# fit_ensemble_summary = (model_fit
-#                         %>% ensemble_stan(n_cores = 4) # generate ensemble in parallel
-#                         %>% summarise_ensemble_stan()
-# )
-# 
-# head(fit_ensemble_summary)
-# 
-# plot_ensemble(fit_ensemble_summary, cases2)
+# model fit
+fit_ensemble_summary = (model_fit
+                        %>% ensemble_stan(n_cores = 4) # generate ensemble in parallel
+                        %>% summarise_ensemble_stan()
+)
+
+head(fit_ensemble_summary)
+
+plot_ensemble(fit_ensemble_summary, cases2)
 
 
 # forecast:

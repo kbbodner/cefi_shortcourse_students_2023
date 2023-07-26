@@ -9,7 +9,7 @@ library(dplyr)
 # COVID-19 case data for Ontario dates pre 1 April 2020
 cases = read_csv(here("data", "fitting.csv")) 
 
-S = 14,686,092 #this is Q1 pop for 2020, for Q2 = 14,718,133 
+S = 14686092 #this is Q1 pop for 2020, for Q2 = 14,718,133 
 
 #----------------------------------------------------------------------------------------------
 #data prep
