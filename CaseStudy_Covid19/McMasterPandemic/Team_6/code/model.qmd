@@ -138,7 +138,7 @@ obs <- cases %>%
 #| label: Main model parameters
 # This is a list of the main parameters for the model
 pars <- list(
-  pop = 2e9, # Population size
+  pop = 4e9, # Population size
   beta = 0.7,
   log_m = -1,
   log_sd = 0.5
@@ -226,25 +226,7 @@ seir_obs_err_inc = (seir_obs_err
   )
 )
 
-seir_obs_err_inc_result = (seir_obs_err_inc
-  %>% simulation_history(obs_error = TRUE)
-)
-
-observed = (
-  seir_obs_err_inc_result
-  %>% select(-matches("to"))
-  %>% rename(date = Date)
-  %>% pivot_longer(-date, names_to = "var")
-  # keep incidence observations
-  %>% filter(var == "incidence")
-  # lob off first observation 
-  # (fitting the initial value is technically difficult and not important to figure out here)
-  %>% slice(-1)
-)
-
-observed <- observed %>%
-  # slice(1:53) %>%
-  mutate(value = obs$value)
+observed <- obs
 
 # HERE IS THE CALIBRATION PART
 seir_obs_err_inc_to_calibrate = (seir_obs_err_inc
@@ -297,7 +279,7 @@ fcst_ensemble_summary = (model_fit
   %>% summarise_ensemble_stan() # can specify a different quantile vector here: see documentation
 )
 
-plot_ensemble(fcst_ensemble_summary, observed, title = 'model with 14M pop')
+plot_ensemble(fcst_ensemble_summary, observed, title = 'model with 4M pop')
 
 # ggarrange(plotlist = fig)
 ```
