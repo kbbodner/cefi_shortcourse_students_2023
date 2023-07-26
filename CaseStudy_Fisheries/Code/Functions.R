@@ -1,12 +1,34 @@
 
-# Simulate a single stock of Ricker SR data =============================================================================================
+#  =============================================================================================
+#' Simulate a single stock of Ricker SR data
+#'
+#' @param leng Length of time series to simulate
+#' @param Sig_Ricker SD around Ricker model
+#' @param true_a Underlying alpha parameter
+#' @param true_b Underlying beta parameter
+#' @param hr_min Minimum harvest rate, default 0.2
+#' @param hr_max Maximum harvest rate, default 0.8
+#' @param lnorm_corr Use lognormal correction TRUE/FALSE
+#' @param autoCorr Include temporal autocorrelation TRUE/FALSE
+#' @param rho Level of temporal autocorrelation
+#' @param covariate 
+#' @param age Generation length ie. what age do they return at
+#'
+#' @return A list with the following elements: 
+#'  - `true_a`: underlying alpha parameter
+#'  - `true_b`: underlying beta parameter
+#'  - `sigma`: simulated SD around Ricker
+#'  - `SMSY`: Estimated Spawners at max. sustainable yield, using Hilborn approximation
+#'  - `DF_Out`: data frame containing data, fitted values (useful to plot "true" relationship), and catch
+
+
+
 Sim_Ricker_SR_Data <- function( leng=20, age=4, Sig_Ricker = 0.2, true_a = 3, true_b=1/5000,
-                          hr_min = 0.2, hr_max = 0.8, lnorm_corr = F, autoCorr = F, rho=NA,
-                          covariate = F){
+                          hr_min = 0.2, hr_max = 0.8, lnorm_corr = F, autoCorr = F, rho=NA){
 
   
   # initiate population somwhere between 100 and Smax
-  init <- round(runif(4, 100, 1/true_b))
+  init <- round(runif(age, 100, 1/true_b))
   hr_vec <- runif(leng+age, hr_min, hr_max)
   
   esc<-rep(NA,leng+age)
@@ -16,9 +38,7 @@ Sim_Ricker_SR_Data <- function( leng=20, age=4, Sig_Ricker = 0.2, true_a = 3, tr
   eps <- rep(NA,leng+age)
   
   for(i in (age+1):(leng+age)){
-    # don't let esc or rec get lower than 100
-    #rec[i] <- max (rlnorm(1, log(true_a) + log(esc[i-4]) - true_b*esc[i-4] , Sig_Ricker), 100)
-    R_mean <- true_a*esc[i-4] * exp(-true_b*esc[i-4])
+    R_mean <- true_a*esc[i-age] * exp(-true_b*esc[i-age])
     # random recruitment residual
     if(autoCorr == F){
        eps[i] <- rnorm(1, 0, Sig_Ricker)
@@ -47,13 +67,13 @@ Sim_Ricker_SR_Data <- function( leng=20, age=4, Sig_Ricker = 0.2, true_a = 3, tr
     # Estimate spawners at MSY (approximation; Hilborn and Walters 1992)
     # approximation is fine for this application
      SMSY <- SRep * ( 0.5 - 0.07*log(true_a) )
-    
-    if(sum(esc[(i-4):(i-1)] > SMSY) == 4) { hr_vec[i] <- hr_max}
+     # knock down pop if hanging out around MSY too long
+    if(sum(esc[(i-age):(i-1)] > SMSY) == 4) { hr_vec[i] <- hr_max}
+     
     esc[i] <- max((1-hr_vec[i])*rec[i], 100)
     catch[i] <- hr_vec[i]*rec[i]
   }
 
-  
   # get "true" values to plot curve from
   true_S = seq(from=min(esc), to=max(esc),length.out=leng)
   true_R = true_a * true_S * exp(-true_S*true_b)
@@ -214,6 +234,7 @@ Ricker.model.MCMC <- function(){
   Smax ~ dlnorm(logSmax_mean, logSmax_tau)       			# prior on Smax instead of beta 
   tau ~ dgamma(Sig_Gam_Dist,Sig_Gam_Dist)            #prior for precision parameter
   sigma <- 1/sqrt(tau) 		 
+  
   
   
   for (i in 1:N) {                       #loop over N sample points
