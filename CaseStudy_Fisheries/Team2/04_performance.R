@@ -49,3 +49,7 @@ best.naive.model <- perf.naive.clean |>
   arrange(desc(performance)) |> 
   slice_min(performance)
 
+#Compare with other models:
+Ricker.RMSE <- perf.Ricker |>
+  filter(metric == "RMSE")
+
