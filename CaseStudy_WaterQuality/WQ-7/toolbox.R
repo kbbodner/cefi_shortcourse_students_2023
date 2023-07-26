@@ -26,6 +26,43 @@ model{
   }
 }
 "
+
+bayesian_inference_2 <- function(data, site_id) {
+  jags_code <- "
+model{
+
+  # Priors
+  beta1 ~ dnorm(0, 1/10000)
+  beta2 ~ dnorm(0, 1/10000)
+  beta3 ~ dnorm(0, 1/10000)
+  beta4 ~ dnorm(0, 1/10000)
+  sd_process ~ dunif(0.00001, 100)
+
+  #Convert Standard Deviation to precision
+  tau_obs <- 1 / pow(sd_obs, 2)
+  tau_process <- 1 / pow(sd_process, 2)
+
+  #Initial conditions
+  chla_latent[1] <- chla_init
+  y[1] ~ dnorm(chla_latent[1], tau_process)
+
+  #Loop through data points
+  for(i in 2:n){
+      # Process model
+      chla_pred[i] <- beta1 * chla_latent[i-1] + beta2 * air_temp[i] +beta3*precipitation_flux[i]
+      +beta4*air_temp[i]*precipitation_flux[i]
+      chla_latent[i] ~ dnorm(chla_pred[i], tau_process)
+
+      # Data model
+      y[i]  ~ dnorm(chla_latent[i], tau_obs)
+  }
+}
+"
+
+
+
+
+
 nchain <- 3
 inits <- list()
 for (i in 1:nchain) {
