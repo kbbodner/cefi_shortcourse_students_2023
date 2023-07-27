@@ -84,8 +84,8 @@ state = c(
   E = 0,  
   I = 1, 
   R = 0,
-  H= 0,
-  D = 0
+  H = 0
+#  D = 0
 )
 
 # parameters
@@ -94,8 +94,9 @@ params = c(
   N = sum(state),
   alpha = 0.2,
   lambda = 0.018, #self-calculated for March31st (see first slide)
-  theta = 0.1, #The first wave CFR ranged from 0.004 to 0.146
-  gamma = 0.1
+#  theta = 0.1, #The first wave CFR ranged from 0.004 to 0.146
+  gamma = 0.1,
+  sigma = 1/21 # Stay at hospital
 )
 ```
 
@@ -139,10 +140,11 @@ seir = (
     "E", # to compartment I
     ~ (beta) * (1/N) * (I) # expression for the flow in terms of parameters and state variables, as a formula
   )
-  %>% add_rate("E", "I", ~ (alpha))
+  %>% add_rate("E", "I", ~ (alpha)*(1 - lambda))
   %>% add_rate("I", "R", ~ (gamma))     
-  %>% add_rate("R", "H", ~ (lambda)) #hospitalization
-  %>% add_rate("H", "D", ~ (theta)) # deaths
+  %>% add_rate("E", "H", ~ (alpha)*(lambda)) #hospitalization
+  %>% add_rate("H", "R", ~ (sigma)) #hospitalization
+  # %>% add_rate("H", "D", ~ (theta)) # deaths
 
 )
 ```
