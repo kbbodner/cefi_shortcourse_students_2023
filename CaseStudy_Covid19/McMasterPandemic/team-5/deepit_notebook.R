@@ -53,6 +53,17 @@ plot_sim(seir_obs_err, seir_obs_err_result,
          title = "Stochastic SEIR simulation")
 
 
+library(lubridate)
+random_timevar = data.frame(
+  Date = ymd(20200315),
+  Symbol = 'beta',
+  Value = 0.01,
+  Type = 'abs'
+)
+
+random_timevar
+
+
 
 # update model to include incidence
 seir_obs_err_inc = (seir_obs_err
@@ -61,6 +72,7 @@ seir_obs_err_inc = (seir_obs_err
                     # add_error_dist instead of update_ because 
                     # update_ replaces previously attached error distributions
                     # add_ appends
+                    %>% update_piece_wise(random_timevar)
                     %>% add_error_dist( 
                       incidence ~ poisson()
                     )
@@ -72,7 +84,9 @@ seir_obs_err_inc_result = (seir_obs_err_inc
 
 #plot stochastic
 plot_sim(seir_obs_err_inc, seir_obs_err_inc_result,
-         title = "Stochastic SEIR simulation with incidence")
+         title = "Stochastic SEIR simulation with incidence") + scale_y_log10()
+
+
 
 
 # create simulated data
@@ -157,6 +171,6 @@ fcst_ensemble_summary = (model_fit
                          %>% summarise_ensemble_stan() # can specify a different quantile vector here: see documentation
 )
 
-plot_ensemble(fcst_ensemble_summary, observed)
+plot_ensemble(fcst_ensemble_summary, cases2)
 
 View(fcst_ensemble_summary)
