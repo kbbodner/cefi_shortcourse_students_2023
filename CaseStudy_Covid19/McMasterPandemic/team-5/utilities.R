@@ -114,3 +114,33 @@ plot_ensemble <- function(ens, obs){
     )
   )
 }
+
+
+# This function takes:
+#   1. predicted vector
+#   2. observed vector
+#   3. dates vector, same length as predicted and observed vector
+#   4. iter_name char string, to name the output. If left alone, will provide time/date
+
+calculate_model_errors <- function(predicted, observed, dates, first_date, iter_name = "")
+  # pass in predicted values, observed values, date (aligned with measures) 
+{
+  bd <- as.data.frame(cbind(predicted, observed, dates))
+  # names(bd) <- c("predicted", "observed", "dates")
+  # # filter to only values that are at the start of observation
+  bd<- bd %>% mutate(error = (bd$predicted-bd$observed)) %>% dplyr::filter(dates >= first_date)
+  # 
+  Q = mean(abs(diff(bd$error)))
+  
+  
+  MAE = mean(abs(bd$error))
+  RMSE = sqrt(mean((bd$error)^2))
+  MASE = MAE/Q
+  
+  iter_name <- if(iter_name == "") {Sys.time()}
+  
+  return(tribble(
+    ~MAE, ~RMSE, ~MASE, ~Q, ~model_iteration,
+    MAE,  RMSE,  MASE,  Q,  iter_name
+  ))
+}
