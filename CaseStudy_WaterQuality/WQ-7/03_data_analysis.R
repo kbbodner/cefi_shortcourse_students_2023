@@ -114,3 +114,27 @@ forecast %>%
     legend.position = c(.2, .2)
   )
 ggsave(here(folder, 'swimmable_prob.pdf'), width = 10, height = 5)
+
+
+forecast %>%
+  group_by(datetime, site_id, method) %>%
+  filter(prediction == max(prediction)) %>% 
+  ggplot(aes(datetime, prediction,
+             group = interaction(site_id, method),
+             color = site_id,
+             fill = site_id
+  )) +
+  geom_line(linewidth = 1) +
+  scale_color_manual(
+    values = c("#EFBB24", "#3A8FB7")
+  ) +
+  facet_wrap(~method) +
+  labs(
+    y = 'Max chla predicted',
+    x = 'Date'
+  ) +
+  theme(
+    legend.title=element_blank(),
+    legend.position = c(.1, .85)
+  )
+ggsave(here(folder, 'max_prediction.pdf'), width = 10, height = 5)
