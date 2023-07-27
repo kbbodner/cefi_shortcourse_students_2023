@@ -96,8 +96,10 @@ forecast %>%
     fill = site_id
   )) +
   geom_line(linewidth = 1) +
-  # geom_ribbon(aes(ymin = prob_swimmable - error,
-  #                 ymax = prob_swimmable + error), alpha = .2) +
+  geom_ribbon(aes(ymin = prob_swimmable - error,
+                  ymax = ifelse(prob_swimmable + error > 1, 
+                                1,
+                                prob_swimmable + error)), alpha = .2) +
   scale_color_manual(
     values = c("#EFBB24", "#3A8FB7")
   ) +
