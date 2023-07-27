@@ -17,11 +17,9 @@ Potential environmental covariates are also included, which are generally assume
 
 All provided code can be found in "Code/Functions.R". 
 
-### Methods: Basic Ricker model 
+### Model 1: Basic Ricker 
 
-The Ricker model is a discrete stock-recruitment model that incorporates population growth ($\alpha$) and carrying capacity ($\beta$) for Pacific Salmon. Of all the available stocks, Early Stewart population was randomly chosen since it is one of many that is sensitive to environmental changes (see below models).
-
-It assumes the chosen population experiences density dependence.
+The Ricker model is a discrete stock-recruitment model that incorporates population growth ($\alpha$) and carrying capacity ($\beta$) for Pacific Salmon. Of all the available stocks, Early Stewart population was randomly chosen since it is one of many that is sensitive to environmental changes (see below models). It assumes the chosen population experiences density dependence.
 
 Consider the following model:
 
@@ -53,6 +51,43 @@ $$
 \tau \sim gamma(\theta, \theta)
 $$
 
+
+### Model 2: Power Model
+
+This alternate model is basically shows that log(recruiters) depends on log(spawners). This is also known as a simple power model which does not assume density dependence.
+
+$$
+R_i = A S_i^B
+$$
+
+We can linearize equation 10 to the following: $$
+ln(R_i) = A+B*ln(S_i)
+$$
+
+This model form has normal priors for both $A$ and $B$:
+
+$$
+A \sim normal(\mu_{A}, \tau_{A}) 
+$$ $$
+B \sim normal(\mu_{B}, \tau_{B})
+$$
+
+And the same gamma prior on precision as the above models (equation 6).
+
+
+### Model 3: Power model with an environmental covariate
+
+This alternate model is an extension to the previous power model that includes the average sea surface temperatures as an environmental covariate:
+
+$$
+R_i = A S_i^{B+gEsst_{i}}
+$$
+
+We can linearize this as the following: $$
+ln(R_i) = A+B*ln(S_i)+gEsst_{i}
+$$
+
+We used the same priors for $A$, $B$, and $g$ as previous above models.
 
 ## Deliverables
 
