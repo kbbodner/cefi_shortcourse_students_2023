@@ -1,0 +1,25 @@
+---
+title: "Fisheries Management Team 2"
+format:
+  revealjs:
+    incremental: true  
+---
+
+## Early Stuart Sockeye Fishery
+:::{.incremental}
+
+:::: {.columns}
+
+::: {.column width="40%"}
+Left column
+:::
+
+::: {.column width="60%"}
+![](stuart-lake-system.png){.absolute top=200  width="350" height="300"}
+:::
+
+::::
+
+:::
+
+## 
