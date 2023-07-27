@@ -42,7 +42,7 @@ functions {
     // I
     dydt[3] =  sigma * y[2] - gamma * y[3];
     // R
-    dydt[4] =  gamma * y[3];
+    dydt[4] =  gamma * y[4];
 
     return dydt;
   }

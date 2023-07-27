@@ -5,7 +5,7 @@ functions {
              real[] x_r,    // data (real)
              int[]  x_i) {  // data (integer)
     real dydt[4];
-    
+
     // define parameters.
     // any non-fixed parameters are in the theta array. Any fixed
     // parameters are in the x_r array
@@ -13,9 +13,9 @@ functions {
     real sigma = x_r[1];
     real gamma = x_r[2];
     real pop_size = x_r[3];
-    
+
     real lambda = (R0 * gamma * y[3]) / pop_size;
-    
+
     // S
     dydt[1] = - lambda * y[1];
     // E
@@ -23,8 +23,8 @@ functions {
     // I
     dydt[3] =  sigma * y[2] - gamma * y[3];
     // R
-    dydt[4] =  gamma * y[3];
-  
+    dydt[4] =  gamma * y[4];
+
     return dydt;
   }
 }

@@ -146,22 +146,16 @@ Poisson observation process. The following chunk
 prints the lines contained in the `stan` file
 
 ```{r read stan model}
-code <- readLines("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/basic_seir_model.stan")
+code_extended <- readLines("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/extended_seir_model.stan")
 
-cat(code, sep = "\n")
-
-#code_extended <- readLines("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/extended_model_cole.stan")
-
-#cat(code_extended, sep = "\n")
+cat(code_extended, sep = "\n")
 ```
 
 We run the following to compile the model
 
 ```{r compile stan model}
-model <- stan_model("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/basic_seir_model.stan")
 
-
-#model_extended <- stan_model("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/extended_model_cole.stan")
+model_extended <- stan_model("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/extended_seir_model.stan")
 ```
 
 Note what is provided in the "data" block of the Stan code. That is what
@@ -180,7 +174,9 @@ stan_data <- list(
   gamma = 1 / 7, # recovery rate
   sigma = 1 / 5, # incubation rate
   pop_size = 5e6, # population of BC
-  t0 = -1
+  t0 = -1,
+  logmask_impact = -0.36,
+  time_start_of_pandemic = 15
 )
 ```
 
@@ -338,7 +334,12 @@ data.com  %>%
   theme_bw() +
   geom_hline(yintercept = 0, linetype="dashed")
 
+################################
 
+y_data <- bc_data$n
+shinystan::launch_shinystan(fit)
+
+#################
 ```
 
 Look at diagnostics in shinystan
