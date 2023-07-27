@@ -76,11 +76,11 @@ bestCov <- as.vector(dfBestCov$Covariate)
 #***  Micro matrix correlation with best covariates   **
 #*# *******************************************************************
 
-matCorBC <-  cor(dfVar[,c("R", bestCov)] )
+matCorBC <-  cor(data[,c("R", bestCov)] )
 ploCor <- corrplot(matCorBC, method = 'color')
 corrplot(matCorBC, method = 'number')
 
-###we do not keep "pd0" car less influent covariate and moderatelu correlated with peak
+###we do not keep "pd0" car less influent covariate and moderately correlated with peak
 # and jnesst so we keep peak, aflow, jnesst
 finalBestCov <- bestCov[!bestCov =="pdo"]
 finalBestCov
