@@ -19,3 +19,12 @@ Use the COVID-19 case data for Ontario provided up to 31 March 2020 to forecast 
 Once you have made an initial, "status quo" forecast in response to the above challenge, consider the following decision makers' request:
 
 > What impact could a mandatory mask policy have on projected case reports?
+
+##Lay Summary
+
+Mask Effect: Exploring methods to reduce Covid cases
+
+COVID-19 has been declared a pandemic, spreading rapidly across the world. We made predictions on how COVID-19 may spread throughout Ontario using the first cases recorded from February to March 2020. This data included estimated rates for a person’s ability to catch the virus, the potential for exposure to the virus, the risk of infection by the virus, and recovery once infected. At the same time, we examined the impact that recent protective orders could have on future case counts. We then used this information to predict future trends for April 2020.
+ One protective order identified as a potentially effective strategy is mask-wearing. Masks are an inexpensive way to prevent someone with COVID-19 from spreading it to other people. We predicted how mask use may change these trends in the future using our initially projected trends. We found that by implementing X protective order, we expected Z fewer cases to occur. We also found that A, B, and C measures were not as effective as we had originally thought. 
+Our results suggest that X protective order is beneficial in controlling COVID-19 spread. Our results also suggest that public health measures, such as social distancing, masking, quarantine, and isolation, affect disease spread in different ways. As decision-makers, understanding these differences and how to effectively apply these protective orders is important to better support public health. This will lead to lower hospitalizations and management of public health resources for patients facing other medical conditions. 
+
