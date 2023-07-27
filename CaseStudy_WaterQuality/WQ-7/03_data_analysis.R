@@ -138,3 +138,49 @@ forecast %>%
     legend.position = c(.1, .85)
   )
 ggsave(here(folder, 'max_prediction.pdf'), width = 10, height = 5)
+
+# compare to past ---------------------------------------------------------
+forecast_sub <- forecast %>%
+  mutate(year = year(datetime)) %>% 
+  mutate(date = format(datetime, "%m-%d")) %>% 
+  filter(method == "~ Temp * Humid") %>% 
+  rename(chla = prediction) %>% 
+  select(-method, -observation)
+
+past_sub <- targets_lm %>% 
+  mutate(year = year(datetime)) %>% 
+  mutate(date = format(datetime, "%m-%d")) %>% 
+  filter(date %in% forecast_sub$date) %>% 
+  select(-air_temperature)
+
+ggthemr::ggthemr('fresh', 'clean')
+mean_sd <- function(x, mult = 1) {  
+  x <- na.omit(x)
+  sd <- sd(x)
+  mean <- mean(x)
+  data.frame(y = mean, ymin = mean - sd, ymax = mean + sd)
+}
+past_sub %>%
+  filter(chla < 100) %>% 
+  filter(year != 2023) %>% 
+  ggplot(aes(date, chla, color = year, group = year)) +
+  geom_line() +
+  facet_wrap(~site_id) +
+  # geom_smooth(data = forecast_sub, aes(x = date, y = chla),
+  #             color = 'black') +
+  stat_summary(data = forecast_sub, aes(x = date, y = chla),
+               fun.data=mean_sd, geom="ribbon", alpha=0.25, 
+               color = 'black') +
+  viridis::scale_color_viridis() +
+  geom_hline(yintercept = 20, color = "firebrick2", linetype = "dashed") +
+  labs(
+    x = "Date",
+    y = "Prediction"
+  ) +
+  theme(
+    legend.title=element_blank(),
+    legend.position = c(.4, .8)
+  ) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave(here(folder, 'compare2other_years.pdf'), width = 10, height = 5)
