@@ -99,7 +99,8 @@ forecast %>%
   geom_ribbon(aes(ymin = prob_swimmable - error,
                   ymax = ifelse(prob_swimmable + error > 1, 
                                 1,
-                                prob_swimmable + error)), alpha = .2) +
+                                prob_swimmable + error)), alpha = .2,
+              linetype='dashed') +
   scale_color_manual(
     values = c("#EFBB24", "#3A8FB7")
   ) +
