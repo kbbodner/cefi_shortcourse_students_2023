@@ -33,6 +33,13 @@ forecast <- bind_rows(
     mutate(method = "~ Temp + Humid"),
 )
 
+real_data <- read_csv(here(folder, "targets-neon-chla_evaluation.csv"))
+
+forecast <- forecast %>% 
+  left_join(real_data) %>% 
+  mutate(method = ordered(method, levels = c("~ Temp",
+                                             "~ Temp + Temp^2",
+                                             "~ Temp + Humid")))
 
 # plot results ------------------------------------------------------------
 ggthemr::ggthemr("fresh")
@@ -54,6 +61,27 @@ forecast %>%
     legend.position = 'bottom'
   )
 ggsave(here(folder, 'raw_prediction.pdf'), width = 10, height = 5)
+
+
+forecast %>%
+  ggplot(aes(datetime, prediction, color = site_id)) +
+  geom_line(aes(group = interaction(site_id, parameter)), alpha = .05) +
+  geom_line(aes(y = observation), color = 'black') +
+  geom_hline(yintercept = 20, color = "firebrick2", linetype = "dashed") +
+  facet_grid(site_id ~ method, scales = "free") +
+  scale_color_manual(
+    values = c("#EFBB24", "#3A8FB7")
+  ) +
+  labs(
+    x = "Date",
+    y = "Prediction"
+  ) +
+  theme(
+    legend.title=element_blank(),
+    legend.position = 'none'
+  )
+ggsave(here(folder, 'compare_prediction_data.pdf'), width = 10, height = 6)
+
 
 forecast %>%
   group_by(datetime, site_id, method) %>%
@@ -86,4 +114,3 @@ forecast %>%
     legend.position = c(.2, .2)
   )
 ggsave(here(folder, 'swimmable_prob.pdf'), width = 10, height = 5)
-
