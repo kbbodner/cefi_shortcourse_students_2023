@@ -407,7 +407,7 @@ for(i in 1:num_samples){
   #loop over forecast days
   for(j in 2:n_days){
     pred <- chla_latent[i,j-1] * chain$beta1[sample_index] +
-      noaa_future_site_ens$air_temperature[j] * chain$beta2[sample_index]
+      noaa_future_site_ens$air_temperature[j] * chain$beta2[sample_index] 
     
     chla_latent[i,j] <- rnorm(1, pred, chain$sd_process[sample_index])
     y[i,j] <- rnorm(1, chla_latent[i,j], sd = data$sd_obs)
@@ -576,3 +576,36 @@ The forecasts should address the following questions:
 New data will be available later in the week to assess the success of your forecasts.  
 
 Note: These lakes monitored by NEON are not used for drinking water and the threshold indicated above is for illustrative purposes only!
+
+
+
+Q2: What are the maximum concentrations that will occur in the next 30 days? And when will this maximum level occur?
+
+Take the 95% quantile.
+```{r}
+forecast_max <- forecast_df %>% 
+  group_by(datetime) %>% 
+  summarise(max = quantile(prediction, 0.95))
+
+forecast_max %>%
+  filter(max == max(max))
+```
+
+
+Q4: What are the chances that the lake(s) will be closed in the next month for swimming?
+ 
+```{r}
+forecast_p20 <- forecast_df %>% 
+  group_by(datetime) %>% 
+  summarise(n = n(), n_20 = sum(prediction > 20)) %>%
+  mutate(p_20 = n_20 / n) 
+
+ggplot(forecast_p20) +
+  geom_line(aes(x = datetime, y = p_20), size = 2, col = "#0C7C59", alpha = 0.8) +
+  geom_hline(yintercept=0.5, size = 0.8, linetype="dashed", color = "red") +
+    xlab("date") +
+    ylab("probability of closing the lake ([Chla] > 20 mg/L)") +
+    theme_classic()
+
+ggsave("figures/Q4.jpg")
+```
