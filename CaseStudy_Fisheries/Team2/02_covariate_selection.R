@@ -13,7 +13,7 @@ library(corrplot)
 
 # data df comes from 01_preparation script
 # Delete yeas without response R
-data <- data[!is.na(datar$R),]
+data <- data[!is.na(data$R),]
 
 
 # **#*****************************************************************
@@ -39,13 +39,13 @@ coVar <- as.list(names(data)[6:18])
 
 # lm for all covariates
 allModelsList <- lapply(paste("R ~", coVar), as.formula)
-allModelsResults <- lapply(allModelsList, function(x) lm(x, data = dfVar)) 
+allModelsResults <- lapply(allModelsList, function(x) lm(x, data = data)) 
 allModelsSummaries = lapply(allModelsResults, summary) 
 
 
 # Vectors to keeps results
 
-coVa <- names(dfVar)[6:18]
+coVa <- names(data)[6:18]
 r2V <- c()
 fV <- c()
 pV <- c()
@@ -84,3 +84,17 @@ corrplot(matCorBC, method = 'number')
 # and jnesst so we keep peak, aflow, jnesst
 finalBestCov <- bestCov[!bestCov =="pdo"]
 finalBestCov
+
+
+### average sea surface temperatures by station
+# stations denoted by _e or _p 
+# _e refers to entrance island lighthouse and is an average over april to june
+#_p refers to Pine island lighthouse and is an average over april to july
+
+data <- data %>% 
+  filter(Pop_Name ==  "Early Stuart" & yr < 2020)  |> 
+  group_by(yr) |> 
+  mutate(avg_sst_e = mean(apesst:jnesst, na.rm = TRUE),
+         avg_sst_p = mean(appsst:jlpsst, na.rm = TRUE))
+
+
