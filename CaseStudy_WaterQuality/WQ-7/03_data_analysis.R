@@ -170,7 +170,8 @@ past_sub %>%
   #             color = 'black') +
   stat_summary(data = forecast_sub, aes(x = date, y = chla),
                fun.data=mean_sd, geom="ribbon", alpha=0.25, 
-               color = 'black') +
+               color = 'purple',
+               linetype = 'dashed') +
   viridis::scale_color_viridis() +
   geom_hline(yintercept = 20, color = "firebrick2", linetype = "dashed") +
   labs(
