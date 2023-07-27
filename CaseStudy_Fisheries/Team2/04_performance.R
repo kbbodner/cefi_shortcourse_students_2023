@@ -18,28 +18,40 @@ performance.functions <- list("MRE" = MRE,
                               "MAAPE" = MAAPE,
                               "MASE" = MASE)
 
-
-#created helper variables/added new column for naive predictions
-obs.2021 <- c(data$rec4[data$yr == pred.year-4], data$rec5[data$yr == pred.year-5])
-baseline.pred <- c(baseline.mod$Preds_Out$Pred4, baseline.mod$Preds_Out$Pred5)
-power.pred <- c(power.mod$Preds_Out$Pred4, power.mod$Preds_Out$Pred5)
-
-naive.mod.ext <- naive.mod |>
-  mutate(R_pred = Pred4 + Pred5)
+#Observations
+observ <- c()
+for(y in baseline.mod.all$Pred_Year) {
+  observ <- c(observ, data$rec4[data$yr==(y-4)] + data$rec5[data$yr==(y-5)])
+}
 
 ###Run the performance on all models:
 
 #Baseline
-perf.Ricker <- run.all.performances(sum(obs.2021), sum(baseline.pred),
-                                    performance.functions)
+perf.baseline <- run.all.performances(observ, baseline.mod.all$R_Pred,
+                                      performance.functions)
 
 #Power
-perf.power <- run.all.performances(sum(obs.2021), sum(power.pred),
+perf.power <- run.all.performances(observ, power.mod.all$R_Pred,
                                     performance.functions)
 
 #Naive models
 perf.naive <- list()
-for(i in 1:length(naive.mod.ext$Mod)) {
+
+for(n in naive.mod.all[[1]]$Mod) {
+  predictions <- c()
+  for(i in length(naive.mod.all)) {
+    predictions <- c(predictions, naive.mod.all[[i]]$R_Pred[naive.mod.all[[i]]$Mod == n])
+  }
+  perf.naive[[length(perf.naive) + 1]] <- run.all.performances(observ , predictions,
+                                                               performance.functions)
+    
+}
+
+naive.mod.all
+
+#Naive models
+perf.naive <- list()
+for(i in 1:length(naive.mod.all[[1]]$Mod)) {
   perf.naive[[i]] <- run.all.performances(sum(obs.2021), naive.mod.ext$R_pred[i],
                                           performance.functions)
 }
