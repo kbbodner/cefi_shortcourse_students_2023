@@ -42,7 +42,7 @@ RunModRetro.new <- function(Dat, Pred_Year, method) {
     Mod <- "BasicRicker"
   }else if (method == "Ricker"){ #### Ricker env ========================================
     data$env <- Data_Retro$envcov #/Scale?
-    data$g_mean <- 1
+    data$g_mean <- 0
     data$g_tau <- 1
     data$S <- Data_Retro$S/Scale 
     data$logA_mean <- 1
@@ -54,7 +54,7 @@ RunModRetro.new <- function(Dat, Pred_Year, method) {
     inits <- function(){
       param <- list()
       param$tau <- runif(1, 0.001, 10)
-      param$g <- rnorm(1, 1, 0.5)
+      param$g <- rnorm(1, 0, 0.5)
       param$logA <- rnorm(1, 1, 0.5)
       param$Smax <- runif(1, min = quantile(data$S, 0.8), max = max(data$S)*1.2)
       param
@@ -62,7 +62,7 @@ RunModRetro.new <- function(Dat, Pred_Year, method) {
     
     JagsFit <- jags(data, inits = list(inits(), inits(), inits()), model.file = RickerCov.model.MCMC, 
                     n.chains =3, n.iter=10000, n.burnin = 4000, n.thin = 3, 
-                    parameters.to.save = c("R_Fit", "R_Pred", "logA", "Smax", "sigma"))
+                    parameters.to.save = c("R_Fit", "R_Pred", "logA", "Smax", "sigma", "g"))
     Mod <- "Ricker Env"
   }else if (method == "Power"){ #### Power =======================================
     data$A_mean <- 1

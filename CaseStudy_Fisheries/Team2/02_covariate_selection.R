@@ -1,6 +1,6 @@
 # covariate selection
 
-rm(list=ls())
+# rm(list=ls())
 gc()
 
 # Packages
@@ -95,6 +95,7 @@ data <- data %>%
   filter(Pop_Name ==  "Early Stuart" & yr < 2020)  |> 
   group_by(yr) |> 
   mutate(avg_sst_e = mean(apesst:jnesst, na.rm = TRUE),
-         avg_sst_p = mean(appsst:jlpsst, na.rm = TRUE))
+         avg_sst_p = mean(appsst:jlpsst, na.rm = TRUE)) |> 
+  ungroup(yr)
 
 
