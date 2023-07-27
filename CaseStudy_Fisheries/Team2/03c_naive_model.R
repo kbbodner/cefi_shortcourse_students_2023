@@ -4,8 +4,8 @@
 naive.mod.all <- list()
 
 #Run the naive models
-for(i in 10:nrow(data)) {
-  naive.mod.all[[i]] <- naive.mod <- Run.Naive.Mods(data, data$yr[i])
-  naive.mod.all[[i]] <- naive.mod.all[[i]] |>
+for(y in data$yr[10]:2021) {
+  naive.mod.all[[length(naive.mod.all) + 1]] <- naive.mod <- Run.Naive.Mods(data, y)
+  naive.mod.all[[length(naive.mod.all)]] <- naive.mod.all[[length(naive.mod.all)]] |>
     mutate(R_Pred= Pred4 + Pred5)
 }
