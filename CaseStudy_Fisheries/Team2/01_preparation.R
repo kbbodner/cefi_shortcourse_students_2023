@@ -38,4 +38,13 @@ data <- data |>
   select(-c(Real_Year)) 
 
 
+###Plot timeseries and state of population
+ricker.crude <- GetRickerBMs(data)
+
+ggplot(data) +
+  geom_line(aes(x=yr, y=S)) +
+  geom_hline(aes(yintercept=ricker.crude$SMSY), color="green", size=1.5 ) +
+  geom_hline(aes(yintercept=ricker.crude$Sgen), color="red", size=1.5 )
+
+
 
