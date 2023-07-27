@@ -3,13 +3,6 @@
 # try model run
 library("here")
 source(here::here("team-5/utilities.R"))
-# parameters
-params = c(
-  beta = 0.7,
-  N = sum(state),
-  alpha = 0.2,
-  gamma = 0.071
-)
 # initial state, in units of individuals
 state = c(
   S = 14865000, #S = susceptible
@@ -18,10 +11,18 @@ state = c(
   R = 100 #R = recovered
 )
 
+# parameters
+params = c(
+  beta = 0.7,
+  N = sum(state),
+  alpha = 0.2,
+  gamma = 0.25
+)
+
 
 source(here::here("team-5/models.R"))
 
-source(here::here("team-5/pull_data.R"))
+#source(here::here("team-5/pull_data.R"))
 
 # basic SEIR model
 
