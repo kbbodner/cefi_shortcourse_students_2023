@@ -60,7 +60,7 @@ forecast %>%
     legend.title=element_blank(),
     legend.position = 'bottom'
   )
-ggsave(here(folder, 'raw_prediction.pdf'), width = 10, height = 5)
+ggsave(here(folder, 'raw_prediction.jpg'), width = 10, height = 5)
 
 
 forecast %>%
@@ -80,7 +80,7 @@ forecast %>%
     legend.title=element_blank(),
     legend.position = 'none'
   )
-ggsave(here(folder, 'compare_prediction_data.pdf'), width = 10, height = 6)
+ggsave(here(folder, 'compare_prediction_data.jpg'), width = 10, height = 6)
 
 
 forecast %>%
@@ -116,7 +116,7 @@ forecast %>%
     legend.title=element_blank(),
     legend.position = c(.2, .2)
   )
-ggsave(here(folder, 'swimmable_prob.pdf'), width = 10, height = 5)
+ggsave(here(folder, 'swimmable_prob.jpg'), width = 10, height = 5)
 
 
 forecast %>%
@@ -140,7 +140,7 @@ forecast %>%
     legend.title=element_blank(),
     legend.position = c(.1, .85)
   )
-ggsave(here(folder, 'max_prediction.pdf'), width = 10, height = 5)
+ggsave(here(folder, 'max_prediction.jpg'), width = 10, height = 5)
 
 # compare to past ---------------------------------------------------------
 forecast_sub <- forecast %>%
@@ -187,4 +187,4 @@ past_sub %>%
   ) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-ggsave(here(folder, 'compare2other_years.pdf'), width = 10, height = 5)
+ggsave(here(folder, 'compare2other_years.jpg'), width = 10, height = 5)
