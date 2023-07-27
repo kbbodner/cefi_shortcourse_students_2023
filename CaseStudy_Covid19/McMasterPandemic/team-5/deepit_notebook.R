@@ -7,7 +7,7 @@ source(here::here("team-5/utilities.R"))
 state = c(
   S = 14865000, #S = susceptible
   E = 0,  #E = exposed,
-  I = 1,  #I = infected, first date of infection/known exposure is 2020-02-08
+  I = 10,  #I = infected, first date of infection/known exposure is 2020-02-08
   R = 100 #R = recovered
 )
 
@@ -119,7 +119,7 @@ seir_obs_err_inc_to_calibrate = (seir_obs_err_inc
 )
 
 
-
+# library(McMasterPandemic)
 model_fit = calibrate_stan(
   model = seir_obs_err_inc, # original model object
   model_to_calibrate = seir_obs_err_inc_to_calibrate, # model object with observed data and priors
