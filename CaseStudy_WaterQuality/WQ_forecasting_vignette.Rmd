@@ -120,7 +120,7 @@ Note: This code chunk can take a little to execute as it accesses the NOAA data 
 bucket <- "neon4cast-drivers/noaa/gefs-v12/stage3/parquet/"
 s3_past <- arrow::s3_bucket(bucket, endpoint_override = "data.ecoforecast.org", anonymous = TRUE)
 
-variables <- c("air_temperature")
+variables <- c("air_temperature", "precipitation_flux")
 #Other variable names can be found at https://projects.ecoforecast.org/neon4cast-docs/Shared-Forecast-Drivers.html#stage-3
 
 noaa_past <- arrow::open_dataset(s3_past) |> 
@@ -164,8 +164,7 @@ variables <- c("air_temperature")
 
 noaa_future <- arrow::open_dataset(s3_future) |> 
   dplyr::filter(datetime >= forecast_date,
-                site_id %in% target_sites,
-                variable %in% variables) |> 
+                site_id %in% target_sites) |> 
   collect()
 
 ```
@@ -181,7 +180,7 @@ noaa_future_daily <- noaa_future |>
   pivot_wider(names_from = variable, values_from = prediction) |>
   # convert to Celsius
   mutate(air_temperature = air_temperature - 273.15) |> 
-  select(datetime, site_id, air_temperature, parameter)
+  select(datetime, site_id, air_temperature, precipitation_flux, parameter)
 
 noaa_future_daily[1:10,]
 ```
@@ -237,12 +236,15 @@ site_target <- site_target |>
 We fit the model as a state-space Bayesian model.  The following is BUGS code  that specifies the model. Explaining the Bayesian model is beyond the scope of this tutorial. 
 
 ```{r }
+
+
 jags_code <- "
 model{
 
   # Priors
   beta1 ~ dnorm(0, 1/10000)
   beta2 ~ dnorm(0, 1/10000)
+  beta3 ~ dnorm(0, 1/10000)
   sd_process ~ dunif(0.00001, 100)
   
   #Convert Standard Deviation to precision
@@ -256,7 +258,7 @@ model{
   #Loop through data points
   for(i in 2:n){
       # Process model
-      chla_pred[i] <- beta1 * chla_latent[i-1] + beta2 * air_temp[i]
+      chla_pred[i] <- beta1 * chla_latent[i-1] + beta2 * air_temp[i] + beta3 * precip[i]
       chla_latent[i] ~ dnorm(chla_pred[i], tau_process)
       chla_pred2[i] ~ dnorm(chla_pred[i], tau_process)  ### new, for one-step-ahead predicions
 
@@ -272,6 +274,7 @@ Set up the fixed inputs for the JAGS model specification.  This includes the cov
 
 ```{r}
 data <- list(air_temp = site_target$air_temperature,
+             precip = site_target$precipitation_flux,
              y = site_target$chla,
              n = length(site_target$air_temperature),
              sd_obs = 0.1,
@@ -286,6 +289,7 @@ inits <- list()
 for(i in 1:nchain){
   inits[[i]] <- list(beta1 = rnorm(1, 0.34, 0.05), 
                      beta2 = rnorm(1, 0.11, 0.05),
+                     beta3 = rnorm(1, 0.2, 0.05),
                      sd_process = runif(1, 0.05, 0.15 ))
 }
 ```
@@ -302,6 +306,7 @@ j.model <- jags.model(file = textConnection(jags_code),
 jags.out   <- coda.samples(model = j.model,
                            variable.names = c("beta1", 
                                               "beta2",
+                                              "beta3",
                                               "chla_latent",
                                               "ypred",
                                               "sd_process"),
@@ -314,7 +319,7 @@ Convert MCMC object to tidy data and remove iterations in burn-in.  We only keep
 
 burn_in <- 1000
 chain <- jags.out %>%
-  tidybayes::spread_draws(beta1, beta2, sd_process, chla_latent[day]) |> 
+  tidybayes::spread_draws(beta1, beta2,beta3, sd_process, chla_latent[day]) |> 
   filter(.iteration > burn_in) |> 
   ungroup()
 
@@ -337,7 +342,7 @@ plot(resid)
 ## Bayesian p-values
 yquant = rep(NA,length(ypred.bar))
 for(i in seq_along(ypred.bar)){
-  yquant[i] = findInterval(data$y[i+1],vec=sort(ypred.out[,i]))/nrow(ypred.out)
+  yquant[i] = findInterval(data$y[i+1],vec=sort(ypred.out[,i]))/nrow(ypred.out) # the chance of bins for observed values falling in bins for predicted values
 }
 
 plot(yquant)
