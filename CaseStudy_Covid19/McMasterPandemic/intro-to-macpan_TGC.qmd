@@ -1,0 +1,651 @@
+---
+title: "Introduction to the `McMasterPandemic` modelling software"
+subtitle: "Prepared for the 2023 Canadian Ecological Forecasting Initiative's Short Course on Forecasting for Decision-Making"
+author: "Irena Papst"
+format: 
+  html:
+    toc: true
+    self-contained: true
+    code-overflow: wrap
+editor: visual
+---
+
+## Goal
+
+The goal of this document is to get you started with the `McMasterPandemic` model simulation software, which will be used to model COVID-19 in some case studies.
+
+## Getting to know `McMasterPandemic`
+
+```{r}
+#| label: setup
+#| message: FALSE
+#| warning: FALSE
+#| results: FALSE
+
+# mandatory setup for working with macpan and stan
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+library(McMasterPandemic)
+source(here::here("R", "tmbstan_tools.R")) # some custom tools for connecting McMasterPandemic and Stan, they're documented fully in that file
+setup_stan() # some required set up for using Stan with McMasterPandemic
+library(rstan) # for additional R Stan tools
+
+# other tools
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+theme_set(
+  theme_bw(
+    base_size = 16
+  )
+)
+
+
+```
+
+`McMasterPandemic` is software that can specify and simulate compartmental models given parameters, an initial state, and a time horizon. These models can interface with Stan to fit parameters using MCMC, and then the results can be used to generate ensemble simulations of the fit or to produce a forecast.
+
+This vignette will guide you through a basic example of performing the above tasks with a simple model. As you work on your case study using this software, you may find [the `McMasterPandemic` user manual](https://canmod.github.io/macpan-book/) helpful, especially for model extensions.
+
+For model fitting and generating ensembles, I have written some utility functions to facilitate working with `McMasterPandemic` model objects that have been fit with Stan via [Template Model Builder](%60chain%60,%20%60iter%60,%20%60init%60,%20%60seed%60). These functions are defined and documented in `R/tmbstan_tools.R`. If you come across a function in this vignette with no help page, please check that file for function documentation. You should also feel free to adapt these functions for your case studies as you see fit, though perhaps copy them over to another file before modifying to ensure that you can still run this vignette if/when you're troubleshooting code for your case studies.
+
+## Model specification
+
+Models are specified in `McMasterPandemic` with the following four pieces of information:
+
+1.  A named vector of model parameters and their values
+2.  A named vector of model states and their initial conditions
+3.  Start and end dates for the beginning and end of the simulation range
+4.  A series of flow rates between compartments (as expressions using parameter and state variable names)
+
+Here is the standard SEIR model, where $S$ is susceptible, $E$ is exposed, $I$ is infected, and $R$ is recovered.
+
+![](figs/SEIR-diagram.png){fig-align="center"}
+
+The flow from $S$ to $E$ models the infection process, with $\beta$ as the transmission rate and $N$ as the population size. The flow from $E$ to $I$ models the process of going from exposed to infectious, where $\alpha$ is the rate at which this process occurs, so $1/\alpha$ is the incubation period. Similarly, the flow from $I$ to $R$ models recovery, where $1/\gamma$ is the infectious period.
+
+This diagram represents the following mathematical model, which makes use of ordinary differential equations:
+
+```{=tex}
+\begin{align*}
+\frac{dS}{dt} &= - \beta S I/N \\
+\frac{dE}{dt} &= \beta S I/N - \alpha E \\
+\frac{dI}{dt} &= \alpha E - \gamma I \\ \frac{dR}{dt} &= \gamma I
+\end{align*}
+```
+To implement this model in `McMasterPandemic`, we start by defining the initial state and parameter vectors:
+
+```{r}
+#| label: state-and-params
+
+# initial state, in units of individuals
+state = c(
+  S = 15000000, 
+  E = 0,  
+  I = 1, 
+  R = 0,
+  H= 0,
+  D = 0
+)
+
+# parameters
+params = c(
+  beta = 0.7,
+  N = sum(state),
+  alpha = 0.2,
+  lambda = 0.018, #self-calculated for March31st (see first slide)
+  theta = 0.1, #The first wave CFR ranged from 0.004 to 0.146
+  gamma = 0.1
+)
+```
+
+Note that `McMasterPandemic` simulates models on the time scale of days, so all rates are per day. For instance, $\gamma = 0.06 \; \rm{days}^{-1}$ implies that the infectious period is $1/\gamma = 1/(0.06 \; \rm{days}^{-1}) \approx 17 \; \rm{days}$ long.
+
+Next, we choose our simulation period by specifying the start and end dates:
+
+```{r}
+#| label: time-window
+
+# start and end dates specified as strings,
+# they don't have to be Date types, but they can be
+start_date = "2020-02-07"
+end_date = "2020-03-31"
+```
+
+Now we can initialize the `McMasterPandemic::flexmodel` object that will store our model information:
+
+```{r}
+#| label: model-skeleton
+#| message: FALSE
+
+seir = flexmodel(
+  params = params,
+  state = state,
+  start_date = start_date,
+  end_date = end_date,
+  do_hazard = TRUE # an option to ensure computations are stable when any of the state variables approach zero (keep this switched on!)
+)
+```
+
+This has nearly all of the components we need to define our model, but we're missing the flow rates, so we add those now:
+
+```{r}
+#| label: model
+
+seir = (
+  seir
+  %>% add_rate(
+    "S", # from compartment S
+    "E", # to compartment I
+    ~ (beta) * (1/N) * (I) # expression for the flow in terms of parameters and state variables, as a formula
+  )
+  %>% add_rate("E", "I", ~ (alpha))
+  %>% add_rate("I", "R", ~ (gamma))     
+  %>% add_rate("R", "H", ~ (lambda)) #hospitalization
+  %>% add_rate("H", "D", ~ (theta)) # deaths
+
+)
+```
+
+(This of course could have been done in one step, when we specified the initial state, parameter, and simulation start and end dates above.)
+
+Comparing the flow rate formulas to the flows in the diagram above, it may look like a state variable is missing in each of the above formulas. For instance, the recovery flow (from $I$ to $R$) is supposed to be $\gamma I$, not just $\gamma$. However, `McMasterPandemic` assumes that these rates are specified as per capita relative to the flow origin state (in this case $I$), so the current number of individuals in $I$ will be multiplied by the specified formula (here just $\gamma$) to determine the number of individuals moving from $I$ to $R$ at each time step ($\gamma I$).
+
+## Deterministic simulation
+
+We can use this model specification for a deterministic simulation using the `McMasterPandemic::simulation_history()` function:
+
+```{r}
+#| label: model-sim
+
+seir_result = simulation_history(seir)
+
+head(seir_result)
+```
+
+This output can be transformed and plotted readily using `dplyr`, `tidyr`, and `ggplot2`:
+
+```{r}
+#| label: fun_plot-sim
+
+# defining a funciton because we will use this code a few times
+plot_sim = function(model, sim_result, title){
+  (sim_result
+   # drop any columns where a flow rate is returned
+   %>% select(-matches("to"), -S)
+   # switch to long form for ease of use with ggplot
+   %>% pivot_longer(-Date, names_to = "State", values_to = "Population")
+   # sort state into a factor variable to enforce legend ordering based on
+   # flow through the model
+   %>% mutate(State = factor(State, 
+                             levels = order_vars(model)))
+   %>% ggplot(aes(x = Date, y = Population, colour = State))
+   + geom_line(linewidth = 1.25)
+   + labs(title = title)
+   + theme(
+     axis.title.x = element_blank(),
+     legend.justification = c(1,1),
+     legend.position = c(1,1),
+     legend.background = element_rect(fill = NA),
+     legend.key = element_rect(fill = NA)
+   )
+)
+}
+```
+
+```{r}
+#| label: fig_model-sim
+#| message: FALSE
+#| warning: FALSE
+
+plot_sim(seir, seir_result,
+         title = "Deterministic SEIR simulation")
+```
+
+## Stochastic simulation
+
+We can also introduce some noise into each state variable to make the model outputs a bit more realistic. This feature will be important when we calibrate the model, in order to account for some expected observation noise in the fitting process, so that we don't mistake noise for a trend.
+
+We will assume that each state variable is observed with Poisson noise:
+
+```{r}
+#| label: model-stoch
+
+seir_obs_err = (seir
+    %>% update_error_dist(
+    S ~ poisson(),
+    E ~ poisson(),
+    I ~ poisson(),
+    R ~ poisson(),
+    H ~ poisson(),
+    D ~ poisson()
+  )
+)
+```
+
+Here is the resulting simulation:
+
+```{r}
+#| label: fig_model-stoch
+
+# for reproducibility
+set.seed(15)
+
+seir_obs_err_result = (seir_obs_err
+  # turn on observation error in simluation
+  %>% simulation_history(obs_error = TRUE)
+)
+
+plot_sim(seir_obs_err, seir_obs_err_result,
+         title = "Stochastic SEIR simulation")
+```
+
+## Calculating derived quantities in simulation
+
+By default, model simulation will return several time series, one for each state variable, and state-dependent rates (*e.g.* $S$ to $E$, as per-capita rates). The state variable time series represent the current number of individuals in a state at a given time. Real-world disease data is often reported in terms of *incidence*, which is the number of *new* infections reported at a given point in time. If we want to calibrate the model to real-world disease data, we have to also calculate and save the incidence.
+
+In the model, the incidence is simply given by $\beta S I/N$, which can be written as $(\beta I/N) * S$, where $(\beta I/N)$ is the per-capita flow rate from S to E and $S$ is the current number of susceptible individuals. Since `McMasterPandemic` already saves state-dependent flow rates like this one in its simulation history (`S_to_E`), and we can ask it to use it to calculate an incidence by adding on a expression to calculate in the simulation report:
+
+```{r}
+#| label: model-with-inc
+
+# update model to include incidence
+seir_obs_err_inc = (seir_obs_err
+  # add an expression to calculate in the simulation report
+  %>% add_sim_report_expr("incidence", ~ (S_to_E) * (S))
+  # add_error_dist instead of update_ because 
+  # update_ replaces previously attached error distributions
+  # add_ appends
+  %>% add_error_dist( 
+    incidence ~ poisson() #change this error
+  )
+)
+
+seir_obs_err_inc_result = (seir_obs_err_inc
+  %>% simulation_history(obs_error = TRUE)
+)
+
+plot_sim(seir_obs_err_inc, seir_obs_err_inc_result,
+         title = "Stochastic SEIR simulation with incidence")
+```
+
+## Calibration with observation noise
+
+To demonstrate `McMasterPandemic`'s modelling fitting capabilities, let's take the noisy incidence time series from the last simulation and attempt to fit the transmission rate. Of course, we know the value of this parameter because we set it, so we can actually verify that the fit has converged to reasonable values for each parameter.
+
+When passing observed data to `McMasterPandemic`, it should be a data frame with three columns:
+
+-   `date`: the date associated with each observation
+
+-   `var`: the name of the associated state variable in the model
+
+-   `value`: the observed value to compare with the simulated state variable
+
+```{r}
+#| label: obs
+
+# observed = (
+#   seir_obs_err_inc_result
+#   %>% select(-matches("to"))
+#   %>% rename(date = Date)
+#   %>% pivot_longer(-date, names_to = "var")
+#   # keep incidence observations
+#   %>% filter(var == "incidence")
+#   # lob off first observation
+#   # (fitting the initial value is technically difficult and not important to figure out here)
+#   %>% slice(-1)
+# )
+
+# head(observed)
+
+observed <- read.csv("data/fitting.csv") %>%
+  mutate(
+    date = as.Date(date), # convert to date
+    var = 'incidence' # add a variable for the name of sim output
+  ) %>%
+  select(date, var, value = new_cases)
+
+#range(observed$date)[1]-1
+```
+
+It's worth pointing out that `McMasterPandemic` can calibrate to multiple time series simultaneously, which may be useful later on in your case studies, but for now we will focus on calibrating to just one variable.
+
+In order to calibrate the model, we have to attach both the observed data, as well as priors for the parameters we're fitting:
+
+```{r}
+#| label: model-to-calib
+
+seir_obs_err_inc_to_calibrate = (seir_obs_err_inc
+  # attach observed data
+  %>% update_observed(
+    observed
+  )
+  # attach priors for parameters we're fitting
+  # ("optimizing" over)
+  %>% update_opt_params(
+    # fitting log beta
+    log_beta ~ log_normal(
+      -1, # log mean, so mean beta is exp(-1) = 0.36  these are the parameters for the log distribution which result on different X, see presentation
+      0.5 # standard deviation of the log normal prior 
+    )
+  )
+)
+```
+
+Each prior is specified by a formula, with the left-hand side giving the parameter to optimize over, and the right-hand side specifying the prior distribution. Here we're fitting $\log(\beta)$ (by using the prefix `log_` on our parameter name on the left-hand side), instead of $\beta$ directly, as we want to enforce the condition that $\beta > 0$ during the optimization. `McMasterPandemic` understands a variety of variable transformations, including `log`, `logit`, `log10`, `cloglog`, and `inverse`. The prior must be transformed in a matching way, hence why we use a `log_normal()` prior.
+
+The only two priors available are `flat` and `normal`. The flat distribution is improper, with no regularization, and its only parameter is the initial value from which the optimizer should start. However, it can be regularized with one of the transformations above, like `log`.
+
+Now that we've set up the model object to include all of the data required to fit the transmission rate, we can calibrate using Stan as follows:
+
+```{r}
+#| label: fit
+
+model_fit = calibrate_stan(
+    model = seir_obs_err_inc, # original model object
+    model_to_calibrate = seir_obs_err_inc_to_calibrate, # model object with observed data and priors
+    chains = 2 # number of MCMC chains
+)
+```
+
+We can pass other MCMC arguments to `calibrate_stan()` as needed, like `iter`, `init`, `seed`; see the source of `?tmbstan::tmbstan()`, which `calibrate_stan()` wraps around, for more details.
+
+The output of `calibrate_stan()` is a list with three components:
+
+1.  `model`: as input,
+2.  `model_to_calibate`: as input,
+3.  `fit`: the model fit.
+
+Note that the `fit` component is an `rstan::stanfit` object, so you can use tools developed for those objects to explore the fit.
+
+```{r}
+#| label: fit-summary
+
+fit = tidy_fit_stan(model_fit)$fit # a simple utility to attach parameter names to stan output
+rstan::summary(fit)$summary
+# exp(rstan::summary(fit)$summary["log_beta", "mean"])
+# exp(rstan::summary(fit)$summary["log_beta", "se_mean"])
+
+```
+
+We see from the summary that the mean fitted value for `log_beta` is `r rstan::summary(fit)$summary["log_beta", "mean"]`, which implies mean `beta` is `r exp(rstan::summary(fit)$summary["log_beta", "mean"])`, which is very close to the transmission rate with which we generated the data: `r params[["beta"]]`.
+
+```{r}
+#| label: fit-traceplot
+
+rstan::traceplot(fit, ncol = 1)
+```
+
+The trace plot reveals well-mixed and converged chains.
+
+There are many other tools available for inspecting and visualizing `rstan` output, including [`tidybayes`](http://mjskay.github.io/tidybayes/articles/tidybayes.html) and the interactive [`shinystan`](https://mc-stan.org/users/interfaces/shinystan):
+
+```{r}
+#| label: fit-shinystan
+#| eval: FALSE
+
+shinystan::launch_shinystan(model_fit$fit) # works better on unmodified stanfit output (not the nicer tidied version we worked with in the previous chunk)
+```
+
+## Generate fit ensemble
+
+Now that we have a fitted model, we can create an ensemble of the model fit by taking each sample of the posterior and simulating the model, keeping track of incidence, the variable we fit. (We do this process in parallel to speed up the computation.) We then summarize the ensemble by taking the median along with the 2.5% and 97.5% quantiles of the incidence values on each date to get a 95% confidence band around the fit. Note that the following chunk, which implements this process, may take a few minutes to execute.
+
+```{r}
+#| label: fit-ens-summary
+#| message: FALSE
+
+fit_ensemble_summary = (model_fit
+  %>% ensemble_stan(n_cores = 4) # generate ensemble in parallel
+  %>% summarise_ensemble_stan()
+)
+
+head(fit_ensemble_summary)
+```
+
+The ensemble is plotted with a line for the median and a ribbon for the confidence band:
+
+```{r}
+#| label: fun_plot_ensemble
+
+# make a function because we'll reuse this in this doc
+plot_ensemble <- function(ens, obs){
+  value_type_labels <- c("Model fit", "Observed data")
+  
+  df = (ens
+    %>% filter(var == "incidence")
+    %>% mutate(value_type = value_type_labels[1])
+    %>% bind_rows(
+      obs %>% mutate(value_type = value_type_labels[2])
+    )
+  )
+  
+  colour_palette = c("dodgerblue", "black")
+  names(colour_palette) = value_type_labels
+  
+  (ggplot(df, aes(x = date))
+    # observed points
+    + geom_point(
+      data = df %>% filter(value_type == value_type_labels[2]),
+      mapping = aes(y = value, colour = value_type), 
+      shape = 1, size = 2
+    )
+    # simulation from fitted model
+    + geom_ribbon(
+      data = df %>% filter(value_type == value_type_labels[1]),
+      mapping = aes(ymin = lwr, ymax = upr,
+                    fill = value_type), alpha = 0.3
+    )
+    + geom_line(
+      data = df %>% filter(value_type == value_type_labels[1]),
+      mapping = aes(y = value, colour = value_type),
+      linewidth = 1.25
+    )
+    + scale_colour_manual(values = colour_palette,
+                          limits = value_type_labels)
+    + scale_fill_manual(values = colour_palette,
+                        limits = value_type_labels)
+    + labs(title = "Incidence over time")
+    + guides(
+    color =
+        guide_legend(override.aes = list(
+          shape = c(NA, 1),
+          linewidth = c(1.25, NA),
+          fill = c(colour_palette[[1]], NA))
+      )
+    )
+    + theme(
+      axis.title = element_blank(),
+      legend.title = element_blank(),
+      legend.justification = c(0,1),
+      legend.position = c(0,1),
+      legend.background = element_rect(fill = NA),
+      legend.key = element_rect(fill = NA)
+    )
+  )
+}
+```
+
+```{r}
+#| label: fig_fit-ens-summary
+
+plot_ensemble(fit_ensemble_summary, observed)
+```
+
+## Generate forecast ensemble
+
+We can use the same function we used to produce the fit ensemble to produce a forecast ensemble. All we need to do is give the function a number of days for the forecast period:
+
+```{r}
+#| label: fig_fcst-ens-summary
+
+fcst_ensemble_summary = (model_fit
+  %>% ensemble_stan(
+    days_to_forecast = 30, # new! number of days to forecast
+    n_cores = 4
+  )
+  %>% summarise_ensemble_stan() # can specify a different quantile vector here: see documentation
+)
+
+plot_ensemble(fcst_ensemble_summary, observed)
+```
+
+## Time-varying parameters
+
+### Simulation
+
+The final modelling feature you will likely find useful in your case studies is the ability to change parameters over time. In `McMasterPandemic`, this is done simply with a piece-wise changes.
+
+```{r}
+#| label: def-new-beta
+beta_new = 0.5
+```
+
+For example, say we want to change the transmission rate to `r beta_new` on 1 Apr 2020. In order to do that, we set up a data frame that has the `Date` of the change, the `Symbol` of the parameter that's changing, the `Value` for the change paired with the `Type` of change:
+
+```{r}
+#| label: param-schedule
+
+param_schedule = data.frame(
+  Date = as.Date('2020-03-25'),
+  Symbol = 'beta',
+  Value = beta_new,
+  Type = 'rel_prev' #relative 
+)
+```
+
+In this case we're setting a value of `r beta_new` absolutely by using `Type = 'abs'` (as opposed to relative to the original value or a previous value for the parameter). Other options for `Type` can be found [here](https://canmod.github.io/macpan-book/time-varying-parameters.html#model-of-piece-wise-time-variation). Now we just attach this parameter schedule to the model object:
+
+```{r}
+#| label: seir-tv
+
+seir_tv = (seir_obs_err_inc
+  %>% update_piece_wise(param_schedule)
+)
+```
+
+```{r}
+#| label: fig_seir-tv
+
+seir_tv_result = simulation_history(seir_tv, obs_err = TRUE)
+# seir_tv_result %>% 
+#   mutate(scenario = "")
+
+(plot_sim(seir_tv, seir_tv_result %>% select(-incidence),
+         title = "Stochastic SEIR simulation\nwith time-varying transmission rate")
+  + geom_vline(
+    data = param_schedule,
+    mapping = aes(xintercept = Date),
+    linetype = "dashed",
+    colour = "black"
+  )
+  + geom_label(
+    data = (param_schedule 
+      %>% mutate(label = paste(Symbol, "prev x", Value,
+                               sep = "\n"))),
+    mapping = aes(x = Date, y = 900, label = label),
+    colour = "black"
+  )
+)
+```
+
+Compared to the original stochastic simulation, where $\beta$ was `r params[['beta']]` throughout the simulation, the epidemic takes off faster once $\beta$ is updated to `r beta_new` on 1 April.
+
+### Calibration
+
+We can also calibrate time-varying parameters for the model. We'll fit the time-varying transmission rate to the incidence from the previous simulation as an example:
+
+```{r}
+#| label: obs-tv
+
+observed_tv = (
+  seir_tv_result
+  %>% transmute(
+    date = Date, 
+    incidence
+  )
+  %>% pivot_longer(-date, names_to = "var")
+  %>% filter(var == "incidence")
+  %>% slice(-1)
+)
+```
+
+In order to prepare the model object for calibration, we still have to append the observed data and priors. Since we now want to also fit a time-varying parameter, we additionally have to:
+
+1.  modify the time-varying parameter schedule to let the software know which of these parameter values we want fitted by putting an `NA` in the `Value` column, and
+2.  attach priors for the time-varying parameters
+
+```{r}
+#| label: seir-tv-to-calibrate
+
+param_schedule_to_calibrate = param_schedule
+param_schedule_to_calibrate$Value = NA # setting all time-varying parameter values (just one!) to NA
+
+seir_tv_to_calibrate = (seir_tv
+  %>% update_observed(observed_tv)
+  %>% update_piece_wise(param_schedule_to_calibrate)
+  # still fit the initial beta value
+  %>% add_opt_params(
+   log_beta ~ log_normal(-1, 0.5) 
+  # attach prior for beta change on 2023-04-01
+  %>% add_opt_tv_params(
+    tv_type = "abs", # type of time-variation value, in this case absolute
+    log_beta ~ log_normal(-1, 0.5)
+  )
+)
+```
+
+We only replace the `Value` of parameters in the time-varying parameter schedule with `NA` if we want to fit them. This way, we can still incorporate time-varying parameters on the simulation side without trying to calibrate their values.
+
+In this example, we only have one change in beta to calibrate. If we had $n$ values, we could either specify one prior for all of them, just as we did for one above, or we could specify one prior for each change by passing vectors of length $n$ for the prior parameters:
+
+``` r
+add_opt_tv_params(
+  tv_type = "abs", # type of time-variation value
+  log_beta ~ log_normal(
+    c(-1, 0.5, 0, ...), # vector of length n for the mean of the log-normal prior
+    c(0.5, 0.25, 0.5, ...) # vector of length n for the sd of the log-normal prior
+  )
+)
+```
+
+Note that this implies that priors for all time-varying parameters of the same symbol will use the same base distribution (in this case, a log-normal).
+
+Now we fit exactly as before:
+
+```{r}
+#| label: fit-tv
+
+model_fit_tv = calibrate_stan(
+    model = seir_tv, # original model object
+    model_to_calibrate = seir_tv_to_calibrate, # model object with observed data and priors
+    chains = 2 # number of MCMC chains
+)
+```
+
+```{r}
+#| label: fit-tv-diagnostics
+
+fit = tidy_fit_stan(model_fit_tv)$fit # a simple utility to attach parameter names to stan output
+rstan::summary(fit)$summary
+rstan::traceplot(fit, ncol = 1)
+```
+
+Internally, time-varying parameter names are appended with the time of the change (in simulation time steps, *i.e.*, days), so here `log_beta_t31` refers to the `beta` from the 31st day of simulation, that is 1 Apr 2020.
+
+```{r}
+#| label: fit-ens-tv
+
+fit_ensemble_tv = (model_fit_tv
+ %>% ensemble_stan(n_cores = 4)
+ %>% summarise_ensemble_stan()
+)
+```
+
+```{r}
+#| label: fig_fit-tv
+
+plot_ensemble(fit_ensemble_tv, observed_tv)
+```
+
+That's it! Now go forth and forecast :)
