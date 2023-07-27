@@ -30,7 +30,7 @@ forecast <- bind_rows(
   forecast_air %>%
     mutate(method = "~ Temp + Temp^2"),
   forecast_air_humid %>%
-    mutate(method = "~ Temp + Humid"),
+    mutate(method = "~ Temp * Humid"),
 )
 
 real_data <- read_csv(here(folder, "targets-neon-chla_evaluation.csv"))
@@ -39,7 +39,7 @@ forecast <- forecast %>%
   left_join(real_data) %>% 
   mutate(method = ordered(method, levels = c("~ Temp",
                                              "~ Temp + Temp^2",
-                                             "~ Temp + Humid")))
+                                             "~ Temp * Humid")))
 
 # plot results ------------------------------------------------------------
 ggthemr::ggthemr("fresh")
