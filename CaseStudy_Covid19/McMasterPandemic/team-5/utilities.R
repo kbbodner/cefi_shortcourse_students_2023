@@ -128,13 +128,18 @@ calculate_model_errors <- function(predicted, observed, dates, first_date, iter_
   bd <- as.data.frame(cbind(predicted, observed, dates))
   # names(bd) <- c("predicted", "observed", "dates")
   # # filter to only values that are at the start of observation
+  # calculate error, defined as predicted minus observed
   bd<- bd %>% mutate(error = (bd$predicted-bd$observed)) %>% dplyr::filter(dates >= first_date)
-  # 
+  # calculates mean of absolute difference of sequential observations (scaling factor)
   Q = mean(abs(diff(bd$error)))
   
-  
+  # mean absolute error is the mean of the absolute error across the data
   MAE = mean(abs(bd$error))
+  
+  # root mean square error is the mean of the squared error across the data
   RMSE = sqrt(mean((bd$error)^2))
+  
+  # MASE is the mean absolute error, scaled by the "null" error Q
   MASE = MAE/Q
   
   iter_name <- if(iter_name == "") {Sys.time()}
