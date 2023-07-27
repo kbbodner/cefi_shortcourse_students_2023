@@ -55,10 +55,10 @@ plot_sim(seir_obs_err, seir_obs_err_result,
 
 library(lubridate)
 random_timevar = data.frame(
-  Date = ymd(20200315),
+  Date = ymd(20200331),
   Symbol = 'beta',
-  Value = 0.01,
-  Type = 'abs'
+  Value = 0.75,
+  Type = 'rel_orig'
 )
 
 random_timevar
@@ -84,7 +84,7 @@ seir_obs_err_inc_result = (seir_obs_err_inc
 
 #plot stochastic
 plot_sim(seir_obs_err_inc, seir_obs_err_inc_result,
-         title = "Stochastic SEIR simulation with incidence") + scale_y_log10()
+         title = "Stochastic SEIR simulation with incidence")
 
 
 
