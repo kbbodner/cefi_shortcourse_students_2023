@@ -5,21 +5,46 @@ format:
     incremental: true  
 ---
 
-## Early Stuart Sockeye Fishery
-:::{.incremental}
+## Stuart Sockeye Fishery
+
 
 :::: {.columns}
 
-::: {.column width="40%"}
-Left column
+::: {.incremental}
+::: {.column width="70%"}
+- Two stocks: 
+  - Early summer returners
+  - Late summer returners
+- 
+
 :::
 
-::: {.column width="60%"}
-![](stuart-lake-system.png){.absolute top=200  width="350" height="300"}
+:::
+
+::: {.column width="30%"}
+![](stuart-lake-system.png){.absolute top=100 right=-100 width="450" height="500"}
 :::
 
 ::::
 
-:::
 
-## 
+##  State of the population
+
+
+
+## Model Forecasts
+- three models:
+  - Basic Ricker
+  - Ricker with Env. Covariate
+  - Power Model
+- We compared the performance of the models using...
+-
+
+
+## Basic Ricker Model
+
+
+## Ricker Covariate model
+
+
+## Rick
