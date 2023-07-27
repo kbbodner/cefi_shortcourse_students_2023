@@ -1,8 +1,11 @@
 # Runs all kinds of naive models
-# @naive.mod is the model output
+# @naive.mod.all is the model output
 
-#Define prediction year
-pred.year <- 2021
+naive.mod.all <- list()
 
-#Run the baseline Ricker model
-naive.mod <- Run.Naive.Mods(data, pred.year)
+#Run the naive models
+for(y in data$yr[10]:2021) {
+  naive.mod.all[[length(naive.mod.all) + 1]] <- naive.mod <- Run.Naive.Mods(data, y)
+  naive.mod.all[[length(naive.mod.all)]] <- naive.mod.all[[length(naive.mod.all)]] |>
+    mutate(R_Pred= Pred4 + Pred5)
+}
