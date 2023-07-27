@@ -11,7 +11,7 @@ state = c(
   R = 100 #R = recovered
 )
 
-# parameters
+# parameters -- these are new gamma and alpha 
 params = c(
   beta = 0.7,
   N = sum(state),
