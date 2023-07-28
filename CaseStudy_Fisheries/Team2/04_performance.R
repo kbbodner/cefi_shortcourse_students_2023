@@ -61,11 +61,9 @@ for(n in naive.mod.LM[[1]]$Mod) {
     predictions <- c(predictions, naive.mod.LM[[i]]$Pred45[naive.mod.LM[[i]]$Mod == n])
   }
   perf.naive.LM[[length(perf.naive.LM) + 1]] <- run.all.performances(observ , predictions,
-                                                               performance.functions)
+                                                                     performance.functions)
 }
-names(perf.naive) <- naive.mod$Mod
-
-####TODO: Fix everything below
+names(perf.naive.LM) <- naive.mod.LM[[1]]$Mod
 
 # best naive model:
 
@@ -76,6 +74,16 @@ best.naive.model <- perf.naive.clean |>
   filter(metric == "RMSE") |> 
   arrange(desc(performance)) |> 
   slice_min(performance)
+
+#best naive LM model
+
+perf.naive.lm.clean <- data.table::rbindlist(perf.naive.LM, idcol = TRUE)
+
+best.naive.lm.model <- perf.naive.lm.clean |> 
+  filter(metric == "RMSE") |> 
+  arrange(desc(performance)) |> 
+  slice_min(performance)
+
 
 #Compare with other models:
 baseline.RMSE <- perf.baseline |>
