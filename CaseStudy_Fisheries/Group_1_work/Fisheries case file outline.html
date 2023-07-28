@@ -405,8 +405,8 @@ B \sim normal(\mu_{B}, \tau_{B})
 <p>And the same gamma prior on precision as the above models (equation 6).</p>
 </section>
 
-<section id="alternate-2-power-model-with-environmental-covariates" class="title-slide slide level2 center">
-<h2>Alternate 2: Power model with environmental covariates</h2>
+<section id="alternate-2-power-model-with-temperature-covariate" class="title-slide slide level2 center">
+<h2>Alternate 2: Power model with temperature covariate</h2>
 <p>This alternate model is an extension to the previous power model that includes the average sea surface temperatures as an environmental covariate:</p>
 <p><span id="eq-14"><span class="math display">\[
 R_i = A S_i^{B+gEsst_{i}}
@@ -433,7 +433,7 @@ g \sim normal(\mu_g, \tau_g )
 
 <section id="create-retroactive-predictions" class="title-slide slide level2 center">
 <h2>Create retroactive predictions</h2>
-<p>Predict between Years: 2011 - 2021 to test model fits</p>
+<p>We used our models to predict recruits in years 2011-2021, then check against real data to assess model performance.</p>
 </section>
 
 <section id="section" class="title-slide slide level2 center">
@@ -455,62 +455,62 @@ g \sim normal(\mu_g, \tau_g )
 
 <section id="model-suggestion" class="title-slide slide level2 center">
 <h2>4. Model Suggestion</h2>
-<p>In all performance metrics, our Power &amp; Temperature Model performed best.</p>
+<p>In all performance metrics, our <strong>Power &amp; Temperature Model</strong> performed best.</p>
 </section>
 
-<section id="test-forecasts" class="title-slide slide level2 center">
-<h2>5. Test Forecasts</h2>
-<p>We proceeded to test our three forecasts models to predict and groundtruth 2022 recruit populations.</p>
+<section id="practice-forecasts" class="title-slide slide level2 center">
+<h2>5. Practice Forecasts</h2>
+<p>We proceeded to apply our three forecast models to predict 2022 recruits.</p>
 </section>
 
-<section id="test-forecasts-1" class="title-slide slide level2 center">
-<h2>5. Test Forecasts</h2>
+<section id="practice-forecasts-1" class="title-slide slide level2 center">
+<h2>5. Practice Forecasts</h2>
 <div class="columns">
-<div class="column" style="width:75%;">
+<div class="column" style="width:70%;">
 <div class="cell" data-layout-align="center">
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="plots/pred_plot_2022.png" style="width:100.0%"></p>
+<p><img data-src="plots/pred_plot_2022.png" style="width:80.0%"></p>
 </figure>
 </div>
 </div>
 </div>
-</div><div class="column" style="width:25%;">
-<p>All models slightly under-predicted recruits, but the contained the true value inside error bars.</p>
+</div><div class="column" style="width:30%;">
+<p>All models slightly under-predicted recruits, but each contained the true value within uncertainty shadow.</p>
 <p>i.e., forecasts are <em>okay</em>.</p>
 </div>
 </div>
 </section>
 
-<section id="forecast-the-future" class="title-slide slide level2 center">
-<h2>6. Forecast the future</h2>
+<section id="forecast-2023" class="title-slide slide level2 center">
+<h2>6. Forecast 2023</h2>
 <p>Seeing that our forecasts were reasonable so far, we used our models to predict recruits in 2023.</p>
 </section>
 
-<section id="forecast-the-future-1" class="title-slide slide level2 center">
+<section id="forecast-the-future" class="title-slide slide level2 center">
 <h2>6. Forecast the future</h2>
 
 <img data-src="plots/pred_plot_2023.png" style="width:100.0%" class="r-stretch quarto-figure-center"></section>
 
-<section id="forecast-the-future-2" class="title-slide slide level2 center">
+<section id="forecast-the-future-1" class="title-slide slide level2 center">
 <h2>6. Forecast the future</h2>
 
-<img data-src="plots/pred_plot_2023.png" style="width:100.0%" class="r-stretch quarto-figure-center"><p>PANIC! - why are predicted values so low??</p>
+<img data-src="plots/pred_plot_2023.png" style="width:100.0%" class="r-stretch quarto-figure-center"><p>PANIC! - what did we do wrong??</p>
 </section>
 
-<section id="investigate-future-forecasts" class="title-slide slide level2 center">
-<h2>6.2 Investigate future forecasts</h2>
-<p>Assess predictor values to make sure we didn’t do anything wrong</p>
+<section id="investigate-unexpected-predictions" class="title-slide slide level2 center">
+<h2>6.2 Investigate unexpected predictions</h2>
+<p>We investigated model parameters to identify reasons our predictions were so low. The temperature covariate model is lowest, but all 3 values are low, indicating an anomaly in the S (spawners) variable.</p>
 </section>
 
-<section id="investigate-future-forecasts-1" class="title-slide slide level2 center">
-<h2>6.2 Investigate future forecasts</h2>
+<section id="investigate-unexpected-predictions-1" class="title-slide slide level2 center">
+<h2>6.2 Investigate unexpected predictions</h2>
 
 <img data-src="plots/Spawners_plot_2023.png" style="width:100.0%" class="r-stretch quarto-figure-center"></section>
 
-<section id="investigate-future-forecasts-2" class="title-slide slide level2 center">
-<h2>6.2 Investigate future forecasts</h2>
+<section id="investigate-unexpected-predictions-2" class="title-slide slide level2 center">
+<h2>6.2 Investigate unexpected predictions</h2>
 
 <img data-src="plots/landslide_screenshot.png" style="width:100.0%" class="r-stretch quarto-figure-center"><p>Considering this, our projected low values of 2023 recruits are reasonable.</p>
 </section>
