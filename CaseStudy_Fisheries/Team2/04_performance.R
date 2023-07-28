@@ -34,9 +34,6 @@ perf.baseline <- run.all.performances(observ, baseline.mod.all$R_Pred,
 perf.power <- run.all.performances(observ, power.mod.all$R_Pred,
                                     performance.functions)
 
-
-
-####TODO: Fix everything below
 #Naive models
 perf.naive <- list()
 
@@ -47,30 +44,26 @@ for(n in naive.mod.all[[1]]$Mod) {
   }
   perf.naive[[length(perf.naive) + 1]] <- run.all.performances(observ , predictions,
                                                                performance.functions)
-    
 }
+names(perf.naive) <- naive.mod$Mod
 
-naive.mod.all
 
-#Naive models
-perf.naive <- list()
-for(i in 1:length(naive.mod.all[[1]]$Mod)) {
-  perf.naive[[i]] <- run.all.performances(sum(obs.2021), naive.mod.ext$R_pred[i],
-                                          performance.functions)
-}
-names(perf.naive) <- naive.mod.ext$Mod
+
+
+####TODO: Fix everything below
+
+# best naive model:
 
 # sort model performance for naive model
 perf.naive.clean <- data.table::rbindlist(perf.naive, idcol = TRUE)
 
-#n best naive model
 best.naive.model <- perf.naive.clean |> 
   filter(metric == "RMSE") |> 
   arrange(desc(performance)) |> 
   slice_min(performance)
 
 #Compare with other models:
-Ricker.RMSE <- perf.Ricker |>
+baseline.RMSE <- perf.baseline |>
   filter(metric == "RMSE")
 
 power.RMSE <- perf.power |>
