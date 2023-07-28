@@ -130,9 +130,17 @@ model_fit = calibrate_stan(
 
 rstan::traceplot(model_fit$fit)
 
+validation <- read.csv("data/validation.csv") %>%
+  mutate(
+    date = as.Date(date), # convert to date
+    var = 'incidence' # add a variable for the name of sim output
+  ) %>%
+  select(date, var, value = new_cases)
+
 # make a function because we'll reuse this in this doc
 plot_ensemble <- function(ens, obs){
   value_type_labels <- c("Model fit", "Observed data")
+  
   df = (ens
         %>% filter(var == "incidence")
         %>% mutate(value_type = value_type_labels[1])
@@ -186,11 +194,296 @@ plot_ensemble <- function(ens, obs){
   )
 }
 
-## slow!
-fcst_ensemble_summary = (model_fit
-  %>% ensemble_stan(
-   days_to_forecast = 30, # new! number of days to forecast
-   n_cores = 4
+plot_ensemble_val <- function(ens, obs, val){
+  value_type_labels <- c("Model fit", "Observed data","Validation data")
+  df = (ens
+        %>% filter(var == "incidence")
+        %>% mutate(value_type = value_type_labels[1])
+        %>% bind_rows(
+          obs %>% mutate(value_type = value_type_labels[2])
+        )
+        %>% bind_rows(
+          val %>% mutate(value_type = value_type_labels[3])
+        )
   )
-  %>% summarise_ensemble_stan() # can specify a different quantile vector here: see documentation
+  
+  colour_palette = c("dodgerblue", "black","red")
+  names(colour_palette) = value_type_labels
+  
+  (ggplot(df, aes(x = date))
+    # observed points
+    + geom_point(
+      data = df %>% filter(value_type == value_type_labels[2]),
+      mapping = aes(y = value, colour = value_type), 
+      shape = 1, size = 2
+    )
+    # observed points
+    + geom_point(
+      data = df %>% filter(value_type == value_type_labels[3]),
+      mapping = aes(y = value, colour = value_type), 
+      shape = 1, size = 2
+    )
+    # simulation from fitted model
+    + geom_ribbon(
+      data = df %>% filter(value_type == value_type_labels[1]),
+      mapping = aes(ymin = lwr, ymax = upr,
+                    fill = value_type), alpha = 0.3
+    )
+    + geom_line(
+      data = df %>% filter(value_type == value_type_labels[1]),
+      mapping = aes(y = value, colour = value_type),
+      linewidth = 1.25
+    )
+    + scale_colour_manual(values = colour_palette,
+                          limits = value_type_labels)
+    + scale_fill_manual(values = colour_palette,
+                        limits = value_type_labels)
+    + labs(title = "Incidence over time")
+    + guides(
+      color =
+        guide_legend(override.aes = list(
+          shape = c(NA, 1, 1),
+          linewidth = c(1.25, NA, NA),
+          fill = c(colour_palette[[1]], NA, NA))
+        )
+    )
+    + theme(
+      axis.title = element_blank(),
+      legend.title = element_blank(),
+      legend.justification = c(0,1),
+      legend.position = c(0,1),
+      legend.background = element_rect(fill = NA),
+      legend.key = element_rect(fill = NA)
+    )
+  )
+}
+
+# fit_ensemble_summary = (model_fit
+#                         %>% ensemble_stan(n_cores = 4) # generate ensemble in parallel
+#                         %>% summarise_ensemble_stan()
+# )
+
+## slow!
+# fcst_ensemble_summary = (model_fit
+#   %>% ensemble_stan(
+#    days_to_forecast = 30, # new! number of days to forecast
+#    n_cores = 4
+#   )
+#   %>% summarise_ensemble_stan() # can specify a different quantile vector here: see documentation
+# )
+
+# plot_ensemble(fit_ensemble_summary, observed)
+# plot_ensemble_val(fit_ensemble_summary, observed, validation)
+
+#| label: def-new-beta
+beta_new = 0.5
+
+#| label: param-schedule
+
+param_schedule = data.frame(
+  Date = as.Date('2020-03-25'),
+  Symbol = 'beta',
+  Value = beta_new,
+  Type = 'rel_orig'
 )
+
+#| label: seir-tv
+
+seir_tv = (seir_obs_err_inc
+           %>% update_piece_wise(param_schedule)
+)
+
+#| label: fig_seir-tv
+
+seir_tv_result = simulation_history(seir_tv, obs_err = TRUE)
+
+#| label: obs-tv
+
+observed_tv = (
+  seir_tv_result
+  %>% transmute(
+    date = Date,
+    incidence
+  )
+  %>% pivot_longer(-date, names_to = "var")
+  %>% filter(var == "incidence")
+  %>% slice(-1)
+)
+
+#| label: fit-tv
+
+model_fit_tv = calibrate_stan(
+  model = seir_tv, # original model object
+  model_to_calibrate = seir_tv_to_calibrate, # model object with observed data and priors
+  chains = 2 # number of MCMC chains
+)
+
+#| label: fit-tv-diagnostics
+
+fit = tidy_fit_stan(model_fit_tv)$fit # a simple utility to attach parameter names to stan output
+rstan::summary(fit)$summary
+rstan::traceplot(fit, ncol = 1)
+
+#| label: fig_fit-tv
+
+fit_ensemble_tv = (model_fit_tv
+                        %>% ensemble_stan(n_cores = 4) # generate ensemble in parallel
+                        %>% summarise_ensemble_stan()
+)
+
+plot_ensemble(fit_ensemble_tv, observed)
+
+#| label: fig_fcst-ens-summary
+
+fcst_ensemble_tv = (model_fit_tv
+                    %>% ensemble_stan(
+                      days_to_forecast = 30, # new! number of days to forecast
+                      n_cores = 4
+                    )
+                    %>% summarise_ensemble_stan() # can specify a different quantile vector here: see documentation
+)
+
+plot_ensemble(fcst_ensemble_tv, observed)
+
+#####
+
+beta_new_m <- c(0.5, 0.7)
+dates_masking <- c(as.Date('2020-03-25'),as.Date('2020-04-15'))
+
+param_schedule = data.frame(
+  Date = dates_masking,
+  Symbol = 'beta',
+  Value = beta_new_m,
+  Type = 'rel_prev'
+)
+
+seir_tv = (seir_obs_err_inc
+           %>% update_piece_wise(param_schedule)
+)
+
+seir_tv_result = simulation_history(seir_tv, obs_err = TRUE)
+
+observed_tv = (
+  seir_tv_result
+  %>% transmute(
+    date = Date, 
+    incidence
+  )
+  %>% pivot_longer(-date, names_to = "var")
+  %>% filter(var == "incidence")
+  %>% slice(-1)
+)
+
+model_fit_tv = calibrate_stan(
+  model = seir_tv, # original model object
+  model_to_calibrate = seir_tv_to_calibrate, # model object with observed data and priors
+  chains = 2 # number of MCMC chains
+)
+
+fit = tidy_fit_stan(model_fit_tv)$fit # a simple utility to attach parameter names to stan output
+rstan::summary(fit)$summary
+rstan::traceplot(fit, ncol = 1)
+
+fit_ensemble_tv_m = (model_fit_tv
+                   %>% ensemble_stan(n_cores = 4)
+                   %>% summarise_ensemble_stan()
+)
+
+plot_ensemble(fit_ensemble_tv, observed)
+plot_ensemble_val(fit_ensemble_tv, observed, validation)
+
+fcst_ensemble_tv_m = (model_fit_tv
+                    %>% ensemble_stan(
+                      days_to_forecast = 30, # new! number of days to forecast
+                      n_cores = 4
+                    )
+                    %>% summarise_ensemble_stan() # can specify a different quantile vector here: see documentation
+)
+
+plot_ensemble(fit_ensemble_tv_m, observed) +
+  theme(text=element_text(size=24))
+plot_ensemble_val(fcst_ensemble_tv_m, observed, validation) +
+  theme(text=element_text(size=24))
+
+plot_ensemble_val_m <- function(ens, mask, obs, val){
+  value_type_labels <- c("Model fit", "Model fit with masking", "Observed data","Validation data")
+  df = (ens
+        %>% filter(var == "incidence")
+        %>% mutate(value_type = value_type_labels[1])
+        %>% bind_rows(
+          mask
+          %>% filter(var == "incidence")
+          %>% mutate(value_type = value_type_labels[2])
+        )
+        %>% bind_rows(
+          obs %>% mutate(value_type = value_type_labels[3])
+        )
+        %>% bind_rows(
+          val %>% mutate(value_type = value_type_labels[4])
+        )
+  )
+  
+  colour_palette = c("dodgerblue","gold","black","red")
+  names(colour_palette) = value_type_labels
+  
+  (ggplot(df, aes(x = date))
+    # observed points
+    + geom_point(
+      data = df %>% filter(value_type == value_type_labels[3]),
+      mapping = aes(y = value, colour = value_type), 
+      shape = 1, size = 2
+    )
+    # observed points
+    + geom_point(
+      data = df %>% filter(value_type == value_type_labels[4]),
+      mapping = aes(y = value, colour = value_type), 
+      shape = 1, size = 2
+    )
+    # simulation from fitted model
+    + geom_ribbon(
+      data = df %>% filter(value_type == value_type_labels[1]),
+      mapping = aes(ymin = lwr, ymax = upr,
+                    fill = value_type), alpha = 0.3
+    )
+    + geom_line(
+      data = df %>% filter(value_type == value_type_labels[1]),
+      mapping = aes(y = value, colour = value_type),
+      linewidth = 1.25
+    )
+    # simulation from fitted model with masks!!
+    + geom_ribbon(
+      data = df %>% filter(value_type == value_type_labels[2]),
+      mapping = aes(ymin = lwr, ymax = upr,
+                    fill = value_type), alpha = 0.3
+    )
+    + geom_line(
+      data = df %>% filter(value_type == value_type_labels[2]),
+      mapping = aes(y = value, colour = value_type),
+      linewidth = 1.25
+    )
+    + scale_colour_manual(values = colour_palette,
+                          limits = value_type_labels)
+    + scale_fill_manual(values = colour_palette,
+                        limits = value_type_labels)
+    + labs(title = "Incidence over time")
+    + guides(
+      color =
+        guide_legend(override.aes = list(
+          shape = c(NA, NA, 1, 1),
+          linewidth = c(1.25, 1.25, NA, NA),
+          fill = c(colour_palette[[1]], colour_palette[[2]], NA, NA))
+        )
+    )
+    + theme(
+      axis.title = element_blank(),
+      legend.title = element_blank(),
+      legend.justification = c(0,1),
+      legend.position = c(0,1),
+      legend.background = element_rect(fill = NA),
+      legend.key = element_rect(fill = NA)
+    )
+  )
+}
+
+plot_ensemble_val_m(fcst_ensemble_tv, fcst_ensemble_tv_m, observed, validation) +
+  theme(text=element_text(size=32))
