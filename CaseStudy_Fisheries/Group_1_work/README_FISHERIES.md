@@ -60,7 +60,9 @@ $$
 R_i = A S_i^B
 $$
 
-We can linearize equation 10 to the following: $$
+We can linearize equation 10 to the following: 
+
+$$
 ln(R_i) = A+B*ln(S_i)
 $$
 
@@ -68,7 +70,9 @@ This model form has normal priors for both $A$ and $B$:
 
 $$
 A \sim normal(\mu_{A}, \tau_{A}) 
-$$ $$
+$$ 
+
+$$
 B \sim normal(\mu_{B}, \tau_{B})
 $$
 
