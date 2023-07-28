@@ -24,7 +24,8 @@ ggplot(data.obs) +
   geom_line(aes(x=yr, y=R_obs))+
    ylab("Returns") +
   xlab("Year") +
-  ggtitle("Yearly returns for Early Stuart")
+  ggtitle("Yearly returns for Early Stuart") +
+  theme_classic()
 
 ggplot(data.obs) +
   geom_line(aes(x=yr, y=R_obs))+
@@ -32,7 +33,8 @@ ggplot(data.obs) +
   geom_line(data=forec, aes(x=yr, y=forecast), col="blue", size=1.1, linetype = "solid") +
   ylab("Returns") +
   xlab("Year") +
-  ggtitle("Yearly returns for Early Stuart")
+  ggtitle("Yearly returns for Early Stuart") +
+  theme_classic()
 
 ggplot(data.obs[60:69,]) +
   geom_line(aes(x=yr, y=R_obs))+
@@ -40,7 +42,8 @@ ggplot(data.obs[60:69,]) +
   geom_line(data=forec, aes(x=yr, y=forecast), col="blue", size=0.8, linetype = "solid") +
   ylab("Returns") +
   xlab("Year") +
-  ggtitle("Yearly returns for Early Stuart")
+  ggtitle("Yearly returns for Early Stuart") +
+  theme_classic()
   
   
 
