@@ -1,21 +1,26 @@
 ---
-title: "Fisheries Management Team 2"
+title: "State of the Fraser River Sockeye Fishery - 2022"
+author: "Lukas Van Riel, Effie Gao, Jesus Pascual, Jack A. Goldman"
 format:
   revealjs:
+    logo: EFI_logo.png
+    css: style.css
     incremental: true  
 ---
 
-## Stuart Sockeye Fishery
+## Fraser River Sockeye Fishery 
 
 
 :::: {.columns}
 
 ::: {.incremental}
-::: {.column width="70%"}
-- Two stocks: 
-  - Early summer returners
-  - Late summer returners
-- 
+::: {.column width="60%"}
+- 2019 and 2020 lowest recorded Fraser Sockeye return ever
+- Management plans led to reduced fishing opportunities
+- **Early Stuart**
+  - fish that return to spawn in early summer
+- 2019 forecast found evidence of population declines
+- 2021 forecast suggest the stock will not reach recovery target
 
 :::
 
@@ -30,9 +35,15 @@ format:
 
 ##  State of the population
 
+![](state-of-pop.png){fig-align="center"}
+
+## Goals
+
+- Previous forecasting methods are old and out of date
+- **Goal**: develop new forecasting methods and evaluate performance
 
 
-## Model Forecasts
+## Candidate models
 - three models:
   - Basic Ricker
   - Ricker with Env. Covariate
@@ -40,11 +51,8 @@ format:
 - We compared the performance of the models using...
 -
 
+## Model comparisons
 
-## Basic Ricker Model
+- graph of model performance
 
-
-## Ricker Covariate model
-
-
-## Rick
+## Proof of Concept Forecast 
