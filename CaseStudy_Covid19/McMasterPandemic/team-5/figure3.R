@@ -177,6 +177,9 @@ ggsave(here::here("team-5/img/fig2_pred_deepit.png"), height = 9, width = 16, un
 View(fcst_ensemble_summary)
 
 
+fig2_summarydata <- fcst_ensemble_summary
+max((fig2_summarydata %>% filter(var == "incidence"))["value"])
+
 
 #### now let's try editing beta so that mask wearing is incorporated.'
 ### How? reduce beta by 25%
@@ -233,8 +236,8 @@ library(lubridate)
 random_timevar = data.frame(
   Date = ymd(20200401),
   Symbol = 'beta',
-  Value = 0.75,
-  Type = 'rel_orig'
+  Value = 0.6,
+  Type = 'rel_prev'
 )
 
 random_timevar
@@ -248,6 +251,7 @@ seir_obs_err_inc = (seir_obs_err
                     # add_error_dist instead of update_ because 
                     # update_ replaces previously attached error distributions
                     # add_ appends
+                    %>% update_piece_wise(random_timevar)
                     %>% add_error_dist( 
                       incidence ~ poisson()
                     )
@@ -331,7 +335,7 @@ fit_ensemble_summary = (model_fit
 head(fit_ensemble_summary)
 
 plot_ensemble(fit_ensemble_summary, cases2) + labs(title = "Incidence over time -- mask wearing starting Apr 1")
-ggsave(here::here("team-5/img/fig3_fit.png"), height = 9, width = 16, units = "cm")
+ggsave(here::here("team-5/img/fig3_fit.png"), height = 18, width = 32, units = "cm")
 
 
 # forecast:
@@ -346,6 +350,6 @@ fcst_ensemble_summary = (model_fit
 )
 
 plot_ensemble(fcst_ensemble_summary, cases2) + labs(title = "Incidence over time -- mask wearing starting Apr 1")
-ggsave(here::here("team-5/img/fig3_pred.png"), height = 9, width = 16, units = "cm")
+ggsave(here::here("team-5/img/fig3_pred.png"), height = 18, width = 32, units = "cm")
 View(fcst_ensemble_summary)
 
