@@ -18,15 +18,16 @@ library(corrplot)
 #***  importance covariates according to pearson correlation   **
 #*# *******************************************************************
 
-matCor <-  cor(data[,5:18] )
+data_copy <- na.omit(data)
+matCor <-  cor(data_copy[,5:18])
 ploCor <- corrplot(matCor, method = 'color')
 corrplot(matCor, method = 'number')
 
 print("Best covariates according to pearson correlation: ")
-print(paste0("- aflow (Average monthly discharge (m3/s)", 
-"/n - peak(Peak annual discharge(m3/s)",
-"/n - jnesst(june Sea surface temperature (C)), and",
-           "/n  pdo(Pacific Decadal Oscillation)"))
+print(paste0("- aflow (Average monthly discharge (m3/s)", "/n",
+"- peak(Peak annual discharge(m3/s)",
+"- jnesst(june Sea surface temperature (C)), and", "/n",
+           "pdo(Pacific Decadal Oscillation)"))
 
 # **#*****************************************************************
 #***  importance covariates according to lm(RR ~ covariate)   **
