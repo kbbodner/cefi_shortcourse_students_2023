@@ -4,8 +4,6 @@ setwd(dirname(getActiveDocumentContext()$path))
 source("03d_multiple_model.R")
 library(dplyr)
 
-#Define prediction year
-pred.year <- 2021
 
 #Define one environmental covariate: jnesst
 newvar <- c("Pop_Name", "yr", "rec4", "rec5", "R", "S", "jnesst")
