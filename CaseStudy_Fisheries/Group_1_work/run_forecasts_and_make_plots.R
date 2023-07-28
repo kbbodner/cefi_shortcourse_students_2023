@@ -4,12 +4,15 @@
 # SORRY, the code is not that efficient, but it works. 
 
 
-
 # libraries ---------------------------------------------------------------
 library(dplyr)
 library(ggplot2)
 library(R2jags)
+
+# global theme and color palette
 theme_set(ggthemes::theme_few())
+pal <- wesanderson::wes_palette("Zissou1")[c(1,4,5)]
+
 
 
 # upload data -------------------------------------------------------------
@@ -21,7 +24,8 @@ data <- read.csv(here::here("CaseStudy_Fisheries",
 ESData <- data %>%
   filter(Pop_Name == "Early Stuart")
 
-# add column for true R
+# add column for true R 
+# (sum of y4 recruits from T-4 and y5 recruits from T-5 )
 ESData <- ESData %>% 
   mutate(True_R = lag(rec4,4) + lag(rec5,5)) %>%
   # add column for 2021 bc lag didn't calculate it
@@ -32,6 +36,8 @@ ESData <- ESData %>%
                    R = NA_integer_,
                    S = NA_integer_, 
                    True_R = 77923 +  154)) 
+
+# remove full dataset
 rm(data)
 
 
@@ -56,7 +62,10 @@ source(here::here("CaseStudy_Fisheries","Code","Functions.R"))
 
 # try in a loop -----------------------------------------------------------
 
+# create empty list to store values in
 last_10_pred_ricker <- list()
+
+# predict values for years 2011-2022
 for(i in 2011:2022){
   
   pred <-  RunModRetro_new(Dat=ESData, Pred_Year=i, Model = "Ricker")
@@ -65,6 +74,8 @@ for(i in 2011:2022){
 }
 
 
+# convert to dataframe and manually add a column for 2010 only to easily 
+# plot a ribbon plot to show the origin of our error shadow
 pred_df_ricker <- as.data.frame(do.call(rbind, last_10_pred_ricker)) %>%
   rbind(c(Pred_Year = 2010,
           Mod = NA,
@@ -77,19 +88,20 @@ pred_df_ricker <- as.data.frame(do.call(rbind, last_10_pred_ricker)) %>%
   ))
 
 
+# plot true values + 2011-2022 predictions
 output_ricker <- ggplot(data = ESData[ESData$yr <= 2021,]) +
   geom_line(aes(x = yr, y = True_R)) +
-  geom_ribbon(data = pred_df_ricker,
+  geom_ribbon(data = pred_df_ricker[pred_df_ricker$Pred_Year<2022,],
               aes(x = Pred_Year,
                   ymin = Pred_low,
                   ymax = Pred_up),
-              fill = "darkmagenta",
+              fill = pal[1],
               color = "transparent",
-              alpha = .2) +
-  geom_line(data = pred_df_ricker,
+              alpha = .25) +
+  geom_line(data = pred_df_ricker[pred_df_ricker$Pred_Year<2022,],
             aes(x=Pred_Year,
                 y = Pred),
-            color = "darkmagenta") +
+            color = pal[1]) +
   labs(x = NULL,
        y = "Returns",
        title = "Ricker Model") +
@@ -104,7 +116,10 @@ output_ricker
 
 # repeat for power model --------------------------------------------------
 
+# create empty list
 last_10_pred_power <- list()
+
+# predict for 2011:2022
 for(i in 2011:2022){
   
   pred <-  RunModRetro_new(Dat=ESData, Pred_Year=i, Model = "Power")
@@ -127,17 +142,17 @@ pred_df_power <-  as.data.frame(do.call(rbind, last_10_pred_power)) %>%
 
 output_power <- ggplot(data = ESData[ESData$yr <= 2021,]) +
   geom_line(aes(x = yr, y = True_R)) +
-  geom_ribbon(data = pred_df_power,
+  geom_ribbon(data = pred_df_power[pred_df_power$Pred_Year<2022,],
               aes(x = Pred_Year,
                   ymin = Pred_low,
                   ymax = Pred_up),
-              fill = "darkmagenta",
+              fill = pal[2],
               color = "transparent",
-              alpha = .2) +
-  geom_line(data = pred_df_power,
+              alpha = .25) +
+  geom_line(data = pred_df_power[pred_df_power$Pred_Year<2022,],
             aes(x=Pred_Year,
                 y = Pred),
-            color = "darkmagenta") +
+            color = pal[2]) +
   labs(x = NULL,
        y = "Returns",
        title = "Power Model") +
@@ -175,20 +190,20 @@ pred_df_power_cov <-  as.data.frame(do.call(rbind, last_10_pred_powercov)) %>%
 
 output_power_cov <- ggplot(data = ESData[ESData$yr <= 2021,]) +
   geom_line(aes(x = yr, y = True_R)) +
-  geom_ribbon(data = pred_df_power_cov,
+  geom_ribbon(data = pred_df_power_cov[pred_df_power_cov$Pred_Year<2022,],
               aes(x = Pred_Year,
                   ymin = Pred_low,
                   ymax = Pred_up),
-              fill = "darkmagenta",
+              fill = pal[3],
               color = "transparent",
-              alpha = .2) +
-  geom_line(data = pred_df_power_cov,
+              alpha = .25) +
+  geom_line(data = pred_df_power_cov[pred_df_power_cov$Pred_Year<2022,],
             aes(x=Pred_Year,
                 y = Pred),
-            color = "darkmagenta") +
+            color = pal[3]) +
   labs(x = NULL,
        y = "Returns",
-       title = "Power and Covariate Model") +
+       title = "Power & Temperature Model") +
   theme_bw() +
   theme(plot.title.position = "plot",
         plot.title = element_text(face = "bold")) +
@@ -216,20 +231,21 @@ ggsave(full_output_plot,
 
 # summarize error of all models -------------------------------------------
 
+# format predicted values and join with original dataset values - RICKER
 ricker_final_pred <- 
   pred_df_ricker %>%
   rename(yr = Pred_Year) %>%
   select(yr, Mod, Pred_low, Pred, Pred_up) %>%
   left_join(ESData %>% select(yr, True_R))
 
-
+# format predicted values and join with original dataset values - POWER
 power_final_pred <- 
   pred_df_power %>%
   rename(yr = Pred_Year) %>%
   select(yr, Mod, Pred_low, Pred, Pred_up) %>%
   left_join(ESData %>% select(yr, True_R))
   
-
+# format predicted values and join with original dataset values - POWERCOV
 powercov_final_pred <- 
   pred_df_power_cov %>%
   rename(yr = Pred_Year) %>%
@@ -237,30 +253,42 @@ powercov_final_pred <-
   left_join(ESData %>% select(yr, True_R))
 
 
+# bind formatted datasets per model together
 final <- rbind(ricker_final_pred, power_final_pred, powercov_final_pred) %>%
   arrange(Mod,yr)
 
+rm(ricker_final_pred, power_final_pred, powercov_final_pred)
+
 final <- final %>%
+  # calculate values of predicted - true value 
+  # (to test how far off predictions were)
   mutate(offset =  Pred - True_R,
          offset_up = Pred_up - True_R,
          offset_low = Pred_low - True_R,
          abs_offset = abs(Pred - True_R),
          percent_offset = abs(Pred - True_R)/True_R * 100) %>%
+  
+  # change model names and order
   mutate(Mod = recode(Mod,
                       "Power" = "Power Model",
                       "Ricker" = "Ricker Model",
-                      "PowerCov" = "Power Model + Covariate")) %>%
+                      "PowerCov" = "Power & Temperature Model")) %>%
   mutate(Mod = factor(Mod,
-                         levels = c("Ricker Model","Power Model","Power Model + Covariate")))
+                         levels = c("Ricker Model","Power Model","Power & Temperature Model")))
   
 
 offset_plot <- final %>%
   tidyr::drop_na(Mod) %>%
-  ggplot(aes(x=yr, y = offset, color = Mod)) +
+  ggplot(aes(x=yr, y = offset, color = Mod, fill = Mod)) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  geom_line(size = 1.5, alpha = .8) +
+  #geom_line() +
+  geom_area(size = 1, alpha = .2, position = "jitter") +
+  
   scale_x_continuous(breaks = scales::pretty_breaks()) +
   scale_y_continuous(labels = scales::comma) +
+  scale_color_manual(values = pal) +
+  scale_fill_manual(values = pal) +
+  
   
   theme(legend.position = c(0,1),
         legend.justification = c(0,1),
@@ -269,7 +297,8 @@ offset_plot <- final %>%
   labs(x = NULL,
        y = "Returns",
        title = "Offset from Real Value",
-       color = "Model")
+       color = NULL, 
+       fill = NULL)
 
 ggview::ggview(offset_plot,
                width = 6,
@@ -322,7 +351,8 @@ model_perf <- final_sum %>%
   labs(x = NULL,
        y = NULL,
        color = "Model",
-       title = "Model Offsets from True Values") 
+       title = "Model Offsets from True Values") +
+  scale_color_manual(values = pal)
 
 ggview::ggview(model_perf,
                width = 6,
@@ -347,8 +377,8 @@ final %>%
   
 rm(last_10_pred_power, last_10_pred_powercov, last_10_pred_ricker,
    model_perf, ESData, full_output_plot, offset_plot, output_power, 
-   output_power_cov, output_ricker, power_final_pred, pred_df_power, 
-   pred_df_power_cov, pred_df_ricker, ricker_final_pred, powercov_final_pred,
+   output_power_cov, output_ricker, pred_df_power, 
+   pred_df_power_cov, pred_df_ricker,
    final_sum, pred)
 
 # forecast for 2022 AND CHECK-------------------------------------------------------
@@ -363,7 +393,7 @@ ESData23 <- data23 %>%
 # add column for true R
 ESData23 <- ESData23 %>% 
   mutate(True_R = lag(rec4,4) + lag(rec5,5)) %>%
-  # add column for 2021 bc lag didn't calculate it %>%
+  # add rows for 2021 and 2022 bc lag doesnt add extra rows 
   rbind(data.frame(Pop_Name = "Early Stuart",
                    yr = 2021,
                    rec4 = NA_integer_,
@@ -390,9 +420,9 @@ ribbon_data <- final[final$yr %in% c(2021,2022),] %>%
   mutate(Mod = recode(Mod,
                       "Power" = "Power Model",
                       "Ricker" = "Ricker Model",
-                      "PowerCov" = "Power Model + Covariate")) %>%
+                      "PowerCov" = "Power & Temperature Model")) %>%
   mutate(Mod = factor(Mod,
-                      levels = c("Ricker Model","Power Model","Power Model + Covariate")))
+                      levels = c("Ricker Model","Power Model","Power & Temperature Model")))
 
   
 
@@ -433,7 +463,9 @@ pred_2022 <- ESData23 %>%
        y = "Returns",
        title = "2022 Predictions",
        caption = "True 2022 Return: 243,951") +
-  scale_y_continuous(labels = scales::comma)
+  scale_y_continuous(labels = scales::comma) +
+  scale_color_manual(values = pal) +
+  scale_fill_manual(values = pal)
 
 
 ggview::ggview(pred_2022,
@@ -452,28 +484,32 @@ ggsave(pred_2022,
 
 # forecast for 2023 -------------------------------------------------------
 
+# create empty list to store values
 pred23 <- list()
 
 # predict 2023 ricker 
-  pred <-  RunModRetro_new(Dat=ESData23, Pred_Year=2023, Model = "Ricker")
-  pred23[[paste0("Ricker",2023)]] <- pred$Preds_Out
-  
-  
-  # predict 2023 power 
-  pred <-  RunModRetro_new(Dat=ESData23, Pred_Year=2023, Model = "Power")
-  pred23[[paste0("Power",2023)]] <- pred$Preds_Out
-  
-  # predict cov 2023 power 
-  pred <-  RunModRetro_new(Dat=ESData23, Pred_Year=2023, Model = "PowerCov", Cov = cov_sst)
-  pred23[[paste0("PowerCov",2023)]] <- pred$Preds_Out
-  
+pred <-  RunModRetro_new(Dat=ESData23, Pred_Year=2023, Model = "Ricker")
+pred23[[paste0("Ricker",2023)]] <- pred$Preds_Out
+
+
+# predict 2023 power 
+pred <-  RunModRetro_new(Dat=ESData23, Pred_Year=2023, Model = "Power")
+pred23[[paste0("Power",2023)]] <- pred$Preds_Out
+
+# predict cov 2023 power 
+pred <-  RunModRetro_new(Dat=ESData23, Pred_Year=2023, Model = "PowerCov", Cov = cov_sst)
+pred23[[paste0("PowerCov",2023)]] <- pred$Preds_Out
+
+# change list to dataframe
 pred23_df <- as.data.frame(do.call(rbind, pred23)) 
 
 
 # plot predictions 
 
+# format data to make ribbon plots 
 ribbon_data_23 <- pred23_df %>%
   select(-ModType) %>%
+  # manually bind 2022 values to give error shadows a starting point
   rbind(
     data.frame(
       Pred_Year = c(2022),
@@ -487,16 +523,17 @@ ribbon_data_23 <- pred23_df %>%
     )
   ) %>%
   
+  # change and order model names
   mutate(Mod = recode(Mod,
                       "Power" = "Power Model",
                       "Ricker" = "Ricker Model",
-                      "PowerCov" = "Power Model + Covariate")) %>%
+                      "PowerCov" = "Power & Temperature Model")) %>%
   mutate(Mod = factor(Mod,
-                      levels = c("Ricker Model","Power Model","Power Model + Covariate")))
+                      levels = c("Ricker Model","Power Model","Power & Temperature Model")))
 
 
  
-
+# plot 2023 predictions
 pred_2023 <- ESData23 %>%
   ggplot(aes(x=yr, y=True_R)) +
   geom_line() +
@@ -533,7 +570,8 @@ pred_2023 <- ESData23 %>%
   labs(x = "Year",
        y = "Returns",
        title = "2023 Predictions") +
-  scale_y_continuous(labels = scales::comma)
+  scale_y_continuous(labels = scales::comma) +
+  scale_color_manual(values = pal)
 
 
 ggview::ggview(pred_2023,
@@ -548,6 +586,14 @@ ggsave(pred_2023,
                          "plots","pred_plot_2023.png"))
 
 
+
+
+# investigate why 2023 predictions are so low -----------------------------
+# 2023 predictions are uncharactaristically low. This applied to all 3 models,
+# indicating it was a function of the S(T-4) value because that's the only 
+# value that would change predictions in all 3 models. 
+# here, we plot that S value over time to see if recent values are anomalous
+# in a way that might explain our low R model predicitons
 
 
 # plot ES Spawners
@@ -613,20 +659,20 @@ stock_status <- ggplot() +
             xmax = Inf,
             ymin = -Inf,
             ymax = low_threshold_R),
-            fill = "tomato2", alpha = .2) +
+            fill = "#FF3700", alpha = .15) +
   # plot middle box
   geom_rect(aes(xmin = -Inf, 
             xmax = Inf,
             ymin = low_threshold_R,
             ymax = high_threshold_R),
-            fill = "yellow", alpha = .2,
+            fill = "#FFeC00", alpha = .15,
             stat = "unique")  +
   # plot top box
   geom_rect(aes(xmin = -Inf, 
             xmax = Inf,
             ymin = high_threshold_R,
             ymax = Inf),
-            fill = "green", alpha = .2,
+            fill = "#00FF00", alpha = .15,
             stat = "unique")  +
   geom_hline(yintercept = c(high_threshold_R, low_threshold_R),
              linetype = "dotted", size = .25) +
@@ -639,7 +685,7 @@ stock_status <- ggplot() +
                    xend = 2023,
                    y = ESData23$True_R[ESData23$yr == 2022],
                    yend = pred23_df$Pred[pred23_df$Mod=="PowerCov"]),
-               linetype = "dashed") +
+               linetype = "dashed", size = .4) +
   geom_point(inherit.aes=F,
              aes(x = 2023, 
                  y = pred23_df$Pred[pred23_df$Mod=="PowerCov"])) +
