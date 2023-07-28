@@ -27,8 +27,7 @@ $$ {#eq-1}
 
 population growth ($\alpha$) and carrying capacity ($\beta$)
 
----
-
+------------------------------------------------------------------------
 
 We can linearize to obtain simpler parameters:
 
@@ -36,8 +35,7 @@ $$
 ln(R_i) = ln(\alpha)+ ln(S_i)-S_i/S_{max}
 $$ {#eq-2}
 
----
-
+------------------------------------------------------------------------
 
 We place priors on the following:
 
@@ -75,13 +73,13 @@ $$
 R_i = A S_i^B
 $$ {#eq-10}
 
----
+------------------------------------------------------------------------
 
 We can linearize equation 10 to the following: $$
 ln(R_i) = A+B*ln(S_i)
 $$ {#eq-11}
 
----
+------------------------------------------------------------------------
 
 This model form has normal priors for both $A$ and $B$:
 
@@ -105,13 +103,13 @@ $$
 R_i = A S_i^{B+gEsst_{i}}
 $$ {#eq-14}
 
----
+------------------------------------------------------------------------
 
 We can linearize this as the following: $$
 ln(R_i) = A+B*ln(S_i)+gEsst_{i}
 $$ {#eq-15}
 
---- 
+------------------------------------------------------------------------
 
 We used the same priors for $A$, $B$, as previous above models and a normal (flat) prior for $g$:
 
@@ -123,33 +121,74 @@ $$ {#eq-9}
 
 ## Create retroactive predictions
 
-Predict between Years: 2006 - 2021
+Predict between Years: 2011 - 2021 to test model fits
 
-```{r}
+##
+
+```{r, out.width = "100%", fig.align = "center"}
 # put graph of models being compared here
+knitr::include_graphics("plots/model_fits_plot.png")
 ```
 
 ## Performance Metrics
 
-Metrics Used: Number of times true value fell outside of confidence intervals
+Metric 1: Offset from true prediction
 
-what else?
-
-```{r}
-# put metric results here
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/predicted_real_offset_plot.png")
 ```
+
+## Performance Metrics
+Metrics 2, 3, & 4: 
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/model_performances.png")
+```
+
 
 ## 4. Model Suggestion
 
-Which? Power Model with Environmental Covariate
+In all performance metrics, our Power & Temperature Model performed best. 
 
-## 5. Final Forecast
 
-### For 2022 and 2023
 
-```{r}
-# put graph with predictions here
+## 5. Test Forecasts
+
+We proceeded to test our three forecasts models to predict and groundtruth 2022 recruit populations.  
+
+## 5. Test Forecasts
+
+:::: {.columns}
+
+::: {.column width="75%"}
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/pred_plot_2022.png")
 ```
+:::
+
+::: {.column width="25%"}
+All models slightly under-predicted recruits, but the contained the true value inside error bars.
+
+
+i.e., forecasts are _okay_.
+:::
+
+::::
+
+
+## 6. Forecast the future
+Seeing that our forecasts were reasonable so far, we used our models to predict recruits in 2023.
+
+## 6. Forecast the future
+
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/pred_plot_2023.png")
+```
+
+
 
 ## Assessment of Stock
 
