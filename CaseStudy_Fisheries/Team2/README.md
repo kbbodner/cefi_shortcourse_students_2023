@@ -1,6 +1,10 @@
 # State of the Stock 
 
-This respository outlines...
+This repository outlines the development of a proof-of-concept forecast for the stock assessment of the Early Stuart Lake Sockeye Fishery.
+
+
+<img align="right" width="300" height="300" src=./Presentation/stuart-lake-system.png>
+
 
 ## Lay Summary
 
