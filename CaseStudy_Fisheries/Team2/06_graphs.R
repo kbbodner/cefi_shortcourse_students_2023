@@ -46,4 +46,38 @@ ggplot(data.obs[60:69,]) +
   theme_classic()
   
   
+#performance plots
+best.naive.lm.model <- best.naive.lm.model |> 
+  rename(model = ".id") |> 
+  as.data.frame()  |> 
+  mutate(model = "Naive LM")
+
+baseline.RMSE <- baseline.RMSE |> 
+  mutate(model = rep("Baseline_Ricker"))|> 
+  relocate(model, .before = metric)
+
+power.RMSE <- power.RMSE |>
+  mutate(model = rep("Power")) |> 
+  relocate(model, .before = metric) 
+
+
+
+best.naive.model <- best.naive.model |> 
+  rename(model = ".id") |> as.data.frame()  |> 
+  mutate(model = "Naive")
+
+ricker.env.RMSE <- ricker.env.RMSE |> 
+  mutate(model = rep("Env_Ricker"))|> 
+  relocate(model, .before = metric) 
+
+
+mod.performance <- rbind(baseline.RMSE, power.RMSE, best.naive.model, best.naive.lm.model, ricker.env.RMSE )
+
+# plot performance values
+mod.performance |> 
+  ggplot() + 
+  geom_col(aes(x = reorder(model, -performance), y = performance)) +
+  ggtitle("Predictive Performance") + 
+  ylab("Difference between Predicted and Observed") +
+  xlab("Model Type")+ theme_bw()+ theme(plot.title = element_text(hjust = 0.5)) 
 
