@@ -1,5 +1,5 @@
 ---
-title: "State of the Fraser River Sockeye Fishery - 2022"
+title: "State of the Stock 2023"
 author: "Lukas Van Riel, Effie Gao, Jesus Pascual, Jack A. Goldman"
 format:
   revealjs:
@@ -45,23 +45,24 @@ format:
 
 
 ## Candidate models
-- three models:
+- Five models:
   - Basic Ricker
   - Ricker with Env. Covariate
   - Power Model
   - Naive
   - Naive Linear Model
 - We compared the performance of the models using RMSE
--
+
 
 ## Model comparisons
 
-- graph of model performance
+![](performance_plot){fig-align="center"}
 
 ## Proof of Concept Forecast 
 
 
 ## Recommendation 
 
+![](state-of-pop.png){fig-align="left"}
 
 ## Thank you
