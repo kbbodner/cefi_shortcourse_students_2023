@@ -31,7 +31,8 @@ perf.baseline <- run.all.performances(observ, baseline.mod.all$R_Pred,
                                       performance.functions)
 
 #Baseline + covariate
-#TODO
+perf.ricker.env <- run.all.performances(observ, ricker.env.mod.all$R_Pred,
+                                      performance.functions)
 
 #Power
 perf.power <- run.all.performances(observ, power.mod.all$R_Pred,
@@ -80,6 +81,11 @@ best.naive.model <- perf.naive.clean |>
 baseline.RMSE <- perf.baseline |>
   filter(metric == "RMSE")
 
+ricker.env.RMSE <- perf.ricker.env |>
+  filter(metric == "RMSE")
+
 power.RMSE <- perf.power |>
   filter(metric == "RMSE")
+
+
 
