@@ -44,10 +44,18 @@ rm(data)
 # upload environmental data
 env <- read.csv(here::here("CaseStudy_Fisheries","DataIn",
                            "FC_Environmental_Data.csv"))
+
 # get a vector of average summer sst
 cov_sst <- env %>% 
   mutate(sst_avg = (apesst + maesst + jnesst)/3) %>%
   pull(sst_avg)
+
+# also plot summer sst for good measure
+env %>% 
+  mutate(sst_avg = (apesst + maesst + jnesst)/3) %>%
+  ggplot(aes(x=yr, y = sst_avg)) +
+  geom_line() +
+  coord_cartesian(xlim = c(2000,2025))
   
 rm(env)
   
@@ -672,7 +680,7 @@ S_plot <- ESData23 %>%
   ggrepel::geom_text_repel(
     inherit.aes=F, stat  = "unique",
     aes(y = S[yr == 2019],
-        x = 2019, label = "Lowest Value\nEver Recorded"),
+        x = 2019, label = "Lowest Value\nEver Recorded\n(as of then)"),
     nudge_x = -5, direction = "y", hjust = "right",
     point.padding = .5,
     lineheight = .8
