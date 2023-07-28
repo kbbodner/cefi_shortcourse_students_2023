@@ -15,7 +15,7 @@ Data includes spawner-recruit data for all Fraser Sockeye stocks with available 
 
 Potential environmental covariates are also included, which are generally assumed to affect early-marine survival, so are synced with each brood-years outmigration year and approximate timing.
 
-All provided code can be found in [Functions_new.R](CaseStudy_Fisheries/Group_1_work/Functions_new.R) and [JL_exploration.R](CaseStudy_Fisheries/Group_1_work/JL_exploration.R)
+All provided code can be found in [Functions_new.R](Functions_new.R) and [JL_exploration.R](JL_exploration.R)
 
 ### Model 1: Basic Ricker 
 
