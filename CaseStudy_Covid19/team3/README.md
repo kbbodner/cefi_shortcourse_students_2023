@@ -3,6 +3,7 @@ This is the presentation and code that goes along with a case study done during 
 
 ## Getting Started
 The attached code uses both DOCKER, if DOCKER is not already installed follow the instructions seen within the README file found here; https://github.com/kbbodner/cefi_shortcourse_students_2023/blob/main/CaseStudy_Covid19/covidseir/README.md
+
 Once this is running open the "introduction_stan_seir_case_study.Qmd" to begin running the model.
 
 ## Summary
