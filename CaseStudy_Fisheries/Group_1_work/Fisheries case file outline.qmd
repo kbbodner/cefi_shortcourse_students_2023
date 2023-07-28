@@ -223,7 +223,7 @@ Compared to global historical mean
 
 :::
 
-## Assessment of Stock
+---
 
 ```{r, out.width = "100%", fig.align = "center"}
 # put graph of models being compared here
