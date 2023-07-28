@@ -88,12 +88,15 @@ $$
 R_i = A S_i^{B+gEsst_{i}}
 $$
 
-We can linearize this as the following: $$
+We can linearize this as the following: 
+
+$$
 ln(R_i) = A+B*ln(S_i)+gEsst_{i}
 $$
 
 We used the same priors for $A$, $B$, and $g$ as previous above models.
 
 ## Deliverables
+
 
 
