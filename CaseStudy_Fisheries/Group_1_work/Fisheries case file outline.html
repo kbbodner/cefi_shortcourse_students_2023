@@ -37,11 +37,11 @@
 
   .callout {
     margin-top: 1em;
-    margin-bottom: 1em;
+    margin-bottom: 1em;  
     border-radius: .25rem;
   }
 
-  .callout.callout-style-simple {
+  .callout.callout-style-simple { 
     padding: 0em 0.5em;
     border-left: solid #acacac .3rem;
     border-right: solid 1px silver;
@@ -92,7 +92,7 @@
     margin-top: 0.5em;
     margin-bottom: 0.5em;
   }
-
+    
   .callout.callout-captioned.callout-style-simple .callout-content  p {
     margin-top: 0;
   }
@@ -143,7 +143,7 @@
   .callout-caption {
     display: flex
   }
-
+    
   .callout-icon::before {
     margin-top: 1rem;
     padding-right: .5rem;
@@ -255,12 +255,12 @@
     }
     .reveal .footnotes ol {
       counter-reset: ol;
-      list-style-type: none;
+      list-style-type: none; 
       margin-left: 0;
     }
     .reveal .footnotes ol li:before {
       counter-increment: ol;
-      content: counter(ol) ". ";
+      content: counter(ol) ". "; 
     }
     .reveal .footnotes ol li > p:first-child {
       display: inline-block;
@@ -302,19 +302,19 @@
     .reveal .slide > img.r-stretch.quarto-figure-center {
       display: block;
       margin-left: auto;
-      margin-right: auto;
+      margin-right: auto; 
     }
     .reveal .slide > img.stretch.quarto-figure-left,
     .reveal .slide > img.r-stretch.quarto-figure-left  {
       display: block;
       margin-left: 0;
-      margin-right: auto;
+      margin-right: auto; 
     }
     .reveal .slide > img.stretch.quarto-figure-right,
     .reveal .slide > img.r-stretch.quarto-figure-right  {
       display: block;
       margin-left: auto;
-      margin-right: 0;
+      margin-right: 0; 
     }
   </style>
 </head>
@@ -485,7 +485,7 @@ g \sim normal(\mu_g, \tau_g )
 
 <section id="forecast-the-future" class="title-slide slide level2 center">
 <h2>6. Forecast the future</h2>
-<p>Seeing that our forecasts were so far, okay, we used our models to predict recruits in 2023.</p>
+<p>Seeing that our forecasts were reasonable so far, we used our models to predict recruits in 2023.</p>
 </section>
 
 <section id="forecast-the-future-1" class="title-slide slide level2 center">
@@ -493,16 +493,40 @@ g \sim normal(\mu_g, \tau_g )
 
 <img data-src="plots/pred_plot_2023.png" style="width:100.0%" class="r-stretch quarto-figure-center"></section>
 
+<section id="forecast-the-future-2" class="title-slide slide level2 center">
+<h2>6. Forecast the future</h2>
+
+<img data-src="plots/pred_plot_2023.png" style="width:100.0%" class="r-stretch quarto-figure-center"><p>PANIC! - why are predicted values so low??</p>
+</section>
+
+<section id="investigate-future-forecasts" class="title-slide slide level2 center">
+<h2>6.2 Investigate future forecasts</h2>
+<p>Assess predictor values to make sure we didn’t do anything wrong</p>
+</section>
+
+<section id="investigate-future-forecasts-1" class="title-slide slide level2 center">
+<h2>6.2 Investigate future forecasts</h2>
+
+<img data-src="plots/Spawners_plot_2023.png" style="width:100.0%" class="r-stretch quarto-figure-center"></section>
+
+<section id="investigate-future-forecasts-2" class="title-slide slide level2 center">
+<h2>6.2 Investigate future forecasts</h2>
+
+<img data-src="plots/landslide_screenshot.png" style="width:100.0%" class="r-stretch quarto-figure-center"><p>Considering this, our projected low values of 2023 recruits are reasonable.</p>
+</section>
+
 <section id="assessment-of-stock" class="title-slide slide level2 center">
 <h2>Assessment of Stock</h2>
 <p>Compared to global historical mean</p>
 <p>Yellow = prediction within +/-0.5sd of global historical mean</p>
 <p>Green = prediction larger than global historical mean by more than +0.5sd</p>
 <p>Red = prediction smaller than global historical mean by more than -0.5sd</p>
-<div class="cell">
-
-</div>
 </section>
+
+<section id="assessment-of-stock-1" class="title-slide slide level2 center">
+<h2>Assessment of Stock</h2>
+
+<img data-src="plots/stock_status.png" style="width:100.0%" class="r-stretch quarto-figure-center"></section>
 </section>
 <section id="limit-fishing-to-the-extent-possible" class="title-slide slide level1 center">
 <h1>LIMIT FISHING TO THE EXTENT POSSIBLE</h1>
@@ -521,7 +545,7 @@ g \sim normal(\mu_g, \tau_g )
   <script src="Fisheries case file outline_files/libs/revealjs/plugin/reveal-menu/menu.js"></script>
   <script src="Fisheries case file outline_files/libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
   <script src="Fisheries case file outline_files/libs/revealjs/plugin/quarto-support/support.js"></script>
-
+  
 
   <script src="Fisheries case file outline_files/libs/revealjs/plugin/notes/notes.js"></script>
   <script src="Fisheries case file outline_files/libs/revealjs/plugin/search/search.js"></script>
@@ -543,7 +567,7 @@ g \sim normal(\mu_g, \tau_g )
 'autoAnimateUnmatched': true,
 'menu': {"side":"left","useTextContentForMissingTitles":true,"markers":false,"loadIcons":false,"custom":[{"title":"Tools","icon":"<i class=\"fas fa-gear\"></i>","content":"<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>"}],"openButton":true},
 'smaller': false,
-
+ 
         // Display controls in the bottom right corner
         controls: false,
 
@@ -721,7 +745,7 @@ g \sim normal(\mu_g, \tau_g )
         ]
       });
     </script>
-
+    
     <script>
       // htmlwidgets need to know to resize themselves when slides are shown/hidden.
       // Fire the "slideenter" event (handled by htmlwidgets.js) when the current
@@ -778,7 +802,7 @@ g \sim normal(\mu_g, \tau_g )
           toggleBodyColorMode(bsSheetEl);
         }
       }
-      toggleBodyColorPrimary();
+      toggleBodyColorPrimary();  
       const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
       tabsets.forEach(function(tabset) {
         const tabby = new Tabby('#' + tabset.id);
@@ -802,11 +826,11 @@ g \sim normal(\mu_g, \tau_g )
           button.setAttribute("data-bs-toggle", "tooltip");
           button.setAttribute("data-bs-placement", "left");
           button.setAttribute("data-bs-title", "Copied!");
-          tooltip = new bootstrap.Tooltip(button,
-            { trigger: "manual",
+          tooltip = new bootstrap.Tooltip(button, 
+            { trigger: "manual", 
               customClass: "code-copy-button-tooltip",
               offset: [0, -8]});
-          tooltip.show();
+          tooltip.show();    
         }
         setTimeout(function() {
           if (tooltip) {
@@ -838,7 +862,7 @@ g \sim normal(\mu_g, \tau_g )
         };
           config['offset'] = [0,0];
           config['maxWidth'] = 700;
-        window.tippy(el, config);
+        window.tippy(el, config); 
       }
       const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
       for (var i=0; i<noterefs.length; i++) {
@@ -891,6 +915,6 @@ g \sim normal(\mu_g, \tau_g )
       }
     });
     </script>
-
+    
 
 </body></html>

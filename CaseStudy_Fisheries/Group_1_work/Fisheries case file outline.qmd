@@ -13,12 +13,11 @@ Group members: Jake Lawlor, Yiran Wang, Emmerson Wilson, and Garland Xie
 
 # Sockeye salmon
 
-![Fraser River Watershed](./plots/background info/watershed2.jpeg)
+![Fraser River Watershed](./plots/background%20info/watershed2.jpeg)
 
----
+------------------------------------------------------------------------
 
-![Early Stuart Stock](./plots/background info/watershed2 close.jpg)
-
+![Early Stuart Stock](./plots/background%20info/watershed2%20close.jpg)
 
 ## 1. Basic Ricker Model
 
@@ -132,7 +131,7 @@ $$ {#eq-9}
 
 Predict between Years: 2011 - 2021 to test model fits
 
-##
+## 
 
 ```{r, out.width = "100%", fig.align = "center"}
 # put graph of models being compared here
@@ -149,27 +148,25 @@ knitr::include_graphics("plots/predicted_real_offset_plot.png")
 ```
 
 ## Performance Metrics
-Metrics 2, 3, & 4: 
+
+Metrics 2, 3, & 4:
+
 ```{r, out.width = "100%", fig.align = "center"}
 # put graph of models being compared here
 knitr::include_graphics("plots/model_performances.png")
 ```
 
-
 ## 4. Model Suggestion
 
-In all performance metrics, our Power & Temperature Model performed best. 
-
-
+In all performance metrics, our Power & Temperature Model performed best.
 
 ## 5. Test Forecasts
 
-We proceeded to test our three forecasts models to predict and groundtruth 2022 recruit populations.  
+We proceeded to test our three forecasts models to predict and groundtruth 2022 recruit populations.
 
 ## 5. Test Forecasts
 
-:::: {.columns}
-
+::: columns
 ::: {.column width="75%"}
 ```{r, out.width = "100%", fig.align = "center"}
 # put graph of models being compared here
@@ -180,14 +177,12 @@ knitr::include_graphics("plots/pred_plot_2022.png")
 ::: {.column width="25%"}
 All models slightly under-predicted recruits, but the contained the true value inside error bars.
 
-
-i.e., forecasts are _okay_.
+i.e., forecasts are *okay*.
+:::
 :::
 
-::::
-
-
 ## 6. Forecast the future
+
 Seeing that our forecasts were reasonable so far, we used our models to predict recruits in 2023.
 
 ## 6. Forecast the future
@@ -195,7 +190,39 @@ Seeing that our forecasts were reasonable so far, we used our models to predict 
 ```{r, out.width = "100%", fig.align = "center"}
 # put graph of models being compared here
 knitr::include_graphics("plots/pred_plot_2023.png")
+
 ```
+
+
+
+## 6. Forecast the future
+
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/pred_plot_2023.png")
+```
+PANIC! - why are predicted values so low??
+
+
+## 6.2 Investigate future forecasts
+Assess predictor values to make sure we didn't do anything wrong
+
+
+
+## 6.2 Investigate future forecasts
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/Spawners_plot_2023.png")
+```
+
+
+## 6.2 Investigate future forecasts
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/landslide_screenshot.png")
+```
+Considering this, our projected low values of 2023 recruits are reasonable. 
+
 
 
 
@@ -209,8 +236,12 @@ Green = prediction larger than global historical mean by more than +0.5sd
 
 Red = prediction smaller than global historical mean by more than -0.5sd
 
-```{r}
-# put graph with yellow green red sections here
+## Assessment of Stock 
+
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/stock_status.png")
 ```
+
 
 # LIMIT FISHING TO THE EXTENT POSSIBLE
