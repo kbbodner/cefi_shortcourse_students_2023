@@ -34,6 +34,9 @@ perf.baseline <- run.all.performances(observ, baseline.mod.all$R_Pred,
 perf.power <- run.all.performances(observ, power.mod.all$R_Pred,
                                     performance.functions)
 
+
+
+####TODO: Fix everything below
 #Naive models
 perf.naive <- list()
 
