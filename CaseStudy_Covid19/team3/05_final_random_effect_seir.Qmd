@@ -258,7 +258,7 @@ prints the lines contained in the `stan` file
 
 code <- readLines(here(
   "stan_models",
-  "basic_seir_model.stan"
+  "final_seir_model.stan"
 ))
 
 cat(code, sep = "\n")
@@ -270,7 +270,7 @@ We run the following to compile the model
 
 model <- stan_model(here(
   "stan_models",
-  "basic_seir_model.stan"
+  "final_seir_model.stan"
 ))
 ```
 
