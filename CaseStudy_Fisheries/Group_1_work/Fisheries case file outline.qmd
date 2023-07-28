@@ -11,6 +11,15 @@ editor: visual
 
 Group members: Jake Lawlor, Yiran Wang, Emmerson Wilson, and Garland Xie
 
+# Sockeye salmon
+
+![Fraser River Watershed](./plots/background info/watershed2.jpeg)
+
+---
+
+![Early Stuart Stock](./plots/background info/watershed2 close.jpg)
+
+
 ## 1. Basic Ricker Model
 
 ::: {.content-visible unless-format="revealjs"}
@@ -27,8 +36,7 @@ $$ {#eq-1}
 
 population growth ($\alpha$) and carrying capacity ($\beta$)
 
----
-
+------------------------------------------------------------------------
 
 We can linearize to obtain simpler parameters:
 
@@ -36,8 +44,7 @@ $$
 ln(R_i) = ln(\alpha)+ ln(S_i)-S_i/S_{max}
 $$ {#eq-2}
 
----
-
+------------------------------------------------------------------------
 
 We place priors on the following:
 
@@ -75,13 +82,13 @@ $$
 R_i = A S_i^B
 $$ {#eq-10}
 
----
+------------------------------------------------------------------------
 
 We can linearize equation 10 to the following: $$
 ln(R_i) = A+B*ln(S_i)
 $$ {#eq-11}
 
----
+------------------------------------------------------------------------
 
 This model form has normal priors for both $A$ and $B$:
 
@@ -105,13 +112,13 @@ $$
 R_i = A S_i^{B+gEsst_{i}}
 $$ {#eq-14}
 
----
+------------------------------------------------------------------------
 
 We can linearize this as the following: $$
 ln(R_i) = A+B*ln(S_i)+gEsst_{i}
 $$ {#eq-15}
 
---- 
+------------------------------------------------------------------------
 
 We used the same priors for $A$, $B$, as previous above models and a normal (flat) prior for $g$:
 
