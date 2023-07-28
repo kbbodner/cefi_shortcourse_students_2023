@@ -198,6 +198,13 @@ ggplot(noaa_future_daily, aes(x=datetime, y=air_temperature)) +
   coord_cartesian(xlim = c(forecast_date - days(60),
                            forecast_date + days(35)))+
   facet_wrap(~site_id, scales = 'free')
+
+ggplot(noaa_future_daily, aes(x=datetime, y=precipitation_flux)) +
+  geom_line(aes(group = parameter), alpha = 0.4)+
+  geom_line(data = noaa_past_mean, colour = 'darkblue') +
+  coord_cartesian(xlim = c(forecast_date - days(60),
+                           forecast_date + days(35)))+
+  facet_wrap(~site_id, scales = 'free')
 ```
 
 # Model fitting
@@ -588,7 +595,14 @@ forecast_max <- forecast_df %>%
   summarise(max = quantile(prediction, 0.95))
 
 forecast_max %>%
-  filter(max == max(max))
+  arrange(max) %>%
+  tail()
+  
+evo_dt <- read.csv("data/targets-neon-chla_evaluation.csv")
+head(evo_dt)
+evo_dt_sorted <- evo_dt[order(evo_dt$observation, decreasing = TRUE),]
+head(evo_dt_sorted)
+
 ```
 
 
