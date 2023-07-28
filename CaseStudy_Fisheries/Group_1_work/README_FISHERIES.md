@@ -99,7 +99,7 @@ We used the same priors for $A$, $B$, and $g$ as previous above models.
 
 ### Model comparisons
 
-![Figure 1](plots/model_fits_plot.png)
+![Figure 1](plots/model_fits_plot.png){width="50%"}
 Figure 1. The number of Fraser Salmon recruits from 1950 - 2020 in the Early Stewart river. Black lines represent observed recruits. Red lines represents predicted values while shadows are 95% credible intervals from three different forecasting models. The three candidate models are: (1) blue - Basic-Ricker, a discrete discrete stock-recruitment model that incorporates population density-dependence and carrying capacity, (2) yellow - Power, a simple power model that does not account for density dependence, and (3) red - an extension of the Power model with average sea surface temperature as an additive environmental covariate.
 
 ![model_performances](plots/model_performances.png){width="50%"}
