@@ -101,6 +101,12 @@ Run.LM_Naive.Mods <- function(Data_Retro, Pred_Year){
 }
 #****************************************************************************
 
-#Run the baseline Ricker model
-LM_naive.mod <- Run.LM_Naive.Mods(data, pred.year)
+#Run the linear naive model
+
+naive.mod.LM <- list()
+
+#Run the naive models
+for(y in data$yr[8]:2021) {
+  naive.mod.LM[[length(naive.mod.LM) + 1]] <- Run.LM_Naive.Mods(data, y)
+}
 
