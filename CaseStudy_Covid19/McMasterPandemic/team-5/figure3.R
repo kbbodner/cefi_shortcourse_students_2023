@@ -158,7 +158,7 @@ fit_ensemble_summary = (model_fit
 head(fit_ensemble_summary)
 
 plot_ensemble(fit_ensemble_summary, cases2)
-ggsave(here::here("team-5/img/fig2_fit_deepit.png"), height = 9, width = 16, units = "cm")
+#ggsave(here::here("team-5/img/fig2_fit_deepit.png"), height = 9, width = 16, units = "cm")
 
 
 # forecast:
@@ -173,8 +173,8 @@ fcst_ensemble_summary = (model_fit
 )
 
 plot_ensemble(fcst_ensemble_summary, cases2)
-ggsave(here::here("team-5/img/fig2_pred_deepit.png"), height = 9, width = 16, units = "cm")
-View(fcst_ensemble_summary)
+#ggsave(here::here("team-5/img/fig2_pred_deepit.png"), height = 9, width = 16, units = "cm")
+#View(fcst_ensemble_summary)
 
 
 fig2_summarydata <- fcst_ensemble_summary
@@ -335,7 +335,7 @@ fit_ensemble_summary = (model_fit
 head(fit_ensemble_summary)
 
 plot_ensemble(fit_ensemble_summary, cases2) + labs(title = "Incidence over time -- mask wearing starting Apr 1")
-ggsave(here::here("team-5/img/fig3_fit.png"), height = 18, width = 32, units = "cm")
+#ggsave(here::here("team-5/img/fig3_fit.png"), height = 18, width = 32, units = "cm")
 
 
 # forecast:
@@ -350,6 +350,6 @@ fcst_ensemble_summary = (model_fit
 )
 
 plot_ensemble(fcst_ensemble_summary, cases2) + labs(title = "Incidence over time -- mask wearing starting Apr 1")
-ggsave(here::here("team-5/img/fig3_pred.png"), height = 18, width = 32, units = "cm")
+#ggsave(here::here("team-5/img/fig3_pred.png"), height = 18, width = 32, units = "cm")
 View(fcst_ensemble_summary)
 

@@ -122,10 +122,10 @@ plot_ensemble <- function(ens, obs){
 #   3. dates vector, same length as predicted and observed vector
 #   4. iter_name char string, to name the output. If left alone, will provide time/date
 
-calculate_model_errors <- function(predicted, observed, dates, first_date, iter_name = "")
+calculate_model_errors <- function(merrIn, first_date, iter_name = "")
   # pass in predicted values, observed values, date (aligned with measures) 
 {
-  bd <- as.data.frame(cbind(predicted, observed, dates))
+  bd <- merrIn
   # names(bd) <- c("predicted", "observed", "dates")
   # # filter to only values that are at the start of observation
   # calculate error, defined as predicted minus observed
