@@ -16,6 +16,8 @@ functions {
              real[] x_r,    // data (real)
              int[]  x_i) {  // data (integer)
     real dydt[4];
+    real R0;
+    real lambda;
     
     // define parameters.
     // any non-fixed parameters are in the theta array. Any fixed
@@ -31,9 +33,9 @@ functions {
     real logmask_impact = x_r[5];
     real time_start_of_pandemic = x_r[6];
 
-    R0 = exp(logR0_baseline - (t > time_masking) * logmask_impact - (t > time_start_of_pandemic) * logpan_impact);
+    R0 = exp(logR0_baseline + (t > time_masking) * logmask_impact + (t > time_start_of_pandemic) * logpan_impact);
     
-    real lambda = (R0 * gamma * y[3]) / pop_size;
+    lambda = (R0 * gamma * y[3]) / pop_size;
     
     // S
     dydt[1] = - lambda * y[1];
@@ -57,12 +59,14 @@ data {
   real ts[T]; // days for which data are recorded (index starting at t0) 
   real forecast_ts[forecast_T]; // days to forecast
   int<lower=0> y[T];      // Observed infection cases
-  real<lower=0> R0_prior[2]; // log Mean and std for R0
   real<lower=0> i0_prior[2];  // log Mean and std for i0
   real<lower=0> gamma;  // recovery rate
   real<lower=0> sigma;  // incubation rate
   real<lower=0> pop_size;  // Total population size
   real<lower=0> time_masking; // time at start of masking
+  real<lower=0> time_start_of_pandemic; // Time since start of pandemic impact
+                                        // on incident infections
+  real logmask_impact; // the log-RR of masking
 }
 // The transformed data block defines any variables that take the data and 
 // do something with it, but will be fixed and not affected by any parameters
@@ -88,14 +92,13 @@ parameters {
   real logpan_impact;
   real i0;
   real<lower=0, upper=1> sample_frac;
-  real logpan_impact;
 }
 // Transformed parameters stores any variables that depends on anything
 // defined in the parameters block. For example since the number of initial
 // infected is treated as a random variable, the set of initial conditions (y0)
 // is also necessarily treated as a random variable
 transformed parameters {
-  real theta[1];
+  real theta[2];
   real y0[4];
   real y_hat[T,4];
   
@@ -106,7 +109,8 @@ transformed parameters {
   y0[4] = 0;
   
   // Pass any SEIR parameters that are not fixed into the theta vector
-  theta[1] = R0;
+  theta[1] = logR0_baseline;
+  theta[2] = logpan_impact;
   
   // integrate the seir_rhs function in time and return values at ts time-points
   y_hat = integrate_ode_rk45(seir_rhs, y0, t0, ts, theta, x_r, x_i);
@@ -117,7 +121,7 @@ model {
   
   // Priors
   logR0_baseline ~ normal(log(2.5), 0.1);
-  logpan_impact ~ normal(1,1);
+  logpan_impact ~ normal(-1,0.5);
   i0 ~ lognormal(i0_prior[1], i0_prior[2]);
   sample_frac ~ normal(0.2,0.01);
   
