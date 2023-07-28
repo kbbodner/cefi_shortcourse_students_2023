@@ -199,14 +199,9 @@ knitr::include_graphics("plots/pred_plot_2023.png")
 # put graph of models being compared here
 knitr::include_graphics("plots/pred_plot_2023.png")
 ```
-<<<<<<< HEAD
-=======
-PANIC! - what did we do wrong?? 
->>>>>>> 68e627955028aabaf0e095130ca9fa9e2435ce3d
 
 PANIC! - why are predicted values so low??
 
-<<<<<<< HEAD
 ## 6.2 Investigate future forecasts
 =======
 ## 6.2 Investigate unexpected predictions
@@ -216,21 +211,6 @@ We investigated model parameters to identify reasons our predictions were so low
 
 Assess predictor values to make sure we didn't do anything wrong
 
-<<<<<<< HEAD
-## 6.2 Investigate future forecasts
-
-=======
-## 6.2 Investigate unexpected predictions
->>>>>>> 68e627955028aabaf0e095130ca9fa9e2435ce3d
-```{r, out.width = "100%", fig.align = "center"}
-# put graph of models being compared here
-knitr::include_graphics("plots/Spawners_plot_2023.png")
-```
-
-<<<<<<< HEAD
-## 6.2 Investigate future forecasts
-
-=======
 
 ## 6.2 Investigate unexpected predictions
 >>>>>>> 68e627955028aabaf0e095130ca9fa9e2435ce3d
