@@ -81,7 +81,8 @@ And the same gamma prior on precision as the above models (equation 6).
 
 ### Model 3: Power model with an environmental covariate
 
-This alternate model is an extension to the previous power model that includes the average sea surface temperatures as an environmental covariate:
+This alternate model is an extension to the previous power model that includes the average sea surface temperatures as an environmental covariate. 
+Brooke Davis suggested to take the average of April ($apesst$), May ($maesst$), and June ($jnesst$) sea surface temperatures. This average ($Esst$) is commonly employed by fisheries scientists.
 
 $$
 R_i = A S_i^{B+gEsst_{i}}
