@@ -48,10 +48,6 @@ $$ {#eq-2}
 We place priors on the following:
 
 $$
-\widehat{lnR_i} \sim normal(ln(R_i), \tau)
-$$ {#eq-3}
-
-$$
 ln(\alpha) \sim normal(\mu_{\alpha}, \tau{\alpha}) 
 $$ {#eq-4}
 
@@ -78,7 +74,7 @@ This alternate model is basically shows that log(recruiters) depends on log(spaw
 based on the assumption that log(recruiters) depends on log(spawners)
 
 $$
-R_i = A S_i^B
+R_i = e^A S_i^B
 $$ {#eq-10}
 
 ------------------------------------------------------------------------
@@ -108,7 +104,7 @@ Note: Jake Lawlor wrote an exploratory R script where he found a significant 1:1
 This alternate model is an extension to the previous power model that includes the average sea surface temperatures as an environmental covariate:
 
 $$
-R_i = A S_i^{B+gEsst_{i}}
+R_i = e^{A+gEsst_{i}} S_i
 $$ {#eq-14}
 
 ------------------------------------------------------------------------
@@ -193,38 +189,34 @@ knitr::include_graphics("plots/pred_plot_2023.png")
 
 ```
 
-
-
 ## 6. Forecast the future
 
 ```{r, out.width = "100%", fig.align = "center"}
 # put graph of models being compared here
 knitr::include_graphics("plots/pred_plot_2023.png")
 ```
+
 PANIC! - why are predicted values so low??
 
-
 ## 6.2 Investigate future forecasts
+
 Assess predictor values to make sure we didn't do anything wrong
 
-
-
 ## 6.2 Investigate future forecasts
+
 ```{r, out.width = "100%", fig.align = "center"}
 # put graph of models being compared here
 knitr::include_graphics("plots/Spawners_plot_2023.png")
 ```
 
-
 ## 6.2 Investigate future forecasts
+
 ```{r, out.width = "100%", fig.align = "center"}
 # put graph of models being compared here
 knitr::include_graphics("plots/landslide_screenshot.png")
 ```
-Considering this, our projected low values of 2023 recruits are reasonable. 
 
-
-
+Considering this, our projected low values of 2023 recruits are reasonable.
 
 ## Assessment of Stock
 
@@ -236,12 +228,11 @@ Green = prediction larger than global historical mean by more than +0.5sd
 
 Red = prediction smaller than global historical mean by more than -0.5sd
 
-## Assessment of Stock 
+## Assessment of Stock
 
 ```{r, out.width = "100%", fig.align = "center"}
 # put graph of models being compared here
 knitr::include_graphics("plots/stock_status.png")
 ```
-
 
 # LIMIT FISHING TO THE EXTENT POSSIBLE
