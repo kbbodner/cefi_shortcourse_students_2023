@@ -77,7 +77,7 @@ Run.LM_Naive.Mods <- function(Data_Retro, Pred_Year){
     as.numeric(coef(lmFit45_3c)[3]) * Data_Retro$peak[Data_Retro$yr == Pred_Year-2] +
     as.numeric(coef(lmFit45_3c)[4]) * Data_Retro$aflow[Data_Retro$yr == Pred_Year-2] +
     as.numeric(coef(lmFit45_3c)[5]) * Data_Retro$jnesst[Data_Retro$yr == Pred_Year-2] 
-  new.row = data.frame(Year = Pred_Year, Mod = "RS4S53C", ModType = "LM",
+  new.row = data.frame(Year = Pred_Year, Mod = "RS4S53C2", ModType = "LM",
                        Pred4 = RS4S53C_Est4, Pred5 = RS4S53C_Est5, Pred45 =  RS4S53C_Est45  )
   Results <- bind_rows(Results, new.row)
   
@@ -92,7 +92,7 @@ Run.LM_Naive.Mods <- function(Data_Retro, Pred_Year){
   RS4S5_jnesst_Est45 <- as.numeric(coef(lmFit45_jnesst)[1]) * Data_Retro$S[Data_Retro$yr == Pred_Year-4] +
     as.numeric(coef(lmFit45_jnesst)[2]) * Data_Retro$S[Data_Retro$yr == Pred_Year-5] +
     as.numeric(coef(lmFit45_jnesst)[3]) * Data_Retro$jnesst[Data_Retro$yr == Pred_Year-2] 
-  new.row = data.frame(Year = Pred_Year, Mod = "RS4S53C", ModType = "LM",
+  new.row = data.frame(Year = Pred_Year, Mod = "RS4S5_jnesst", ModType = "LM",
                        Pred4 = RS4S5_jnesst_Est4, Pred5 = RS4S5_jnesst_Est4, Pred45 =RS4S5_jnesst_Est45  )
   Results <- bind_rows(Results, new.row)
   
