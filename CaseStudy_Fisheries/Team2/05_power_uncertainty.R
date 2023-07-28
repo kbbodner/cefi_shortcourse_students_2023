@@ -28,7 +28,7 @@ data2$Sig_Gam_Dist <- 0.001
 data2$S <- Data_Retro$S/Scale 
 data2$P4 <- mean(Data_Retro$rec4 / Data_Retro$R, na.rm=T)
 
-
+# define power model formula
 power <- "
 model{
 A ~ dnorm(A_mean, A_tau)             # prior for alpha
@@ -48,18 +48,21 @@ R_Pred_Tot <- R_Pred[N] * P4 + R_Pred[N-1] * (1-P4)
 "
 
 
-
+# run jags model
 j.model2   <- jags.model(file = textConnection(power),
                          data = data2,
                          n.chains = 3)
 
+# resample from the posterior
 var.out2 <- coda.samples (model = j.model2,
                           variable.names = c("A", "B","tau", "R_Pred_Tot"),
                           n.iter = 5000)
+
+# check data frame
 head(var.out2)
 
 
-## remember to assess convergence and remove burn-in before doing other diagnostics
+## assess convergence and remove burn-in before doing other diagnostics
 GBR <- gelman.plot(var.out2)
 
 ## convert to matrix
@@ -72,6 +75,23 @@ dim(var.mat.scale)
 hist(var.mat.scale$R_Pred_Tot, breaks=50)
 median(var.mat.scale$R_Pred_Tot)
 
+
+#Is this how we get the confi interval?
+power.mod.2023 <- RunModRetro.new(data, 2023, "Power")
+power.mod.2023$Preds_Out
+
+####
+hist(var.mat.scale$R_Pred_Tot, breaks=1000)
+median(var.mat.scale$R_Pred_Tot)
+
+sorted_pred <- sort(var.mat.scale$R_Pred_Tot)
+ci_p <- c(0.025, 0.975)
+posit <- (ci_p * length(var.mat.scale$R_Pred_Tot))
+
+sorted_pred[posit]
+
+
+# CI/PI test 2
 ## Pairwise scatter plots & correlation
 pairs(var.mat2)	## pairs plot to evaluate parameter correlation
 cor(var.mat2)  
@@ -96,19 +116,3 @@ pi <- apply(ypred,2,quantile,c(0.025,0.975))
 j.model2$R_Pred
 summary(var.out2)$statistics
 plot(Year,  )
-
-#Is this how we get the confi interval?
-power.mod.2023 <- RunModRetro.new(data, 2023, "Power")
-power.mod.2023$Preds_Out
-
-####
-hist(var.mat.scale$R_Pred_Tot, breaks=1000)
-median(var.mat.scale$R_Pred_Tot)
-
-sorted_pred <- sort(var.mat.scale$R_Pred_Tot)
-ci_p <- c(0.025, 0.975)
-posit <- (ci_p * length(var.mat.scale$R_Pred_Tot))
-
-sorted_pred[posit]
-
-
