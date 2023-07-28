@@ -43,8 +43,7 @@ reported-case data.
 
 ```{r load bc data}
 # load data grouped by location (HA), and age group
-covid_data <- read_csv("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/data/fitting_data.csv")
-
+covid_data <- read_csv("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/data/validation_data.csv")
 
 covid_data %>%
   group_by(Reported_Date, HA) %>%
@@ -53,18 +52,21 @@ covid_data %>%
   geom_line() +
   theme_classic()
 
-
+# Load Total BC cases for whole province for first 60 recorded time-points
+bc_data1 <- read_csv("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/data/bc_fitting_data.csv")
 
 # Load Total BC cases for whole province for first 60 recorded time-points
-bc_data <- read_csv("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/data/bc_fitting_data.csv")
+bc_data2 <- read_csv("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/data/bc_validation_data.csv")
 
+bc_data.new <- rbind(bc_data1, bc_data2)
 
-
-bc_data %>%
+bc_data.new %>%
   ggplot(aes(x = Reported_Date, y = n)) +
+  geom_point() +
   geom_line() +
-  theme_classic() +
-  ggtitle("Reported cases BC (first 60 recorded time-points of pandemic)")
+  theme_bw() +
+  annotate('rect', xmin= ymd("2020-03-29"), xmax= ymd("2020-04-12"), ymin = 0, ymax = 95, fill='red', alpha=0.5) + ylab("Cases") + xlab("Reported cases")
+
 ```
 
 
@@ -78,13 +80,13 @@ the data
 We then store the time points and cases data to load into the stan model
 
 ```{r store fitting forecast data}
-fitting_time_points <- bc_data$time_points
-fitting_cases <- bc_data$n
+fitting_time_points <- bc_data.new$time_points
+fitting_cases <- bc_data.new$n
 forecast_time_points <- seq(max(fitting_time_points) + 1,
                             max(fitting_time_points) + 31)
 
-forecast_dates <- seq(max(bc_data$Reported_Date) + 1,
-                      max(bc_data$Reported_Date) + 31, by = "1 day")
+forecast_dates <- seq(max(bc_data.new$Reported_Date) + 1,
+                      max(bc_data.new$Reported_Date) + 31, by = "1 day")
 ```
 
 # Setting up the model
@@ -163,7 +165,7 @@ is expected as input at inference time. This can be provided as a `list`
 object.
 
 ```{r load data into stan format}
-stan_data <- list(
+stan_data_extended <- list(
   T = length(fitting_time_points), # number of data points
   y = fitting_cases, # observed infection cases
   ts = fitting_time_points, # Time points
@@ -175,7 +177,8 @@ stan_data <- list(
   sigma = 1 / 5, # incubation rate
   pop_size = 5e6, # population of BC
   t0 = -1,
-  logmask_impact = -0.36,
+  logmask_impact = log(0.5),
+  time_masking = 52,
   time_start_of_pandemic = 15
 )
 ```
@@ -183,29 +186,19 @@ stan_data <- list(
 # Run the inference
 
 ```{r}
-fit <- sampling(model,
-  data = stan_data,
-  iter = 1000,
+fit_extended <- sampling(model_extended,
+  data = stan_data_extended,
+  iter = 2000,
   seed = 42, # fix seed to recreate results
   chains = 2,
   control = list(adapt_delta = 0.9)
 )
-
-
-#########Extended Model##############
-#fit_extened <- sampling(model_extended,
- # data = stan_data,
- # iter = 500,
- # seed = 42, # fix seed to recreate results
- # chains = 1,
- # control = list(adapt_delta = 0.9)
-#)
 ```
 
 Examine the summary of the posterior
 
 ```{r}
-summary(fit, c("R0", "i0", "sample_frac"))
+summary(fit_extended, c("logR0_baseline", "logpan_impact", "i0", "sample_frac"))
 ```
 
 # Examining the model output
@@ -221,73 +214,73 @@ state_dictionary <- tribble(
   4, "R"
 )
 
-time_dictionary <- bc_data %>%
+time_dictionary <- bc_data.new %>%
   select(Reported_Date) %>%
   mutate(t = 1:n())
 
 ########## Infected Individuals###########
-fit %>%
+ggsave("Infected.mask.jpeg", fit_extended %>%
   spread_draws(y_hat[t, i]) %>%
   left_join(state_dictionary, by = "i") %>%
   left_join(time_dictionary, by = "t") %>%
   filter(state == "I") %>%
   ggplot(aes(x = Reported_Date)) +
   stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
-  scale_fill_brewer() + ylab("Infected Individuals") + theme_bw()
+  scale_fill_brewer() + ylab("Infected Individuals") + theme_bw() )
 
 
 ############### Exposed individuals##################
-fit %>%
+ggsave("Exposed.mask.jpeg", fit_extended %>%
   spread_draws(y_hat[t, i]) %>%
   left_join(state_dictionary, by = "i") %>%
   left_join(time_dictionary, by = "t") %>%
   filter(state == "E") %>%
   ggplot(aes(x = Reported_Date)) +
   stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
-  scale_fill_brewer() + ylab("Exposed Indiviuals") + theme_bw()
+  scale_fill_brewer() + ylab("Exposed Indiviuals") + theme_bw() )
 
 
 ############### Recovered Individuals##################
-fit %>%
+ggsave("Recovered.mask.jpeg", fit_extended %>%
   spread_draws(y_hat[t, i]) %>%
   left_join(state_dictionary, by = "i") %>%
   left_join(time_dictionary, by = "t") %>%
   filter(state == "R") %>%
   ggplot(aes(x = Reported_Date)) +
   stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
-  scale_fill_brewer() + ylab("Recovered Individuals") + theme_bw()
+  scale_fill_brewer() + ylab("Recovered Individuals") + theme_bw() )
 
 ############### Susceptible Individuals##################
-fit %>%
+ggsave("Susceptible.mask.jpeg", fit_extended %>%
   spread_draws(y_hat[t, i]) %>%
   left_join(state_dictionary, by = "i") %>%
   left_join(time_dictionary, by = "t") %>%
   filter(state == "S") %>%
   ggplot(aes(x = Reported_Date)) +
   stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
-  scale_fill_brewer() + ylab("Susceptible Individuals") + theme_bw()
+  scale_fill_brewer() + ylab("Susceptible Individuals") + theme_bw() )
 ```
 
 Compare posterior predictive distribution of cases to actual cases,
 
 ```{r}
-time_dictionary <- bc_data %>%
+time_dictionary <- bc_data.new %>%
   select(Reported_Date) %>%
   mutate(t = 1:n())
 
-fit %>%
+ggsave("fitted.mask.jpeg", fit_extended %>%
   spread_draws(cases[t]) %>%
   left_join(time_dictionary, by = "t") %>%
   ggplot(aes(x = Reported_Date)) +
   stat_lineribbon(aes(y = cases), .width = c(.99, .95, .8, .5), color = "#08519C") +
   scale_fill_brewer() +
-  geom_point(data = bc_data, aes(x = Reported_Date, y = n))
+  geom_point(data = bc_data, aes(x = Reported_Date, y = n)) + theme_bw())
 ```
 
 Compare the forecasted predictive distribution of cases to actual cases,
 
 ```{r}
-time_dictionary_fitting <- bc_data %>%
+time_dictionary_fitting <- bc_data.new %>%
   select(Reported_Date) %>%
   mutate(
     t = 1:n(),
@@ -302,7 +295,7 @@ time_dictionary_forecasting <- tibble(Reported_Date = forecast_dates) %>%
 time_dictionary <- time_dictionary_fitting %>%
   bind_rows(time_dictionary_forecasting)
 
-fit %>%
+fit_extended %>%
   tidybayes::gather_draws(cases[t], forecasted_cases[t]) %>%
   left_join(time_dictionary, by = c("t", ".variable")) %>%
   ggplot(aes(x = Reported_Date)) +
@@ -311,7 +304,7 @@ fit %>%
     .width = c(.8, .5)
   ) +
   scale_fill_brewer() +
-  geom_point(data = bc_data, aes(x = Reported_Date, y = n))
+  geom_point(data = bc_data.new, aes(x = Reported_Date, y = n)) + ylab("Predicted cases") + xlab("Reported Date") + theme_bw() + ggtitle("Forecast for Implementing Face Mask")
 ```
 
 The base model indicates a period of unbounded growth. In addition,
@@ -321,38 +314,31 @@ investigate these differences. What are some of the underlying causes of this?
 
 ```{r}
 
-data.com <- fit %>%
+data.com1 <- fit_extended %>%
   tidybayes::gather_draws(cases[t]) %>%
   left_join(time_dictionary, by = c("t", ".variable")) %>%
-  left_join(bc_data, by = "Reported_Date") %>%
+  left_join(bc_data.new, by = "Reported_Date") %>%
   mutate(residuals = n - .value)
 
-data.com  %>%
+data.com1  %>%
   filter(.draw %in% c(2,4,5,6,7,8,9,10)) %>% 
   ggplot(aes(x = t, y=residuals, color = as.factor(.draw))) + 
   geom_point() + 
   theme_bw() +
   geom_hline(yintercept = 0, linetype="dashed")
-
-################################
-
-y_data <- bc_data$n
-shinystan::launch_shinystan(fit)
-
-#################
 ```
 
 Look at diagnostics in shinystan
 
 ```{r}
 y_data <- bc_data$n
-shinystan::launch_shinystan(fit)
+shinystan::launch_shinystan(fit_extended)
 ```
 
 Do mean plot of residuals
 
 ```{r}
-data.com  %>%
+data.com1  %>%
   group_by(t) %>% 
   summarise(mean_residuals = mean(residuals)) %>% 
   ggplot(aes(x = t, y=mean_residuals)) + 

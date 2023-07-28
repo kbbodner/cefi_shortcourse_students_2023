@@ -65,6 +65,22 @@ bc_data %>%
   geom_line() +
   theme_classic() +
   ggtitle("Reported cases BC (first 60 recorded time-points of pandemic)")
+
+#########################################################################
+
+# Load Total BC cases for whole province for first 60 recorded time-points
+bc_validation_data <- read_csv("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/data/bc_validation_data.csv")
+
+new.Reported_Date <- unique(bc_validation_data$Reported_Date)
+
+bc_validation_data %>%
+  ggplot(aes(x = Reported_Date, y = n)) +
+  geom_line() +
+  theme_classic() +
+  ggtitle("Reported cases BC (first 60 recorded time-points of pandemic)")
+
+
+bc_validation_data <- rbind(bc_data, bc_validation_data)
 ```
 
 
@@ -85,6 +101,16 @@ forecast_time_points <- seq(max(fitting_time_points) + 1,
 
 forecast_dates <- seq(max(bc_data$Reported_Date) + 1,
                       max(bc_data$Reported_Date) + 31, by = "1 day")
+
+#########################################################
+
+fitting_valid_points <- bc_validation_data$time_points
+fitting_valid_cases <- bc_validation_data$n
+forecast_valid_points <- seq(max(fitting_valid_points) + 1,
+                            max(fitting_valid_points) + 31)
+
+forecast_valid_dates <- seq(max(bc_validation_data$Reported_Date) + 1,
+                      max(bc_validation_data$Reported_Date) + 31, by = "1 day")
 ```
 
 # Setting up the model
@@ -149,10 +175,6 @@ prints the lines contained in the `stan` file
 code <- readLines("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/basic_seir_model.stan")
 
 cat(code, sep = "\n")
-
-#code_extended <- readLines("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/extended_model_cole.stan")
-
-#cat(code_extended, sep = "\n")
 ```
 
 We run the following to compile the model
@@ -160,8 +182,6 @@ We run the following to compile the model
 ```{r compile stan model}
 model <- stan_model("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/basic_seir_model.stan")
 
-
-#model_extended <- stan_model("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/extended_model_cole.stan")
 ```
 
 Note what is provided in the "data" block of the Stan code. That is what
@@ -182,6 +202,21 @@ stan_data <- list(
   pop_size = 5e6, # population of BC
   t0 = -1
 )
+
+##########################
+stan_valid_data <- list(
+  T = length(fitting_valid_points), # number of data points
+  y = fitting_valid_cases, # observed infection cases
+  ts = fitting_valid_points, # Time points
+  forecast_T = length(forecast_valid_points), # number of forecast points
+  forecast_ts = forecast_valid_points, # Forecast time points
+  R0_prior = c(log(2.5), 0.2), # log Mean and std for R0
+  i0_prior = c(log(8), 1.0), # log Mean and std for i0
+  gamma = 1 / 7, # recovery rate
+  sigma = 1 / 5, # incubation rate
+  pop_size = 5e6, # population of BC
+  t0 = -1
+)
 ```
 
 # Run the inference
@@ -195,24 +230,27 @@ fit <- sampling(model,
   control = list(adapt_delta = 0.9)
 )
 
+##########################################
 
-#########Extended Model##############
-#fit_extened <- sampling(model_extended,
- # data = stan_data,
- # iter = 500,
- # seed = 42, # fix seed to recreate results
- # chains = 1,
- # control = list(adapt_delta = 0.9)
-#)
+fit_valid <- sampling(model,
+  data = stan_valid_data,
+  iter = 1000,
+  seed = 42, # fix seed to recreate results
+  chains = 2,
+  control = list(adapt_delta = 0.9)
+)
 ```
 
 Examine the summary of the posterior
 
 ```{r}
 summary(fit, c("R0", "i0", "sample_frac"))
+
+####################################
+summary(fit_valid, c("R0", "i0", "sample_frac"))
 ```
 
-# Examining the model output
+# Examining the model output for the original data
 
 Compare the output of the different states in the model,
 
@@ -230,47 +268,110 @@ time_dictionary <- bc_data %>%
   mutate(t = 1:n())
 
 ########## Infected Individuals###########
-fit %>%
+ggsave("Infected_old.jpeg", fit %>%
   spread_draws(y_hat[t, i]) %>%
   left_join(state_dictionary, by = "i") %>%
   left_join(time_dictionary, by = "t") %>%
   filter(state == "I") %>%
   ggplot(aes(x = Reported_Date)) +
   stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
-  scale_fill_brewer() + ylab("Infected Individuals") + theme_bw()
+  scale_fill_brewer() + ylab("Infected Individuals") + theme_bw())
 
 
 ############### Exposed individuals##################
-fit %>%
+ggsave("Exposed_old.jpeg", fit %>%
   spread_draws(y_hat[t, i]) %>%
   left_join(state_dictionary, by = "i") %>%
   left_join(time_dictionary, by = "t") %>%
   filter(state == "E") %>%
   ggplot(aes(x = Reported_Date)) +
   stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
-  scale_fill_brewer() + ylab("Exposed Indiviuals") + theme_bw()
+  scale_fill_brewer() + ylab("Exposed Indiviuals") + theme_bw() )
 
 
 ############### Recovered Individuals##################
-fit %>%
+ggsave("Recovered_old.jpeg", fit %>%
   spread_draws(y_hat[t, i]) %>%
   left_join(state_dictionary, by = "i") %>%
   left_join(time_dictionary, by = "t") %>%
   filter(state == "R") %>%
   ggplot(aes(x = Reported_Date)) +
   stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
-  scale_fill_brewer() + ylab("Recovered Individuals") + theme_bw()
+  scale_fill_brewer() + ylab("Recovered Individuals") + theme_bw() )
 
 ############### Susceptible Individuals##################
-fit %>%
+ggsave("susceptible_old.jpeg", fit %>%
   spread_draws(y_hat[t, i]) %>%
   left_join(state_dictionary, by = "i") %>%
   left_join(time_dictionary, by = "t") %>%
   filter(state == "S") %>%
   ggplot(aes(x = Reported_Date)) +
   stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
-  scale_fill_brewer() + ylab("Susceptible Individuals") + theme_bw()
+  scale_fill_brewer() + ylab("Susceptible Individuals") + theme_bw() )
 ```
+
+
+```{r}
+state_dictionary <- tribble(
+  ~i, ~state,
+  1, "S",
+  2, "E",
+  3, "I",
+  4, "R"
+)
+
+time_dictionary1 <- bc_validation_data %>%
+  select(Reported_Date) %>%
+  mutate(t = 1:n())
+
+########## Infected Individuals###########
+ggsave("Infected_new.jpeg", fit_valid %>%
+  spread_draws(y_hat[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary1, by = "t") %>%
+  filter(state == "I") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer() + ylab("Infected Individuals") + theme_bw() )
+
+
+############### Exposed individuals##################
+ggsave("Exposed_new.jpeg", fit_valid %>%
+  spread_draws(y_hat[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary1, by = "t") %>%
+  filter(state == "E") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer() + ylab("Exposed Indiviuals") + theme_bw() )
+
+
+############### Recovered Individuals##################
+ggsave("Recovered_new.jpeg", fit_valid %>%
+  spread_draws(y_hat[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary1, by = "t") %>%
+  filter(state == "R") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer() + ylab("Recovered Individuals") + theme_bw() )
+
+############### Susceptible Individuals##################
+ggsave("susceptible_new.jpeg", fit_valid %>%
+  spread_draws(y_hat[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary1, by = "t") %>%
+  filter(state == "S") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer() + ylab("Susceptible Individuals") + theme_bw() )
+```
+
+
+
+
+
+
 
 Compare posterior predictive distribution of cases to actual cases,
 
@@ -287,6 +388,25 @@ fit %>%
   scale_fill_brewer() +
   geom_point(data = bc_data, aes(x = Reported_Date, y = n))
 ```
+
+
+
+```{r}
+time_dictionary1 <- bc_validation_data %>%
+  select(Reported_Date) %>%
+  mutate(t = 1:n())
+
+fit_valid %>%
+  spread_draws(cases[t]) %>%
+  left_join(time_dictionary1, by = "t") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = cases), .width = c(.99, .95, .8, .5), color = "#08519C") +
+  scale_fill_brewer() +
+  geom_point(data = bc_validation_data, aes(x = Reported_Date, y = n))
+```
+
+
+
 
 Compare the forecasted predictive distribution of cases to actual cases,
 
@@ -306,7 +426,7 @@ time_dictionary_forecasting <- tibble(Reported_Date = forecast_dates) %>%
 time_dictionary <- time_dictionary_fitting %>%
   bind_rows(time_dictionary_forecasting)
 
-fit %>%
+ggsave("forecast.old_data.jpeg", fit %>%
   tidybayes::gather_draws(cases[t], forecasted_cases[t]) %>%
   left_join(time_dictionary, by = c("t", ".variable")) %>%
   ggplot(aes(x = Reported_Date)) +
@@ -315,8 +435,66 @@ fit %>%
     .width = c(.8, .5)
   ) +
   scale_fill_brewer() +
-  geom_point(data = bc_data, aes(x = Reported_Date, y = n))
+  geom_point(data = bc_data, aes(x = Reported_Date, y = n)))
+######################################################################
+
+
+time_dictionary_fitting2 <- bc_validation_data %>%
+  select(Reported_Date) %>%
+  mutate(
+    t = 1:n(),
+    .variable = "cases"
+  )
+time_dictionary_forecasting2 <- tibble(Reported_Date = forecast_dates) %>%
+  mutate(
+    t = 1:n(),
+    .variable = "forecasted_cases"
+  )
+
+time_dictionary2 <- time_dictionary_fitting2 %>%
+  bind_rows(time_dictionary_forecasting2)
+
+ggsave("forecast.new_data.jpeg",fit_valid %>%
+  tidybayes::gather_draws(cases[t], forecasted_cases[t]) %>%
+  left_join(time_dictionary2, by = c("t", ".variable")) %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = .value, group = .variable),
+    color = "#08519C",
+    .width = c(.8, .5)
+  ) +
+  scale_fill_brewer() +
+  geom_point(data = bc_validation_data, aes(x = Reported_Date, y = n)) + ylab("Forecasted cases")) + 
+
 ```
+
+#. Extracting forecated cases in the old data and the corresponding true fiited cases in the new data
+
+```{r}
+old.forecast <- fit %>%
+  tidybayes::gather_draws(cases[t], forecasted_cases[t]) %>%
+  left_join(time_dictionary, by = c("t", ".variable")) %>%
+filter(Reported_Date %in% new.Reported_Date) %>%
+  group_by(t) %>%
+  summarise(mean.cases = mean(.value)) %>%
+  ungroup()
+
+
+
+new.fitted <- fit_valid %>%
+  spread_draws(cases[t]) %>%
+  left_join(time_dictionary1, by = "t")%>%
+filter(Reported_Date %in% new.Reported_Date) %>%
+  group_by(t) %>%
+  summarise(mean.cases = mean(cases)) %>%
+  ungroup()
+
+data.comp <- data.frame(cbind("new.data"=new.fitted$mean.cases, "old.forecasted.data"=old.forecast$mean.cases), "Reported.Date" = new.Reported_Date) 
+
+ggsave("Forecast_vs_Actual.jpeg", ggplot(data = data.comp, aes(x=new.data, y=old.forecasted.data)) + geom_point() + geom_smooth(method='lm', se = T) + ylab("Forecasted cases from old data") + xlab("Actual cases from new data") + theme_bw() + ggtitle("Our model forecasted more cases than what was actually recorded"))
+```
+
+
+
 
 The base model indicates a period of unbounded growth. In addition,
 The posterior predictive distribution of cases does not seem to match the
@@ -324,14 +502,26 @@ pattern of observed cases. Bayesian p-values and residuals can be used to
 investigate these differences. What are some of the underlying causes of this? 
 
 ```{r}
-
 data.com <- fit %>%
   tidybayes::gather_draws(cases[t]) %>%
   left_join(time_dictionary, by = c("t", ".variable")) %>%
   left_join(bc_data, by = "Reported_Date") %>%
   mutate(residuals = n - .value)
 
-data.com  %>%
+
+
+
+data.com1 <- fit_valid %>%
+  tidybayes::gather_draws(cases[t]) %>%
+  left_join(time_dictionary2, by = c("t", ".variable")) %>%
+  left_join(bc_validation_data, by = "Reported_Date") %>%
+  mutate(residuals = n - .value)
+
+
+
+
+
+data.com1  %>%
   filter(.draw %in% c(2,4,5,6,7,8,9,10)) %>% 
   ggplot(aes(x = t, y=residuals, color = as.factor(.draw))) + 
   geom_point() + 
@@ -351,14 +541,22 @@ shinystan::launch_shinystan(fit)
 Do mean plot of residuals
 
 ```{r}
-data.com  %>%
+ggsave("residuals_plot.jpeg", data.com1  %>%
   group_by(t) %>% 
   summarise(mean_residuals = mean(residuals)) %>% 
   ggplot(aes(x = t, y=mean_residuals)) + 
   geom_point() + 
   theme_bw() +
-  geom_hline(yintercept = 0, linetype="dashed")
+  geom_hline(yintercept = 0, linetype="dashed"))
 
+
+ggsave("resid.plot_old.jpeg", data.com  %>%
+  group_by(t) %>% 
+  summarise(mean_residuals = mean(residuals)) %>% 
+  ggplot(aes(x = t, y=mean_residuals)) + 
+  geom_point() + 
+  theme_bw() +
+  geom_hline(yintercept = 0, linetype="dashed"))
 ```
 
 # Decision maker request
