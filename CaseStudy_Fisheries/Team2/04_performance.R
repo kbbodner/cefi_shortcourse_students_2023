@@ -30,6 +30,9 @@ for(y in baseline.mod.all$Pred_Year) {
 perf.baseline <- run.all.performances(observ, baseline.mod.all$R_Pred,
                                       performance.functions)
 
+#Baseline + covariate
+#TODO
+
 #Power
 perf.power <- run.all.performances(observ, power.mod.all$R_Pred,
                                     performance.functions)
@@ -39,7 +42,7 @@ perf.naive <- list()
 
 for(n in naive.mod.all[[1]]$Mod) {
   predictions <- c()
-  for(i in length(naive.mod.all)) {
+  for(i in 1:length(naive.mod.all)) {
     predictions <- c(predictions, naive.mod.all[[i]]$R_Pred[naive.mod.all[[i]]$Mod == n])
   }
   perf.naive[[length(perf.naive) + 1]] <- run.all.performances(observ , predictions,
@@ -47,8 +50,19 @@ for(n in naive.mod.all[[1]]$Mod) {
 }
 names(perf.naive) <- naive.mod$Mod
 
+#Linear naive model
 
+perf.naive.LM <- list()
 
+for(n in naive.mod.LM[[1]]$Mod) {
+  predictions <- c()
+  for(i in 1:length(naive.mod.LM)) {
+    predictions <- c(predictions, naive.mod.LM[[i]]$Pred45[naive.mod.LM[[i]]$Mod == n])
+  }
+  perf.naive.LM[[length(perf.naive.LM) + 1]] <- run.all.performances(observ , predictions,
+                                                               performance.functions)
+}
+names(perf.naive) <- naive.mod$Mod
 
 ####TODO: Fix everything below
 
