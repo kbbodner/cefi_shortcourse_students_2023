@@ -60,9 +60,19 @@ format:
 
 ## Proof of Concept Forecast 
 
+![](timeseries.png){fig-align="centre"} 
+## Proof of Concept Forecast
+
+![](timeseries+pred.png){fig-align="center"}
+
+
+## Proof of Concept Forecast
+
+![](timeseries+pred+zoom.png){fig-align="center"}
+
 
 ## Recommendation 
 
-![](state-of-pop.png){fig-align="left"}
+![](state-of-pop.png){fig-align="left"} 
 
 ## Thank you
