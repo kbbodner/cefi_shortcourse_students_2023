@@ -99,17 +99,19 @@ We used the same priors for $A$, $B$, and $g$ as previous above models.
 
 ### Model comparisons
 
-```{r}
-knitr::include_graphics("plots/model_fits_plot.png")
-```
+![Figure 1](plots/model_fits_plot.png)
 
-Figure 1. The number of Fraser Salmon recruits from 1950 - 2020 in the Early Stewart river. Black lines represent observed recruits. Red lines represents predicted values while shadows are 95% credible intervals from three different forecasting models. The three candidate models are: (1) blue - Basic-Ricker, a discrete discrete stock-recruitment model that incorporates population density-dependence and carrying capacity, (2) yellow - Power, a simple power model that does not account for density dependence, and (3) red - an extension of the Power model with average sea surface temperature as an additive environmental covariate.
+Figure 1. The number of Fraser Salmon recruits from 1950 - 2020 in the Early Stewart river. Black lines represent observed recruits. Red lines represents predicted values while shadows are 95% credible intervals from three different forecasting models. The three candidate models are: (1) blue - Basic-Ricker, a discrete discrete stock-recruitment model that incorporates population density-dependence and carrying capacity, (2) yellow - Power, a simple power model that does not account for density dependence, and (3) red - Power + Temperature, an extension of the Power model with average sea surface temperature as an additive environmental covariate.
 
-![model_performances](plots/model_performances.png){width="50%"}
+![model_performances](plots/model_performances.png)
+
+Figure 2. Model performances across the three forecasting models (blue - Basic-Ricker, yellow - Power, red - Power + Temperature). Three different performance metrics were used: (1) mean absolute offset, (2) mean offset, and (3) percent offset. 
 
 ### Final Forecast
 
-![stock status](plots/stock_status.png){width="50%"}
+![stock status](plots/stock_status.png)
+
+Figure 3. Stock status (number of recruits) over time (1950-2023). Black solid lines represent observed number of recruits. Black dashed lines represent the predicted number of recruits in 2023 from the candidate forecasting model (Power + Temperature). 
 
 
 
