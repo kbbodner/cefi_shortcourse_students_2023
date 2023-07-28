@@ -23,14 +23,14 @@ S = 14686092 #this is Q1 pop for 2020, for Q2 = 14,718,133
 #   I = 1,  #I = infected, first date of infection/known exposure is 2020-02-08
 #   R = 0 #R = recovered
 # )
-
-# parameters
-params = c(
-  beta = 0.7,
-  N = sum(state),
-  alpha = 0.05,
-  gamma = 0.06
-)
+# 
+# # parameters
+# params = c(
+#   beta = 0.7,
+#   N = sum(state),
+#   alpha = 0.05,
+#   gamma = 0.06
+# )
 
 start_date = "2020-03-01" #first day of exposure is 2020-02-08
 end_date = "2020-03-31" #for first
