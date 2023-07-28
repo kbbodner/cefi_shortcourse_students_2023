@@ -361,18 +361,15 @@ ln(R_i) = ln(\alpha)+ ln(S_i)-S_i/S_{max}
 <section class="slide level3">
 
 <p>We place priors on the following:</p>
-<p><span id="eq-3"><span class="math display">\[
-\widehat{lnR_i} \sim normal(ln(R_i), \tau)
-\qquad(3)\]</span></span></p>
 <p><span id="eq-4"><span class="math display">\[
 ln(\alpha) \sim normal(\mu_{\alpha}, \tau{\alpha})
-\qquad(4)\]</span></span></p>
+\qquad(3)\]</span></span></p>
 <p><span id="eq-5"><span class="math display">\[
 ln(S\_{max}) \sim normal(\mu_{Smax}, \tau_{Smax})
-\qquad(5)\]</span></span></p>
+\qquad(4)\]</span></span></p>
 <p><span id="eq-6"><span class="math display">\[
 \tau \sim gamma(\theta, \theta)
-\qquad(6)\]</span></span></p>
+\qquad(5)\]</span></span></p>
 </section>
 
 <section id="alternate-models" class="title-slide slide level2 scrollable center">
@@ -385,45 +382,45 @@ ln(S\_{max}) \sim normal(\mu_{Smax}, \tau_{Smax})
 <h2>Alternate 1: Power model</h2>
 <p>based on the assumption that log(recruiters) depends on log(spawners)</p>
 <p><span id="eq-10"><span class="math display">\[
-R_i = A S_i^B
-\qquad(7)\]</span></span></p>
+R_i = e^A S_i^B
+\qquad(6)\]</span></span></p>
 </section>
 <section class="slide level3">
 
 <p>We can linearize equation 10 to the following: <span id="eq-11"><span class="math display">\[
 ln(R_i) = A+B*ln(S_i)
-\qquad(8)\]</span></span></p>
+\qquad(7)\]</span></span></p>
 </section>
 <section class="slide level3">
 
 <p>This model form has normal priors for both <span class="math inline">\(A\)</span> and <span class="math inline">\(B\)</span>:</p>
 <p><span id="eq-12"><span class="math display">\[
 A \sim normal(\mu_{A}, \tau_{A})
-\qquad(9)\]</span></span> <span id="eq-13"><span class="math display">\[
+\qquad(8)\]</span></span> <span id="eq-13"><span class="math display">\[
 B \sim normal(\mu_{B}, \tau_{B})
-\qquad(10)\]</span></span></p>
+\qquad(9)\]</span></span></p>
 <p>And the same gamma prior on precision as the above models (equation 6).</p>
 </section>
 
-<section id="alternate-2-power-model-with-environmental-covariates" class="title-slide slide level2 center">
-<h2>Alternate 2: Power model with environmental covariates</h2>
+<section id="alternate-2-power-model-with-temperature-covariate" class="title-slide slide level2 center">
+<h2>Alternate 2: Power model with temperature covariate</h2>
 <p>This alternate model is an extension to the previous power model that includes the average sea surface temperatures as an environmental covariate:</p>
 <p><span id="eq-14"><span class="math display">\[
-R_i = A S_i^{B+gEsst_{i}}
-\qquad(11)\]</span></span></p>
+R_i = e^{A+gEsst_{i}} S_i
+\qquad(10)\]</span></span></p>
 </section>
 <section class="slide level3">
 
 <p>We can linearize this as the following: <span id="eq-15"><span class="math display">\[
 ln(R_i) = A+B*ln(S_i)+gEsst_{i}
-\qquad(12)\]</span></span></p>
+\qquad(11)\]</span></span></p>
 </section>
 <section class="slide level3">
 
 <p>We used the same priors for <span class="math inline">\(A\)</span>, <span class="math inline">\(B\)</span>, as previous above models and a normal (flat) prior for <span class="math inline">\(g\)</span>:</p>
 <p><span id="eq-9"><span class="math display">\[
 g \sim normal(\mu_g, \tau_g )
-\qquad(13)\]</span></span></p>
+\qquad(12)\]</span></span></p>
 </section>
 
 <section id="model-comparisons" class="title-slide slide level2 center">
@@ -433,7 +430,7 @@ g \sim normal(\mu_g, \tau_g )
 
 <section id="create-retroactive-predictions" class="title-slide slide level2 center">
 <h2>Create retroactive predictions</h2>
-<p>Predict between Years: 2011 - 2021 to test model fits</p>
+<p>We used our models to predict recruits in years 2011-2021, then check against real data to assess model performance.</p>
 </section>
 
 <section id="section" class="title-slide slide level2 center">
@@ -455,79 +452,101 @@ g \sim normal(\mu_g, \tau_g )
 
 <section id="model-suggestion" class="title-slide slide level2 center">
 <h2>4. Model Suggestion</h2>
-<p>In all performance metrics, our Power &amp; Temperature Model performed best.</p>
+<p>In all performance metrics, our <strong>Power &amp; Temperature Model</strong> performed best.</p>
 </section>
 
-<section id="test-forecasts" class="title-slide slide level2 center">
-<h2>5. Test Forecasts</h2>
-<p>We proceeded to test our three forecasts models to predict and groundtruth 2022 recruit populations.</p>
+<section id="practice-forecasts" class="title-slide slide level2 center">
+<h2>5. Practice Forecasts</h2>
+<p>We proceeded to apply our three forecast models to predict 2022 recruits.</p>
 </section>
 
-<section id="test-forecasts-1" class="title-slide slide level2 center">
-<h2>5. Test Forecasts</h2>
+<section id="practice-forecasts-1" class="title-slide slide level2 center">
+<h2>5. Practice Forecasts</h2>
 <div class="columns">
-<div class="column" style="width:75%;">
+<div class="column" style="width:70%;">
 <div class="cell" data-layout-align="center">
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="plots/pred_plot_2022.png" style="width:100.0%"></p>
+<p><img data-src="plots/pred_plot_2022_without_real_value.png" style="width:80.0%"></p>
 </figure>
 </div>
 </div>
 </div>
-</div><div class="column" style="width:25%;">
-<p>All models slightly under-predicted recruits, but the contained the true value inside error bars.</p>
+</div><div class="column" style="width:30%;">
+
+</div>
+</div>
+</section>
+
+<section id="practice-forecasts-2" class="title-slide slide level2 center">
+<h2>5. Practice Forecasts</h2>
+<div class="columns">
+<div class="column" style="width:70%;">
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="plots/pred_plot_2022_with_real_value.png" style="width:80.0%"></p>
+</figure>
+</div>
+</div>
+</div>
+</div><div class="column" style="width:30%;">
+<p>All models slightly under-predicted recruits, but each contained the true value within uncertainty shadow.</p>
 <p>i.e., forecasts are <em>okay</em>.</p>
 </div>
 </div>
 </section>
 
-<section id="forecast-the-future" class="title-slide slide level2 center">
-<h2>6. Forecast the future</h2>
+<section id="forecast-2023" class="title-slide slide level2 center">
+<h2>6. Forecast 2023</h2>
 <p>Seeing that our forecasts were reasonable so far, we used our models to predict recruits in 2023.</p>
 </section>
 
-<section id="forecast-the-future-1" class="title-slide slide level2 center">
+<section id="forecast-the-future" class="title-slide slide level2 center">
 <h2>6. Forecast the future</h2>
 
 <img data-src="plots/pred_plot_2023.png" style="width:100.0%" class="r-stretch quarto-figure-center"></section>
 
-<section id="forecast-the-future-2" class="title-slide slide level2 center">
+<section id="forecast-the-future-1" class="title-slide slide level2 center">
 <h2>6. Forecast the future</h2>
 
 <img data-src="plots/pred_plot_2023.png" style="width:100.0%" class="r-stretch quarto-figure-center"><p>PANIC! - why are predicted values so low??</p>
 </section>
 
-<section id="investigate-future-forecasts" class="title-slide slide level2 center">
-<h2>6.2 Investigate future forecasts</h2>
-<p>Assess predictor values to make sure we didn’t do anything wrong</p>
+<section id="investigate-unexpected-predictions" class="title-slide slide level2 center">
+<h2>6.2 Investigate unexpected predictions</h2>
+<p>We investigated model parameters to identify reasons our predictions were so low. The temperature covariate model is lowest, but all 3 values are low, indicating a probable <em>anomaly in the S (spawners) variable</em>.</p>
 </section>
 
-<section id="investigate-future-forecasts-1" class="title-slide slide level2 center">
-<h2>6.2 Investigate future forecasts</h2>
+<section id="investigate-unexpected-predictions-1" class="title-slide slide level2 center">
+<h2>6.2 Investigate unexpected predictions</h2>
 
-<img data-src="plots/Spawners_plot_2023.png" style="width:100.0%" class="r-stretch quarto-figure-center"></section>
-
-<section id="investigate-future-forecasts-2" class="title-slide slide level2 center">
-<h2>6.2 Investigate future forecasts</h2>
-
-<img data-src="plots/landslide_screenshot.png" style="width:100.0%" class="r-stretch quarto-figure-center"><p>Considering this, our projected low values of 2023 recruits are reasonable.</p>
+<img data-src="plots/Spawners_plot_2023.png" style="width:100.0%" class="r-stretch quarto-figure-center"><p>2019 spawners dip will likely affect 2023 Returns. Could this spawner count really be so low??</p>
 </section>
 
-<section id="assessment-of-stock" class="title-slide slide level2 center">
+<section id="investigate-unexpected-predictions-2" class="title-slide slide level2 center">
+<h2>6.2 Investigate unexpected predictions</h2>
+<p>yes.</p>
+
+<img data-src="plots/background%20info/landslide_screenshot.png" style="width:100.0%" class="r-stretch quarto-figure-center"><p>Considering this, our projected low values of 2023 recruits are reasonable (read: not an error on our part).</p>
+</section>
+
+<section id="assessment-of-stock" class="title-slide slide level2 incremental center">
 <h2>Assessment of Stock</h2>
 <p>Compared to global historical mean</p>
-<p>Yellow = prediction within +/-0.5sd of global historical mean</p>
-<p>Green = prediction larger than global historical mean by more than +0.5sd</p>
-<p>Red = prediction smaller than global historical mean by more than -0.5sd</p>
+<ul>
+<li><p><strong>Yellow</strong> = prediction within +/-0.5sd of global historical mean</p></li>
+<li><p><strong>Green</strong> = prediction larger than global historical mean by more than +0.5sd</p></li>
+<li><p><strong>Red</strong> = prediction smaller than global historical mean by more than -0.5sd</p></li>
+</ul>
 </section>
 
-<section id="assessment-of-stock-1" class="title-slide slide level2 center">
-<h2>Assessment of Stock</h2>
+<section class="slide level3">
 
-<img data-src="plots/stock_status.png" style="width:100.0%" class="r-stretch quarto-figure-center"></section>
-</section>
+
+<img data-src="plots/stock_status.png" style="width:100.0%" class="r-stretch quarto-figure-center"></section></section>
 <section id="limit-fishing-to-the-extent-possible" class="title-slide slide level1 center">
 <h1>LIMIT FISHING TO THE EXTENT POSSIBLE</h1>
 <div class="footer footer-default">

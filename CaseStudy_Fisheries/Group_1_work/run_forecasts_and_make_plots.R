@@ -352,7 +352,10 @@ model_perf <- final_sum %>%
        y = NULL,
        color = "Model",
        title = "Model Offsets from True Values") +
-  scale_color_manual(values = pal)
+  scale_color_manual(values = pal) +
+  theme(strip.clip = "off",
+        strip.background = element_blank()) +
+  coord_cartesian(clip = "off")
 
 ggview::ggview(model_perf,
                width = 6,
@@ -425,8 +428,8 @@ ribbon_data <- final[final$yr %in% c(2021,2022),] %>%
                       levels = c("Ricker Model","Power Model","Power & Temperature Model")))
 
   
-
-pred_2022 <- ESData23 %>%
+# plot 2022 predictions WITHOUT real 2022 data
+pred_2022 <- ESData23[ESData23$yr<2022,] %>%
   ggplot(aes(x=yr, y=True_R)) +
   geom_line() +
   geom_ribbon(data = ribbon_data,
@@ -450,7 +453,8 @@ pred_2022 <- ESData23 %>%
   ggrepel::geom_text_repel(data = final[final$yr == 2022,],
                             aes(x= yr, y = Pred, color = Mod,
                                 label = formatC(Pred, format="f", big.mark=",", digits=0)),
-                           nudge_x = 1, direction = "y", hjust = "left",
+                           nudge_x = 1, nudge_y = 2000,
+                           direction = "y", hjust = "left",
                            show.legend = F,
                            segment.color = "grey80") +
   ggthemes::theme_few() +
@@ -477,7 +481,65 @@ ggsave(pred_2022,
        width = 5, height = 5,
        units = "in",
        file = here::here("CaseStudy_Fisheries","Group_1_work",
-                         "plots","pred_plot_2022.png"))
+                         "plots","pred_plot_2022_without_real_value.png"))
+
+
+
+# Repeat exact same plot WITH real 2022 data
+pred_2022_w_real <- ESData23 %>%
+  ggplot(aes(x=yr, y=True_R)) +
+  geom_line() +
+  geom_ribbon(data = ribbon_data,
+              aes(x = yr, 
+                  ymin = Pred_low,
+                  ymax = Pred_up, 
+                  fill = Mod),
+              color = "transparent",
+              alpha = .4) +
+  geom_segment(data = final[final$yr == 2022,],
+               aes(x = 2021, 
+                   xend = yr, 
+                   y = ESData23$True_R[ESData23$yr == 2021],
+                   yend = Pred,
+                   color = Mod)) +
+  geom_point(data = final[final$yr == 2022,],
+             aes( x = yr, 
+                  y = Pred,
+                  color = Mod),
+             size = .5) +
+  ggrepel::geom_text_repel(data = final[final$yr == 2022,],
+                           aes(x= yr, y = Pred, color = Mod,
+                               label = formatC(Pred, format="f", big.mark=",", digits=0)),
+                           nudge_x = 1, nudge_y = 2000,
+                           direction = "y", hjust = "left",
+                           show.legend = F,
+                           segment.color = "grey80") +
+  ggthemes::theme_few() +
+  theme(legend.position = "none",
+        plot.title.position = "plot",
+        strip.text = element_text(face = "bold")) +
+  coord_cartesian(xlim = c(1950,2035)) +
+  facet_wrap(~Mod, ncol = 1) +
+  labs(x = "Year",
+       y = "Returns",
+       title = "2022 Predictions",
+       caption = "True 2022 Return: 243,951") +
+  scale_y_continuous(labels = scales::comma) +
+  scale_color_manual(values = pal) +
+  scale_fill_manual(values = pal)
+
+
+ggview::ggview(pred_2022_w_real,
+               width = 5, 
+               height = 5,
+               unit = "in")
+
+ggsave(pred_2022_w_real,
+       width = 5, height = 5,
+       units = "in",
+       file = here::here("CaseStudy_Fisheries","Group_1_work",
+                         "plots","pred_plot_2022_with_real_value.png"))
+
 
 
 

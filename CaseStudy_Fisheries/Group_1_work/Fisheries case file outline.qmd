@@ -166,7 +166,22 @@ We proceeded to apply our three forecast models to predict 2022 recruits.
 ::: {.column width="70%"}
 ```{r, out.width = "80%", fig.align = "center"}
 # put graph of models being compared here
-knitr::include_graphics("plots/pred_plot_2022.png")
+knitr::include_graphics("plots/pred_plot_2022_without_real_value.png")
+```
+:::
+
+::: {.column width="30%"}
+:::
+:::
+
+
+## 5. Practice Forecasts
+
+::: columns
+::: {.column width="70%"}
+```{r, out.width = "80%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/pred_plot_2022_with_real_value.png")
 ```
 :::
 
@@ -200,14 +215,24 @@ PANIC! - why are predicted values so low??
 
 ## 6.2 Investigate unexpected predictions
 
-We investigated model parameters to identify reasons our predictions were so low. The temperature covariate model is lowest, but all 3 values are low, indicating an anomaly in the S (spawners) variable.
+We investigated model parameters to identify reasons our predictions were so low. The temperature covariate model is lowest, but all 3 values are low, indicating a probable *anomaly in the S (spawners) variable*.
 
+## 6.2 Investigate unexpected predictions
 ```{r, out.width = "100%", fig.align = "center"}
 # put graph of models being compared here
-knitr::include_graphics("plots/landslide_screenshot.png")
+knitr::include_graphics("plots/Spawners_plot_2023.png")
+```
+2019 spawners dip will likely affect 2023 Returns. Could this spawner count really be so low??
+
+
+## 6.2 Investigate unexpected predictions
+yes. 
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/background info/landslide_screenshot.png")
 ```
 
-Considering this, our projected low values of 2023 recruits are reasonable.
+Considering this, our projected low values of 2023 recruits are reasonable (read: not an error on our part). 
 
 ::: {.incremental}
 
