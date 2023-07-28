@@ -13,12 +13,11 @@ Group members: Jake Lawlor, Yiran Wang, Emmerson Wilson, and Garland Xie
 
 # Sockeye salmon
 
-![Fraser River Watershed](./plots/background info/watershed2.jpeg)
+![Fraser River Watershed](./plots/background%20info/watershed2.jpeg)
 
----
+------------------------------------------------------------------------
 
-![Early Stuart Stock](./plots/background info/watershed2 close.jpg)
-
+![Early Stuart Stock](./plots/background%20info/watershed2%20close.jpg)
 
 ## 1. Basic Ricker Model
 
