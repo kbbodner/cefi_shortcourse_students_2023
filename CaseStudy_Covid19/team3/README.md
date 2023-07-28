@@ -1,36 +1,12 @@
-## Installing and launching Docker container
+## Team 3: Covid-19 Case Study
+This is the presentation and code that goes along with a case study done during the Fields Institute Forecasting for Decision-Making shortcourse in summer 2023. Team members include Danielle Berger, Gabriel Dansereau, Rhiannon Loster & Keara Smith. The purpose of this Covid-19 case study was to work on editting a base model with the given data, while hopefully answering the given "decision maker's request". The base model in this case was given as an SEIR (Susceptible, Exposed, Infected, Recovered) compartmental model, and the data was Covid-19 cases from the end of January to the end of March 2020 in British Columbia, CA. The decision maker's request was whether or not to implement masks within British Columbia, by making projections for the next 30 days (April 2020). The data used and code modified (using both R and STAN files) for this case study are available, as well as a pdf file of the presentation given on July 28, 2023.
 
-This project involves the use of Docker which is an open source platform that allows for all OS and application configuration to be stored in a container, which can easily be deployed on any machine. For this project we use `Rocker` which is a project to specifically set up R and Rstudio images. The project uses Stan, which requires a C++ toolchain to be set up. However, with Docker we can ensure that this is set-up correctly each time and can be used by other collaborators to avoid any "works on my machine" bugs.
+## Getting Started
+The attached code uses both DOCKER, if DOCKER is not already installed follow the instructions seen within the README file found here; https://github.com/kbbodner/cefi_shortcourse_students_2023/blob/main/CaseStudy_Covid19/covidseir/README.md
 
-First [install Docker](https://docs.docker.com/get-docker/). On Windows and Mac
-the easiest way to get started is to install [Docker Desktop](https://www.docker.com/products/docker-desktop/).
-Note, on Windows you will also need to [install Windows Subsystem for Linux (WSL2)](https://learn.microsoft.com/en-us/windows/wsl/install).
+Once this is running open the "introduction_stan_seir_case_study.Qmd" to begin running the model.
 
-On Windows, make sure Docker Desktop is running and then go through the following steps:
+## Summary
+The COVID-19 pandemic has been perceived as one of the greatest global threats, not only to public health and well-being, but also to global economic and social stability. In British Columbia, jurisdictions have implemented varying measures, namely lockdowns, shift from in-person to virtual care, and quarantines, to mitigate potential consequences. Since the coronavirus can spread through droplets and particles released into the air by speaking, coughing, or sneezing, masks are very helpful in preventing the virus from spreading in crowded indoor public spaces. There are various types of masks and respirators that are used to prevent the spread of disease. Forecasting models are useful in helping understand what kind of effect certain interventions, such as using masks, will have on the number of cases and spread of a disease, such as COVID-19. The objective of this model was to to justify or oppose mask usage by projecting the daily case rate for wearing (or not wearing) various mask types. This model forecasted case rates to the end of April with data from the beginning of January to the end of March, 2020. With a mask policy, our model found N95 masks to have the greatest impact on decreasing the impact of COVID-19 infection with a decrease in daily case numbers across all Health Authorities. Notably, N95 masks reduced daily case numbers by about 99% in the Fraser Health Authority by April 30th. By evaluating the impact of every member of the public wearing a face mask, it was found that masks reduce the spread of COVID-19 and thus, may be an effective way to control case rates across the province. 
 
-1. Open a terminal (or in Windows open Powershell) and navigate to the parent directory `/covidseir` that
-contains the file `Dockerfile`. i.e. run the command ```cd path/to/covidseir/```
-1. Build with docker by running
-   ```docker build -t covidseir .```
-   1. Note: You may run into an issue here where it says that the dockerfile isn't found. Can be resolved from this [issue](https://github.com/docker/buildx/issues/426#issuecomment-732980948)
-1. Run the image with the following command by changing "apassword" to an alternative password. Alternatively if a password is not included one will be assigned (check logs). 
-    ```docker run -d -e PASSWORD=apassword -p 8787:8787 -v ${PWD}:/home/rstudio/Documents covidseir:latest```
-1. Open your web browser (e.g. Chrome or Firefox) and type the following in the address bar `localhost:8787`. 
-1. Log in with user/password `rstudio/apassword`.
-1. At any time you can check what containers are running with the following
-command ```docker ps```
-1. When you're ready to close your session you can run
-```docker stop container_name``` where `container_name` is an automatically 
-generated name you can find under `NAMES` by running the ```docker ps``` command
-1. To start-up a container again run ```docker start container_name```.
-Note that you can see all available containers (including those not currently running)
-by entering the following ```docker container ls --all```
 
-**Note:** The `-v` flag sets the volume to share in the developer environment, make sure you're in the project directory before running the above command. This allows the docker environment to 
-communicate with the working directory of the project so that any changes to
-files while running Rstudio in the container will be made in the same directory
-outside of the container. 
-For more information see [The Rocker Project](https://www.rocker-project.org/). 
-
-**Note:** There may be further complications with running Rstudio within docker if you're using `docker-ce` in `WSL2`. If you need to mount the drive that contains the git repo use the following command (e.g. if the drive name is `Z`)
-```sudo mount -t drvfs Z: /mnt/z```
