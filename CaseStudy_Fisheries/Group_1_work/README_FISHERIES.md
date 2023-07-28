@@ -105,9 +105,11 @@ Figure 1. The number of Fraser Salmon recruits from 1950 - 2020 in the Early Ste
 
 </br>
 
-<img src="plots/model_performances.png" alt="drawing" width="600"/>
+<img src="plots/model_performances.png" alt="drawing" width="700"/>
 
 Figure 2. Model performances across the three forecasting models (blue - Basic-Ricker, yellow - Power, red - Power + Temperature). Three different performance metrics were used: (1) mean absolute offset, (2) mean offset, and (3) percent offset. 
+
+</br>
 
 ### Final Forecast
 
