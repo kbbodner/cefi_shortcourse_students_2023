@@ -88,31 +88,4 @@ sorted_pred <- sort(var.mat.scale$R_Pred_Tot)
 ci_p <- c(0.025, 0.975)
 posit <- (ci_p * length(var.mat.scale$R_Pred_Tot))
 
-sorted_pred[posit]
-
-
-# CI/PI test 2
-## Pairwise scatter plots & correlation
-pairs(var.mat2)	## pairs plot to evaluate parameter correlation
-cor(var.mat2)  
-
-nsamp <- 5000
-samp <- sample.int(nrow(var.mat2),nsamp)
-xpred <- 2022 					## sequence of x values we're going to
-npred <- length(xpred)				##      make predictions for
-ypred <- matrix(0.0,nrow=nsamp,ncol=npred)	## storage for predictive interval
-ycred <- matrix(0.0,nrow=nsamp,ncol=npred)	## storage for credible interval
-
-
-for(g in seq_len(nsamp)){
-  theta = var.mat2[samp[g],]
-  ycred[g,] <- theta["A"] + theta["B"]*xpred
-  ypred[g,] <- rnorm(npred,ycred[g,],1/sqrt(theta["tau"]))
-}
-
-ci <- apply(ycred,2,quantile,c(0.025,0.5,0.975))  ## credible interval and median
-pi <- apply(ypred,2,quantile,c(0.025,0.975))
-
-j.model2$R_Pred
-summary(var.out2)$statistics
-plot(Year,  )
+conf.interv <- sorted_pred[posit]
