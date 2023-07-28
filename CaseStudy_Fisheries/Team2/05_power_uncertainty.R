@@ -1,7 +1,8 @@
 # unclean - power forecast
 
-Dat = data
-
+Dat = data 
+Pred_Year=2023
+library(tidyverse)
 
 # for year X forecast, would have return data up to year X-1
 # age-4 return (rec4) up to brood year X-5, age-5 return (rec5) up to brood year X-6
@@ -25,21 +26,16 @@ data2$B_mean <- 1
 data2$B_tau <- 1
 data2$Sig_Gam_Dist <- 0.001
 data2$S <- Data_Retro$S/Scale 
+data2$P4 <- mean(Data_Retro$rec4 / Data_Retro$R, na.rm=T)
 
-inits <- function(){
-  param <- list()
-  param$tau <- runif(1, 0.001, 10)
-  param$A <- rnorm(1, 1, 0.5)
-  param$B <- rnorm(1, 1, 0.5)
-  param
-}
 
 power <- "
 model{
 A ~ dnorm(A_mean, A_tau)             # prior for alpha
 B ~ dnorm(B_mean, B_tau)                # prior for beta
 tau ~ dgamma(Sig_Gam_Dist,Sig_Gam_Dist)    # prior for precision parameter
-sigma <- 1/sqrt(tau)  
+sigma <- 1/sqrt(tau)
+
 
 for (i in 1:N) {                             # loop over N sample points
       R_Obs[i] ~ dlnorm(logR_Fit[i], tau)          # likelihood -> predicted value for NA in data set
@@ -47,6 +43,7 @@ for (i in 1:N) {                             # loop over N sample points
       R_Fit[i] <- exp(logR_Fit[i])
       R_Pred[i] ~ dlnorm(logR_Fit[i],tau)
 }
+R_Pred_Tot <- R_Pred[N] * P4 + R_Pred[N-1] * (1-P4)
 }
 "
 
@@ -54,18 +51,26 @@ for (i in 1:N) {                             # loop over N sample points
 
 j.model2   <- jags.model(file = textConnection(power),
                          data = data2,
-                         inits = list(inits(), inits(), inits()),
                          n.chains = 3)
 
 var.out2 <- coda.samples (model = j.model2,
-                          variable.names = c("A", "B","tau"),
-                          n.iter = 2000)
+                          variable.names = c("A", "B","tau", "R_Pred_Tot"),
+                          n.iter = 5000)
+head(var.out2)
+
 
 ## remember to assess convergence and remove burn-in before doing other diagnostics
 GBR <- gelman.plot(var.out2)
 
 ## convert to matrix
-var.mat2      <- as.matrix(var.out2)
+var.mat2      <- as.data.frame(var.out2[[3]])
+var.mat.scale <-  var.mat2 |>
+  mutate(R_Pred_Tot=R_Pred_Tot * Scale)
+  
+head(var.mat.scale) 
+dim(var.mat.scale)
+hist(var.mat.scale$R_Pred_Tot, breaks=50)
+median(var.mat.scale$R_Pred_Tot)
 
 ## Pairwise scatter plots & correlation
 pairs(var.mat2)	## pairs plot to evaluate parameter correlation
@@ -91,4 +96,19 @@ pi <- apply(ypred,2,quantile,c(0.025,0.975))
 j.model2$R_Pred
 summary(var.out2)$statistics
 plot(Year,  )
+
+#Is this how we get the confi interval?
+power.mod.2023 <- RunModRetro.new(data, 2023, "Power")
+power.mod.2023$Preds_Out
+
+####
+hist(var.mat.scale$R_Pred_Tot, breaks=1000)
+median(var.mat.scale$R_Pred_Tot)
+
+sorted_pred <- sort(var.mat.scale$R_Pred_Tot)
+ci_p <- c(0.025, 0.975)
+posit <- (ci_p * length(var.mat.scale$R_Pred_Tot))
+
+sorted_pred[posit]
+
 
