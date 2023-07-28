@@ -12,8 +12,6 @@ library(corrplot)
 
 
 # data df comes from 01_preparation script
-# Delete yeas without response R
-data <- data[!is.na(data$R),]
 
 
 # **#*****************************************************************
