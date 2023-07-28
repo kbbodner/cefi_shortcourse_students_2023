@@ -13,12 +13,15 @@ library(dplyr)
 library(McMasterPandemic)
 library(rstan)
 library(tidyr)
+library(lubridate)
 ```
 
 ## Ontario data of reported covid cases between Feb-Mar 2020
 ```{r load data}
 # COVID-19 case data for Ontario dates pre 1 April 2020
-cases = read_csv("data/fitting.csv") 
+source(here::here("team-5/utilities.R"))  #load packages and functions
+source(here::here("team-5/models.R")) #load basic model
+source(here::here("team-5/pull_data.R")) #load data
 
 #S = 14686092 #this is Quarterly 1 population for 2020, S = 14718133 #for Q2 2020
 ```
