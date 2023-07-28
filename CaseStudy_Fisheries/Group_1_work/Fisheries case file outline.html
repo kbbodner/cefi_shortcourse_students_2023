@@ -37,11 +37,11 @@
 
   .callout {
     margin-top: 1em;
-    margin-bottom: 1em;  
+    margin-bottom: 1em;
     border-radius: .25rem;
   }
 
-  .callout.callout-style-simple { 
+  .callout.callout-style-simple {
     padding: 0em 0.5em;
     border-left: solid #acacac .3rem;
     border-right: solid 1px silver;
@@ -92,7 +92,7 @@
     margin-top: 0.5em;
     margin-bottom: 0.5em;
   }
-    
+
   .callout.callout-captioned.callout-style-simple .callout-content  p {
     margin-top: 0;
   }
@@ -143,7 +143,7 @@
   .callout-caption {
     display: flex
   }
-    
+
   .callout-icon::before {
     margin-top: 1rem;
     padding-right: .5rem;
@@ -255,12 +255,12 @@
     }
     .reveal .footnotes ol {
       counter-reset: ol;
-      list-style-type: none; 
+      list-style-type: none;
       margin-left: 0;
     }
     .reveal .footnotes ol li:before {
       counter-increment: ol;
-      content: counter(ol) ". "; 
+      content: counter(ol) ". ";
     }
     .reveal .footnotes ol li > p:first-child {
       display: inline-block;
@@ -302,19 +302,19 @@
     .reveal .slide > img.r-stretch.quarto-figure-center {
       display: block;
       margin-left: auto;
-      margin-right: auto; 
+      margin-right: auto;
     }
     .reveal .slide > img.stretch.quarto-figure-left,
     .reveal .slide > img.r-stretch.quarto-figure-left  {
       display: block;
       margin-left: 0;
-      margin-right: auto; 
+      margin-right: auto;
     }
     .reveal .slide > img.stretch.quarto-figure-right,
     .reveal .slide > img.r-stretch.quarto-figure-right  {
       display: block;
       margin-left: auto;
-      margin-right: 0; 
+      margin-right: 0;
     }
   </style>
 </head>
@@ -335,6 +335,14 @@
 </section>
 
 <section>
+<section id="sockeye-salmon" class="title-slide slide level1 center">
+<h1>Sockeye salmon</h1>
+
+<img data-src="./plots/background%20info/watershed2.jpeg" class="r-stretch quarto-figure-center"><p class="caption">Fraser River Watershed</p></section>
+<section class="slide level3">
+
+
+<img data-src="./plots/background%20info/watershed2%20close.jpg" class="r-stretch quarto-figure-center"><p class="caption">Early Stuart Stock</p></section>
 <section id="basic-ricker-model" class="title-slide slide level2 center">
 <h2>1. Basic Ricker Model</h2>
 <p>Consider the following model:</p>
@@ -365,14 +373,14 @@ ln(S\_{max}) \sim normal(\mu_{Smax}, \tau_{Smax})
 <p><span id="eq-6"><span class="math display">\[
 \tau \sim gamma(\theta, \theta)
 \qquad(6)\]</span></span></p>
-</section></section>
+</section>
+
 <section id="alternate-models" class="title-slide slide level2 scrollable center">
 <h2>2. Alternate Models</h2>
 <p>Power Model</p>
 <p>Power Model with environmental covariate</p>
 </section>
 
-<section>
 <section id="alternate-1-power-model" class="title-slide slide level2 scrollable center">
 <h2>Alternate 1: Power model</h2>
 <p>based on the assumption that log(recruiters) depends on log(spawners)</p>
@@ -395,8 +403,8 @@ A \sim normal(\mu_{A}, \tau_{A})
 B \sim normal(\mu_{B}, \tau_{B})
 \qquad(10)\]</span></span></p>
 <p>And the same gamma prior on precision as the above models (equation 6).</p>
-</section></section>
-<section>
+</section>
+
 <section id="alternate-2-power-model-with-environmental-covariates" class="title-slide slide level2 center">
 <h2>Alternate 2: Power model with environmental covariates</h2>
 <p>This alternate model is an extension to the previous power model that includes the average sea surface temperatures as an environmental covariate:</p>
@@ -416,7 +424,8 @@ ln(R_i) = A+B*ln(S_i)+gEsst_{i}
 <p><span id="eq-9"><span class="math display">\[
 g \sim normal(\mu_g, \tau_g )
 \qquad(13)\]</span></span></p>
-</section></section>
+</section>
+
 <section id="model-comparisons" class="title-slide slide level2 center">
 <h2>3. Model Comparisons</h2>
 
@@ -494,7 +503,7 @@ g \sim normal(\mu_g, \tau_g )
 
 </div>
 </section>
-
+</section>
 <section id="limit-fishing-to-the-extent-possible" class="title-slide slide level1 center">
 <h1>LIMIT FISHING TO THE EXTENT POSSIBLE</h1>
 <div class="footer footer-default">
@@ -512,7 +521,7 @@ g \sim normal(\mu_g, \tau_g )
   <script src="Fisheries case file outline_files/libs/revealjs/plugin/reveal-menu/menu.js"></script>
   <script src="Fisheries case file outline_files/libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
   <script src="Fisheries case file outline_files/libs/revealjs/plugin/quarto-support/support.js"></script>
-  
+
 
   <script src="Fisheries case file outline_files/libs/revealjs/plugin/notes/notes.js"></script>
   <script src="Fisheries case file outline_files/libs/revealjs/plugin/search/search.js"></script>
@@ -534,7 +543,7 @@ g \sim normal(\mu_g, \tau_g )
 'autoAnimateUnmatched': true,
 'menu': {"side":"left","useTextContentForMissingTitles":true,"markers":false,"loadIcons":false,"custom":[{"title":"Tools","icon":"<i class=\"fas fa-gear\"></i>","content":"<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>"}],"openButton":true},
 'smaller': false,
- 
+
         // Display controls in the bottom right corner
         controls: false,
 
@@ -712,7 +721,7 @@ g \sim normal(\mu_g, \tau_g )
         ]
       });
     </script>
-    
+
     <script>
       // htmlwidgets need to know to resize themselves when slides are shown/hidden.
       // Fire the "slideenter" event (handled by htmlwidgets.js) when the current
@@ -769,7 +778,7 @@ g \sim normal(\mu_g, \tau_g )
           toggleBodyColorMode(bsSheetEl);
         }
       }
-      toggleBodyColorPrimary();  
+      toggleBodyColorPrimary();
       const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
       tabsets.forEach(function(tabset) {
         const tabby = new Tabby('#' + tabset.id);
@@ -793,11 +802,11 @@ g \sim normal(\mu_g, \tau_g )
           button.setAttribute("data-bs-toggle", "tooltip");
           button.setAttribute("data-bs-placement", "left");
           button.setAttribute("data-bs-title", "Copied!");
-          tooltip = new bootstrap.Tooltip(button, 
-            { trigger: "manual", 
+          tooltip = new bootstrap.Tooltip(button,
+            { trigger: "manual",
               customClass: "code-copy-button-tooltip",
               offset: [0, -8]});
-          tooltip.show();    
+          tooltip.show();
         }
         setTimeout(function() {
           if (tooltip) {
@@ -829,7 +838,7 @@ g \sim normal(\mu_g, \tau_g )
         };
           config['offset'] = [0,0];
           config['maxWidth'] = 700;
-        window.tippy(el, config); 
+        window.tippy(el, config);
       }
       const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
       for (var i=0; i<noterefs.length; i++) {
@@ -882,6 +891,6 @@ g \sim normal(\mu_g, \tau_g )
       }
     });
     </script>
-    
+
 
 </body></html>
