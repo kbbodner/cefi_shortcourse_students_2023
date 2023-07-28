@@ -8,7 +8,7 @@ format:
     incremental: true  
 ---
 
-## Fraser River Sockeye Fishery 
+## Fraser River Sockeye Fishery {.smaller}
 
 
 :::: {.columns}
@@ -40,6 +40,7 @@ format:
 ## Goals
 
 - Previous forecasting methods are old and out of date
+
 - **Goal**: develop new forecasting methods and evaluate performance
 
 
@@ -48,7 +49,9 @@ format:
   - Basic Ricker
   - Ricker with Env. Covariate
   - Power Model
-- We compared the performance of the models using...
+  - Naive
+  - Naive Linear Model
+- We compared the performance of the models using RMSE
 -
 
 ## Model comparisons
@@ -56,3 +59,9 @@ format:
 - graph of model performance
 
 ## Proof of Concept Forecast 
+
+
+## Recommendation 
+
+
+## Thank you
