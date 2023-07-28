@@ -24,7 +24,6 @@ cases_val <- read_csv(here("data", "validation.csv"))     %>% mutate(var = "inci
   rename(value = new_cases) %>%
   relocate(value, .after = var) %>% filter(date >= "2020-02-09")
 
-source(here::here("team-5/models.R"))
 source(here::here("team-5/pull_data.R"))
 source(here::here("team-5/utilities.R"))
 state = c(
@@ -36,15 +35,17 @@ state = c(
 
 # parameters -- these are new gamma and alpha 
 params = c(
-  beta = 0.575, #1/4
+  beta = 0.27, #1/4
   N = sum(state),
   alpha = 0.2, #1/5
   gamma = 0.25 #1/4
 )
 # 
 
+
+source(here::here("team-5/models.R"))
 seir_result = simulation_history(seir)
-set.seed(15)
+set.seed(156)
 
 
 seir_obs_err = (seir
@@ -62,14 +63,14 @@ seir_obs_err_result = (seir_obs_err
 )
 
 
-plot_sim(seir_obs_err, seir_obs_err_result, "")
+plot_sim(seir_obs_err, seir_obs_err_result %>% select(-S), "")
 # adding time-varying beta for all of march
 library(lubridate)
 random_timevar = data.frame(
-  Date = ymd(seq(from = 20200301, to = 20200330, by = 1)),
-  Symbol = rep('beta', 30),
-  Value = rep(NA, 30),
-  Type = rep('abs', 30)
+  Date = (seq(from = ymd("2020-03-16"), to = ymd("2020-04-15"), by = 1)),
+  Symbol = rep('beta', 31),
+  Value = rep(NA, 31),
+  Type = rep('abs', 31)
 )
 
 
@@ -134,7 +135,7 @@ create_scenario_output <- function(file_name = "", plot_title = "", beta_change 
   seir_obs_err_inc_to_calibrate = (seir_obs_err_inc
                                    # attach observed data
                                    %>% update_observed(
-                                     cases2
+                                     rbind(cases2, cases_val)
                                    )
                                    # attach priors for parameters we're fitting
                                    # ("optimizing" over)
@@ -142,11 +143,11 @@ create_scenario_output <- function(file_name = "", plot_title = "", beta_change 
                                      # fitting log beta
                                      log_beta ~ log_normal(
                                        -1, # log mean, so mean beta is exp(-1) = 0.36
-                                       0.5 # standard deviation of the log normal prior
+                                       3 # standard deviation of the log normal prior
                                      )
                                    )
                                      %>% add_opt_tv_params(tv_type = "abs"
-                                                           , log_beta ~ log_flat((-4))
+                                                           , log_beta ~ log_flat((-3))
                                      )
                                    
   )
@@ -157,7 +158,7 @@ create_scenario_output <- function(file_name = "", plot_title = "", beta_change 
   model_fit = calibrate_stan(
     model = seir_obs_err_inc, # original model object
     model_to_calibrate = seir_obs_err_inc_to_calibrate, # model object with observed data and priors
-    chains = 2, iter = 1000 # number of MCMC chains
+    chains = 2, iter = 2000 # number of MCMC chains
   )
   
   # now look at model fit:
@@ -175,40 +176,40 @@ create_scenario_output <- function(file_name = "", plot_title = "", beta_change 
                           %>% summarise_ensemble_stan()
   )
   
-  # head(fit_ensemble_summary)
+  head(fit_ensemble_summary)
   
-  plot_ensemble(fit_ensemble_summary, cases2) + labs(title = plot_title)
+  plot_ensemble(fit_ensemble_summary, rbind(cases2, cases_val)) + labs(title = plot_title)
   ggsave(here::here(paste0(file_name, "_fit.png")), height = 9, width = 16, units = "cm")
   
   
   # forecast:
   
-  
-  fcst_ensemble_summary = (model_fit
-                           %>% ensemble_stan(
-                             days_to_forecast = 30, # new! number of days to forecast
-                             n_cores = 4
-                           )
-                           %>% summarise_ensemble_stan() # can specify a different quantile vector here: see documentation
-  )
-  
-  plot_ensemble(fcst_ensemble_summary, rbind(cases2, cases_val)) + labs(title = plot_title)
-  ggsave(here::here(paste0(file_name, "_pred.png")), height = 9, width = 16, units = "cm")
-  
-  fcst_outproc <- fcst_ensemble_summary%>%filter(var == "incidence", date <= ("2020-04-15"), date > ("2020-02-08"))
-  cases_err <- ((rbind(cases2, cases_val))["value"])
-  dates <- as.Date(fcst_outproc$date)
-  merr_in <- cbind(fcst_outproc$value, cases_err, dates)
-  names(merr_in) <- c("predicted", "observed", "dates")
-  merr_in$observed - merr_in$predicted
-  
-  merr <- calculate_model_errors(merr_in,
-                                 first_date = as.Date("2020-04-01"),
-                                 iter_name = (plot_title)
-                                 )
-  merr$max_inc <- max((fcst_ensemble_summary %>% filter(var == "incidence"))["value"])
-  # return(max((fcst_ensemble_summary %>% filter(var == "incidence"))["value"]))
-  return(merr)
+  # 
+  # fcst_ensemble_summary = (model_fit
+  #                          %>% ensemble_stan(
+  #                            days_to_forecast = 30, # new! number of days to forecast
+  #                            n_cores = 4
+  #                          )
+  #                          %>% summarise_ensemble_stan() # can specify a different quantile vector here: see documentation
+  # )
+  # 
+  # plot_ensemble(fcst_ensemble_summary, rbind(cases2, cases_val)) + labs(title = plot_title)
+  # ggsave(here::here(paste0(file_name, "_pred.png")), height = 9, width = 16, units = "cm")
+  # 
+  # fcst_outproc <- fcst_ensemble_summary%>%filter(var == "incidence", date <= ("2020-04-15"), date > ("2020-02-08"))
+  # cases_err <- ((rbind(cases2, cases_val))["value"])
+  # dates <- as.Date(fcst_outproc$date)
+  # merr_in <- cbind(fcst_outproc$value, cases_err, dates)
+  # names(merr_in) <- c("predicted", "observed", "dates")
+  # merr_in$observed - merr_in$predicted
+  # 
+  # merr <- calculate_model_errors(merr_in,
+  #                                first_date = as.Date("2020-04-01"),
+  #                                iter_name = (plot_title)
+  #                                )
+  # merr$max_inc <- max((fcst_ensemble_summary %>% filter(var == "incidence"))["value"])
+  # # return(max((fcst_ensemble_summary %>% filter(var == "incidence"))["value"]))
+  # return(merr)
 }
 
 # 
@@ -223,7 +224,7 @@ test_beta_080 <- create_scenario_output(file_name = "team-5/img/beta_080_tv", pl
 
 test_beta_070 <- create_scenario_output(file_name = "team-5/img/beta_070_tv", plot_title = "TV: Mask wearing 70% effective", beta_change = 0.8419)
 
-test_beta_060 <- create_scenario_output(file_name = "team-5/img/beta_060_tv", plot_title = "TV: Mask wearing 60% effective", beta_change = 0.877)
+test_beta_060 <- create_scenario_output(file_name = "team-5/img/beta_060_tv2", plot_title = "TV: Mask wearing 60% effective", beta_change = 0.877)
 
 test_beta_050 <- create_scenario_output(file_name = "team-5/img/beta_050_tv", plot_title = "TV: Mask wearing 50% effective", beta_change = 0.905)
 
@@ -253,7 +254,7 @@ test_beta_080$model_iteration = "beta80"
 test_beta_out <- rbind(test_beta_010, test_beta_020, test_beta_030, test_beta_040, test_beta_050, test_beta_060,
       test_beta_070, test_beta_080)
 
-write_csv(test_beta_out, file = here("team-5/img/beta_error_oos.csv"))
+write_csv(test_beta_out, file = here("team-5/img/beta_error_oos2.csv"))
 
 # create outputs for varying levels of mask effectiveness
 
