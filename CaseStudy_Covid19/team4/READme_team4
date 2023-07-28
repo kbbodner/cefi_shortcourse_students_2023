@@ -1,18 +1,15 @@
 
 
+This project is part of the Short Course on Forecasting for Decision-Making: An Epidemiological & Ecological Perspective. 
+(Info here)[http://www.fields.utoronto.ca/activities/23-24/forecasting]
+
 Here we explore transmission models in Stan, and it's a good learning opportunity for those interested in modelling covid 19 outbreak and making Bayesian inferences. 
 With Bayesian inference, we quantify uncertainty and incorporate prior knowledge into the model. 
-In this repo,  we incorporate a susceptible, exposed, infected, recovered (SEIR) model into stan, using data from the first two months of covid outbreak 
-in British Columbia. We explore the benefits of mask-wearing as one of our parameters. 
+In this repo,  we incorporate a susceptible, exposed, infected, recovered (SEIR) model into stan, using data from the first two months of covid cases 
+in British Columbia. Our model accounts for the implementation of a mask mandate as well as a general behavioural change in the population during the initial stages of the pandemic. 
+Our model manages to capture a decrease in cases due to these effects but needs improvement to forecast cases in BC accurately.  As part of our results, we include an approximation of mask-wearing into our parameters.     
 
 This offers an amazing opportunity to understand mathematical models using Bayes for the parameters. 
-
-How to start: 
-
-This code is part of the Short Course on Forecasting for Decision-Making: An Epidemiological & Ecological Perspective. (Info here)[http://www.fields.utoronto.ca/activities/23-24/forecasting]
-- Read about mathematical models in public health (here)[]
-- Read about forecasting here (here)[]
-
 
 Summary 
 The outbreak of COVID-19 is currently marking a significant turning point in British Columbia's public health.
