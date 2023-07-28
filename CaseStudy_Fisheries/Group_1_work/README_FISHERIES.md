@@ -97,5 +97,13 @@ We used the same priors for $A$, $B$, and $g$ as previous above models.
 
 ## Deliverables
 
+![stock status](plots/stock_status.png)
+
+
+
+
+
+
+
 
 
