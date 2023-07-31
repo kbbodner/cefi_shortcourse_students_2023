@@ -1,0 +1,15 @@
+---
+title: "Apply lessons learned and look Ahead"
+format: html
+editor: visual
+---
+
+## The Results Are In!
+
+It's November 1, 2022. You've been anxiously awaiting the updated Sockeye data file from your data manager for several weeks. Outlook notification: "2023 forecast Data is Ready!". Even though your main purpose for this data set is to get the ball rolling on the 2023 forecast, you can't wait to check to see how your proposed new methods performed in 2022.
+
+Pull up the data and compare your forecast to what actually returned from the 2017 and 2018 brood years in 2022. How did you do? Did one of your other methods perform better than the basic Ricker model?
+
+Based on what you learned in 2022, make a forecast for your selected stock(s) for 2023.
+
+Include the analysis that you carried out for 2022 comparing candidate models (but updated with an additional year of data), along with any tweaks you decided to make in your models, or changes in how you made your final choice in 2022 vs. 2023. Again, present a suite of candidate models, compare them, and make a suggestion as to which you think should provide the final forecast for 2023. Also, try to provide some context to decision makers in terms of the current status of the population. How does it currently stand compared to benchmarks? Is there reason to be extra [cautious](https://www.pac.dfo-mpo.gc.ca/pacific-smon-pacifique/big-bar-landslide-eboulement/index-eng.html) this year?

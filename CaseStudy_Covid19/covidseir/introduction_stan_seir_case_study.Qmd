@@ -43,7 +43,7 @@ reported-case data.
 
 ```{r load bc data}
 # load data grouped by location (HA), and age group
-covid_data <- read_csv(here("covidseir","data","fitting_data.csv"))
+covid_data <- read_csv("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/data/fitting_data.csv")
 
 
 covid_data %>%
@@ -56,7 +56,7 @@ covid_data %>%
 
 
 # Load Total BC cases for whole province for first 60 recorded time-points
-bc_data <- read_csv(here("covidseir","data","bc_fitting_data.csv"))
+bc_data <- read_csv("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/data/bc_fitting_data.csv")
 
 
 
@@ -146,23 +146,22 @@ Poisson observation process. The following chunk
 prints the lines contained in the `stan` file
 
 ```{r read stan model}
-code <- readLines(here(
-  "covidseir",
-  "stan_models",
-  "basic_seir_model.stan"
-))
+code <- readLines("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/basic_seir_model.stan")
 
 cat(code, sep = "\n")
+
+#code_extended <- readLines("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/extended_model_cole.stan")
+
+#cat(code_extended, sep = "\n")
 ```
 
 We run the following to compile the model
 
 ```{r compile stan model}
-model <- stan_model(here(
-  "covidseir",
-  "stan_models",
-  "basic_seir_model.stan"
-))
+model <- stan_model("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/basic_seir_model.stan")
+
+
+#model_extended <- stan_model("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/extended_model_cole.stan")
 ```
 
 Note what is provided in the "data" block of the Stan code. That is what
@@ -190,11 +189,21 @@ stan_data <- list(
 ```{r}
 fit <- sampling(model,
   data = stan_data,
-  iter = 500,
+  iter = 1000,
   seed = 42, # fix seed to recreate results
   chains = 2,
   control = list(adapt_delta = 0.9)
 )
+
+
+#########Extended Model##############
+#fit_extened <- sampling(model_extended,
+ # data = stan_data,
+ # iter = 500,
+ # seed = 42, # fix seed to recreate results
+ # chains = 1,
+ # control = list(adapt_delta = 0.9)
+#)
 ```
 
 Examine the summary of the posterior
@@ -220,6 +229,7 @@ time_dictionary <- bc_data %>%
   select(Reported_Date) %>%
   mutate(t = 1:n())
 
+########## Infected Individuals###########
 fit %>%
   spread_draws(y_hat[t, i]) %>%
   left_join(state_dictionary, by = "i") %>%
@@ -227,7 +237,39 @@ fit %>%
   filter(state == "I") %>%
   ggplot(aes(x = Reported_Date)) +
   stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
-  scale_fill_brewer()
+  scale_fill_brewer() + ylab("Infected Individuals") + theme_bw()
+
+
+############### Exposed individuals##################
+fit %>%
+  spread_draws(y_hat[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary, by = "t") %>%
+  filter(state == "E") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer() + ylab("Exposed Indiviuals") + theme_bw()
+
+
+############### Recovered Individuals##################
+fit %>%
+  spread_draws(y_hat[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary, by = "t") %>%
+  filter(state == "R") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer() + ylab("Recovered Individuals") + theme_bw()
+
+############### Susceptible Individuals##################
+fit %>%
+  spread_draws(y_hat[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary, by = "t") %>%
+  filter(state == "S") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer() + ylab("Susceptible Individuals") + theme_bw()
 ```
 
 Compare posterior predictive distribution of cases to actual cases,
@@ -280,6 +322,44 @@ The base model indicates a period of unbounded growth. In addition,
 The posterior predictive distribution of cases does not seem to match the
 pattern of observed cases. Bayesian p-values and residuals can be used to 
 investigate these differences. What are some of the underlying causes of this? 
+
+```{r}
+
+data.com <- fit %>%
+  tidybayes::gather_draws(cases[t]) %>%
+  left_join(time_dictionary, by = c("t", ".variable")) %>%
+  left_join(bc_data, by = "Reported_Date") %>%
+  mutate(residuals = n - .value)
+
+data.com  %>%
+  filter(.draw %in% c(2,4,5,6,7,8,9,10)) %>% 
+  ggplot(aes(x = t, y=residuals, color = as.factor(.draw))) + 
+  geom_point() + 
+  theme_bw() +
+  geom_hline(yintercept = 0, linetype="dashed")
+
+
+```
+
+Look at diagnostics in shinystan
+
+```{r}
+y_data <- bc_data$n
+shinystan::launch_shinystan(fit)
+```
+
+Do mean plot of residuals
+
+```{r}
+data.com  %>%
+  group_by(t) %>% 
+  summarise(mean_residuals = mean(residuals)) %>% 
+  ggplot(aes(x = t, y=mean_residuals)) + 
+  geom_point() + 
+  theme_bw() +
+  geom_hline(yintercept = 0, linetype="dashed")
+
+```
 
 # Decision maker request
 
