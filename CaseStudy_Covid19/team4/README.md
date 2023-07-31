@@ -1,7 +1,7 @@
 
 
 This project is part of the Short Course on Forecasting for Decision-Making: An Epidemiological & Ecological Perspective. 
-(Info here)[http://www.fields.utoronto.ca/activities/23-24/forecasting]
+[Info here](http://www.fields.utoronto.ca/activities/23-24/forecasting)
 
 Here we explore transmission models in Stan, and it's a good learning opportunity for those interested in modelling covid 19 outbreak and making Bayesian inferences. 
 With Bayesian inference, we quantify uncertainty and incorporate prior knowledge into the model. 
