@@ -24,3 +24,7 @@ Preliminary results indicate that the number of cases can decrease over time dep
 In conclusion, wearing masks and accurate case forecasting is important in managing COVID-19 in British Columbia. 
 These strategies highlight the importance of community engagement and data-driven decision-making in curbing the virus's spread and protecting public health. 
 As the province continues to navigate the pandemic, maintaining vigilance and adherence to these practices will play a key role in the ongoing efforts to contain COVID-19. 
+
+
+How to use the code: 
+We compared the orignal stan model offered by the nstructors (introduction_stan_seir_case_new_model_res.Qmd) with a new stan model that incorporated a starting point for masking and behavioural change due to the pandemic (introduction_stan_seir_case_new_model_res.Qmd). Results from both models were compared. 
