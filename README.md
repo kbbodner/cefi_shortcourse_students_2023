@@ -43,5 +43,3 @@ There are a number of exercises that span a couple of programming approaches to 
 Perhaps most importantly, we have our four case studies. A focal point of this course is having students take a case study of interest, and work on building and expanding a forecast for a focal system. In this iteration of the course there are four case studies, one on fisheries, one on water quality, and two on COVID-19. Each of the COVID-19 case studies are from different locations (Ontario and BC respectively) and take slightly different approaches. 
 
 There are extensive documentation for each of the case studies in their respective folders, along with troubleshooting tips. Please take the time to read through each case study before starting, as each of them have slightly different software requirements. 
-
-
