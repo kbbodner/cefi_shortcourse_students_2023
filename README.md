@@ -10,7 +10,7 @@ All code and documentation herein is free to use! If you were unable to make it 
 
 ### Lectures
 
-First, is the `Lectures` folder, where the various lecture materials can be found for the course. These lectures were recorded, and the recording videos can be found on the CEFI website.
+First, is the `Lectures` folder, where the various lecture materials can be found for the course. These lectures were recorded, and the recording videos can be found on the [CEFI website](https://youtube.com/playlist?list=PLmpgJtGjCb06k0MMg6WFPbVIQq01O0K5X&si=VhCaBp1H4-AksiMK).
 
 ![first-slide](~/Github/cefi_shortcourse_students_2023/figs/slide-1.png)
 
@@ -34,4 +34,14 @@ Here is the course schedule. We suggest you roughly follow along with the order 
 
 ### Exercises
 
-There are a series of exercises in the `Exercises` folder for you to work through. 
+There are a series of exercises in the `Exercises` folder for you to work through. Instructions are in the `README_EXERCISES.md` file in that directory for how to make use of those. 
+
+There are a number of exercises that span a couple of programming approaches to the current course content. 
+
+### Case Studies
+
+Perhaps most importantly, we have our four case studies. A focal point of this course is having students take a case study of interest, and work on building and expanding a forecast for a focal system. In this iteration of the course there are four case studies, one on fisheries, one on water quality, and two on COVID-19. Each of the COVID-19 case studies are from different locations (Ontario and BC respectively) and take slightly different approaches. 
+
+There are extensive documentation for each of the case studies in their respective folders, along with troubleshooting tips. Please take the time to read through each case study before starting, as each of them have slightly different software requirements. 
+
+

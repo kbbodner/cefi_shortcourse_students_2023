@@ -11,7 +11,7 @@
 
 
 
-<title>README</title>
+<title>README_EXERCISES</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -352,225 +352,54 @@ display: none;
 </div>
 
 
-<div id="overview" class="section level2">
-<h2>Overview</h2>
-<p>Welcome! This repository contains all materials from the Canadian
-Ecological Forecasting Initiative short course on Forecasting for
-Decision-Making: An Epidemiological &amp; Ecological Perspective. The
-course took place at the Fields Institute in Toronto, ON from July 24th
-- 28th.</p>
-<p>In the spirit of having this course be as open as possible, we have
-put all the course materials here on this GitHub page, including
-lectures, exercises and forecast modelling materials for three case
-studies: Infectious Disease Control, Fisheries Management, Water Quality
-Monitoring. For a description of the course’s overall objectives, please
-see <a href="http://www.fields.utoronto.ca/activities/23-24/forecasting">here</a>.</p>
+<div id="learning-exercises" class="section level2">
+<h2>Learning Exercises</h2>
+<p>These are designed to help you get familiar with both the specific
+software we use in this course, as well as the concept of doing
+forecasting more generally.</p>
+<p>You do not necessarily need to do them all.</p>
+<div id="activity-0---github" class="section level3">
+<h3>Activity 0 - GitHub</h3>
+<p>GitHub is a website that uses Git (a software) to do version control,
+which allows us to work collaboratively on projects in the cloud. This
+might be new to some folks, and so the first activity we have for you is
+to go through this GitHub introduction and become familiar with how it
+works. It will be essential for this course.</p>
 </div>
-<div id="how-to-use-this-repository" class="section level2">
-<h2>How to Use This Repository</h2>
-<p>All code and documentation herein is free to use! If you were unable
-to make it to the course in person, or simply want to go through this
-material on your own time, please feel free. This repository is
-structured into 3 main sections.</p>
-<div id="lectures" class="section level3">
-<h3>Lectures</h3>
-<p>First, is the <code>Lectures</code> folder, where the various lecture
-materials can be found for the course. These lectures were recorded, and
-the recording videos can be found on the <a href="https://youtube.com/playlist?list=PLmpgJtGjCb06k0MMg6WFPbVIQq01O0K5X&amp;si=VhCaBp1H4-AksiMK">CEFI
-website</a>.</p>
-<div class="float">
-<img src="~/Github/cefi_shortcourse_students_2023/figs/slide-1.png" alt="first-slide" />
-<div class="figcaption">first-slide</div>
+<div id="activity-1---bayesian-modeling" class="section level3">
+<h3>Activity 1 - Bayesian Modeling</h3>
+<p>There are two activities here that are “primers” to using a Bayesian
+modeling software. The goal of these exercises is to walk you through
+the how-to of building and fitting a model in one of the two softwares
+used in this course</p>
+<div id="activity-1---jags" class="section level4">
+<h4>Activity 1 - JAGS</h4>
+<p>The first is in JAGS, which is a slightly older, but well-used
+software for Bayesian models.</p>
+<p>Note that you will need to have JAGS downloaded onto your computer
+before you can go through this primer. You can download it for your
+operating system <a href="https://sourceforge.net/projects/mcmc-jags/">here</a>.</p>
 </div>
-<p>Here is the course schedule. We suggest you roughly follow along with
-the order of lectures here.</p>
-<div id="schedule" class="section level4">
-<h4>Schedule</h4>
-<table>
-<colgroup>
-<col width="12%" />
-<col width="12%" />
-<col width="12%" />
-<col width="12%" />
-<col width="12%" />
-<col width="12%" />
-<col width="12%" />
-<col width="12%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="center">Time Slots</th>
-<th></th>
-<th align="center"></th>
-<th align="center">Monday</th>
-<th align="center">Tuesday</th>
-<th align="center">Wednesday</th>
-<th align="center">Thursday</th>
-<th align="center">Friday</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="center">9:00 <br>-<br> 10:00</td>
-<td></td>
-<td align="center">Lecture 1</td>
-<td align="center">Topic(s): <br>(1) Introductions &amp; Schedule
-Overview;<br> <br>(2) Introduction to Forecasting<br><br>Lead(s):
-<br>(1) KB, CRF &amp; Instructors; <br>(2) Mike Dietze</td>
-<td align="center">Topic: <br>Bayesian Analysis - Part
-2<br><br>Instructor: Mike Dietze</td>
-<td align="center">Topic: <br>Model Assessment<br><br>Instructor: Mike
-Irvine</td>
-<td align="center">Topic:<br>Delivering Forecasting Models to Decision
-Makers<br><br>Instructor: Colin Daniel and Alex Filazzola</td>
-<td align="center">Topic: <br>OCAP Training Part
-1<br><br><br>Instructor: OCAP</td>
-</tr>
-<tr class="even">
-<td align="center">10:00 <br>- <br>10:20</td>
-<td></td>
-<td align="center">Coffee Break</td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-</tr>
-<tr class="odd">
-<td align="center">10:20 <br>- <br>11:20</td>
-<td></td>
-<td align="center">Lecture 2</td>
-<td align="center">Topic: <br>Introduction to the Modelling
-Landscape<br><br>Instructor: Irena Papst</td>
-<td align="center">Topic: <br>Reproducibility &amp;
-Transparency<br><br>Instructor: Mike Irvine</td>
-<td align="center">Topic: <br>Combining Fish Population Forecasting with
-Fisheries Management:<br>an Introduction to Management Strategy
-Evaluation (MSE)<br><br>Instructor: Brooke Davis</td>
-<td align="center">Topic:<br>Experiences Building Collaborations and
-Bridging Communication<br><br>Instructor: Brooke Davis + Other
-Instructors</td>
-<td align="center">(1) Group Work:<br>Finalize Presentation <br><br> (2)
-Overview of NEON Ecological Forecasting Challenge <br><br> Lead: (2)
-Quinn Thomas</td>
-</tr>
-<tr class="even">
-<td align="center">11:20 <br>- <br>11:30</td>
-<td></td>
-<td align="center">Break</td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-</tr>
-<tr class="odd">
-<td align="center">11:30 <br>- <br>12:30</td>
-<td></td>
-<td align="center">Extra Practice <br>or <br>Lecture 3:</td>
-<td align="center">Topic: <br>Bayesian Analysis - Part
-1<br><br>Instructor: Mike Dietze</td>
-<td align="center">Exercise 2:<br>Paired Coding <br><br>Lead: Mike
-Dietze</td>
-<td align="center"><a href="https://mdmazur.shinyapps.io/ToyGroundfishMSE/">Exercise 3:<br>MSE
-Exercise</a> <br><br>Lead: Brooke Davis</td>
-<td align="center">Topic:<br> Decision Analysis in Health
-<br><br>Instructor: Beate Sander</td>
-<td align="center">Group Work: <br>Finalize Presentation <br><br>
-Closing Remarks</td>
-</tr>
-<tr class="even">
-<td align="center">12:30<br>- <br>1:30</td>
-<td></td>
-<td align="center">Lunch</td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-</tr>
-<tr class="odd">
-<td align="center">1:30 <br>- <br>3:00</td>
-<td></td>
-<td align="center">Extra Practice <br>or <br>Lecture 3:</td>
-<td align="center">Exercise 1: <br>Introduction to Bayesian
-Analysis<br><br>Lead(s): Mike Dietze + Mike Irvine</td>
-<td align="center">Topic(s):<br>(1) Code Review Example;<br>(2)
-Propagating, Analyzing, &amp;<br>Reducing Uncertainty<br><br>Instructor:
-Mike Dietze + Irena Papst</td>
-<td align="center">Group work</td>
-<td align="center">Exercise 4: <br>Writing Lay Summaries
-Exercise<br><br>Lead: Korryn Bodner and Carina Rauen Firkowski</td>
-<td align="center">Group Project Presentations <br>Part 1</td>
-</tr>
-<tr class="even">
-<td align="center">3:00<br>- <br>3:20</td>
-<td></td>
-<td align="center">Coffee Break</td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-</tr>
-<tr class="odd">
-<td align="center">3:20<br>-<br>5:30</td>
-<td></td>
-<td align="center">Group Work</td>
-<td align="center">Case Study Introductions (30 mins)<br><br>Case Study
-Overviews (in small groups)<br><br>Lead(s): All Instructors</td>
-<td align="center">Group work</td>
-<td align="center">Group work</td>
-<td align="center">Group work</td>
-<td align="center">Group Project Presentations <br>Part 2 <br><br> End
-at 3:50pm</td>
-</tr>
-<tr class="even">
-<td align="center"></td>
-<td></td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-</tr>
-<tr class="odd">
-<td align="center">6:00<br>- <br>8:00</td>
-<td></td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center">Group Dinner</td>
-<td align="center"></td>
-</tr>
-</tbody>
-</table>
+<div id="activity-1---stan" class="section level4">
+<h4>Activity 1 - STAN</h4>
+<p>Stan is a sightly newer software that has some advantages, but is
+slightly more complex to get running on your own machine. In order to
+try and streamline this process, we use a docker container (a software
+that sets up a virtual environment) to try and make this simpler across
+operating systems. See the README in that folder for more info.</p>
 </div>
 </div>
-<div id="exercises" class="section level3">
-<h3>Exercises</h3>
-<p>There are a series of exercises in the <code>Exercises</code> folder
-for you to work through. Instructions are in the
-<code>README_EXERCISES.md</code> file in that directory for how to make
-use of those.</p>
-<p>There are a number of exercises that span a couple of programming
-approaches to the current course content.</p>
+<div id="activity-2---pair-coding" class="section level3">
+<h3>Activity 2 - Pair Coding</h3>
+<p>Pair coding, or literally coding in pairs, is a helpful exercise for
+those still getting used to coding in the same repository as others. You
+don’t need to do it in pairs, you can do it yourself (and play both
+sides), but it’s easier with another.</p>
+<p>The goal here is to walk you through key concepts such as making a
+pull request and reviewing code.</p>
 </div>
-<div id="case-studies" class="section level3">
-<h3>Case Studies</h3>
-<p>Perhaps most importantly, we have our four case studies. A focal
-point of this course is having students take a case study of interest,
-and work on building and expanding a forecast for a focal system. In
-this iteration of the course there are four case studies, one on
-fisheries, one on water quality, and two on COVID-19. Each of the
-COVID-19 case studies are from different locations (Ontario and BC
-respectively) and take slightly different approaches.</p>
-<p>There are extensive documentation for each of the case studies in
-their respective folders, along with troubleshooting tips. Please take
-the time to read through each case study before starting, as each of
-them have slightly different software requirements.</p>
+<div id="activity-3---mse" class="section level3">
+<h3>Activity 3 - MSE</h3>
 </div>
 </div>
 
