@@ -1,0 +1,479 @@
+---
+title: "NEON forecast challenge - chlorophyll"
+author: Freya Olsson, Quinn Thomas
+output:
+  md_document: 
+    variant: markdown_github
+    number_sections: true
+    toc: true
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# This R markdown document
+
+This is a vignette on producing surface lake chlorophyll forecasts using NEON data. Data are used in the NEON Forecasting Challenge and these materials have been modified based on an original workshop materials focused on submitting to the Challenge. To complete the workshop via this markdown document the following packages will need to be installed:
+
+-   `remotes`
+-   `rjags`
+-   `tidybayes`
+-   `tidyverse`
+-   `lubridate`
+-   `neon4cast` (from github)
+
+For the rjags code to work you first you need to install JAGS code from: <https://mcmc-jags.sourceforge.io>
+
+The following code chunk should be run to install packages. If you are using the eco4cast/neon4cast Docker container you will not need to do this install step.
+
+```{r eval = F}
+install.packages('remotes')
+install.packages('rjags')
+install.packages('tidybayes')
+install.packages('tidyverse') # collection of R packages for data manipulation, analysis, and visualisation
+install.packages('lubridate') # working with dates and times
+remotes::install_github('eco4cast/neon4cast') # package from NEON4cast challenge organisers to assist with forecast building and submission
+```
+
+Additionally, R version 4.2 is required to run the neon4cast package. It's also worth checking your Rtools is up to date and compatible with R 4.2, see (<https://cran.r-project.org/bin/windows/Rtools/rtools42/rtools.html>).
+
+```{r}
+version$version.string
+library(tidybayes)
+library(tidyverse)
+library(lubridate)
+library(rjags)
+
+```
+
+If you do not wish to run the code yourself you can follow along via the rendered markdown which can be viewed from the [Github repository](https://github.com/OlssonF/NEON-forecast-challenge-workshop).
+
+# The case study
+
+In this water quality forecasting example we will produce 30 day ahead forecasts of lake surface chlorophyll concentration. Chlorophyll concentration is a proxy used in water quality monitoring for algal biomass. Large chlorophyll values can be an indication of algal blooms. Algal blooms can be a problem for managers as they are linked to low oxygen concentrations, fish kills and toxin production, all important water quality parameters. The concentration of chlorophyll in natural waters is driven by a complex interaction of temperatures, nutrients, and hydrodynamic conditions that is not well quantified and can be quite stochastic in nature - a great challenge for forecasters!
+
+# The forecasting workflow
+
+## Read in the data
+
+We start forecasting by first looking at the historic data - called the 'targets'. These data are available near real-time, with the latency of approximately 24-48 hrs but for this introduction we will look at a subset of the historic data.
+
+```{r eval=TRUE, echo = TRUE, error=FALSE, warning=FALSE, message=FALSE}
+#read in the targets data
+targets <- read_csv('Data/targets-neon-chla.csv')
+target_sites <- targets |> 
+  distinct(site_id) |> 
+  pull()
+
+```
+
+Information on the NEON sites can be found in the `NEON_Field_Site_Metadata_20220412.csv` file on the eco4cast GitHub. It can be filtered to only include the sites we will be looking at. This table has information about the field sites, including location, ecoregion, information about the watershed (e.g. elevation, mean annual precipitation and temperature), and lake depth.
+
+```{r eval=TRUE, echo = TRUE, error=FALSE, warning=FALSE, message=FALSE}
+# read in the sites data
+aquatic_sites <- read_csv("https://raw.githubusercontent.com/eco4cast/neon4cast-targets/main/NEON_Field_Site_Metadata_20220412.csv") |>
+  dplyr::filter(field_site_id %in% target_sites)
+```
+
+Let's take a look at the targets data!
+
+```{r eval = T, echo = TRUE}
+glimpse(targets)
+
+```
+
+The columns of the targets file show the time step (daily for this water quality data), the 4 character site code (`site_id`), the variable being measured, and the mean daily observation. Here we are looking only at two lake sites (`BARC` and `SUGG`) chlorophyll concentration (ug/L) (`chla`) observations.
+
+## Visualise the data
+
+```{r eval = TRUE, echo = TRUE, warning=FALSE, fig.dim=c(10,10), fig.cap='Figure: Chlorophyll targets data at two lake sites provided by EFI for the NEON forecasting challgenge.'}
+
+targets %>%
+  ggplot(., aes(x = datetime, y = observation)) +
+  geom_point() +   
+  theme_bw() + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  facet_wrap(~site_id, scales = 'free_y')+
+  labs(title = 'chla')
+
+```
+
+# Introducing co-variates
+
+One important step to overcome when thinking about generating forecasts is to include co-variates in the model. A chlorophyll forecast, for example, may be benefit from information about past and future weather. Below is code snippets for downloading past and future NOAA weather forecasts for all of the NEON sites. The 3 types of data are as follows:
+
+-   stage_1: raw forecasts - 31 member ensemble forecasts at 3 hr intervals for the first 10 days, and 6 hr intervals for up to 35 days at the NEON sites.
+-   stage_2: a processed version of Stage 1 in which fluxes are standardized to per second rates, fluxes and states are interpolated to 1 hour intervals and variables are renamed to match conventions. We recommend this for obtaining future weather. Future weather forecasts include a 30-member ensemble of equally likely future weather conditions.
+-   stage_3: can be viewed as the "historical" weather and is combination of day 1 weather forecasts (i.e., when the forecasts are most accurate).
+
+This code create a connection to the data set hosted on the eco4cast server. To download the data you have to tell the function to `collect()` it. These data set can be subsetted and filtered using `dplyr` functions prior to download to limit the memory usage.
+
+You can read more about the NOAA forecasts available for the NEON sites [here:](https://projects.ecoforecast.org/neon4cast-docs/Shared-Forecast-Drivers.html)
+
+## Download co-variates
+
+### Download historic data
+
+We will generate a chlorophyll forecast using `air_temperature` as a co-variate. Note: This code chunk can take a little to execute as it accesses the NOAA data depending on your internet connection.
+
+```{r, message=FALSE}
+# past stacked weather
+bucket <- "neon4cast-drivers/noaa/gefs-v12/stage3/parquet/"
+s3_past <- arrow::s3_bucket(bucket, endpoint_override = "data.ecoforecast.org", anonymous = TRUE)
+
+variables <- c("air_temperature", "precipitation_flux", "eastward_wind", "northward_wind")
+#Other variable names can be found at https://projects.ecoforecast.org/neon4cast-docs/Shared-Forecast-Drivers.html#stage-3
+
+noaa_past <- arrow::open_dataset(s3_past) |> 
+  dplyr::filter(site_id %in% target_sites,
+                datetime >= ymd('2017-01-01'),
+                variable %in% variables) |> 
+  collect()
+
+noaa_past[1:10,]
+```
+
+This is a stacked ensemble forecast of the one day ahead forecasts. To get an estimate of the historic conditions we can take a mean of these ensembles. We will also need to convert the temperatures to Celsius from Kelvin.
+
+```{r}
+# aggregate the past to mean values
+noaa_past_mean <- noaa_past |> 
+  mutate(datetime = as_date(datetime)) |> 
+  group_by(datetime, site_id, variable) |> 
+  summarize(prediction = mean(prediction, na.rm = TRUE), .groups = "drop") |> 
+  pivot_wider(names_from = variable, values_from = prediction) |> 
+  # convert air temp to C
+  mutate(air_temperature = air_temperature - 273.15) |> 
+  filter(datetime <= as_date(max(targets$datetime)))
+
+```
+
+We can then look at the future weather forecasts in the same way but using the `noaa_stage2()`. The forecast becomes available from NOAA at 5am UTC the following day, so if we were producing real-time forecasts we would need take the NOAA forecast from yesterday to make the water quality forecasts. But for this example we will produce forecasts from the end of the targets for the next 35 days. The stage 2 NOAA forecast is all an ensemble of 31 simulations which we can use to produce an estimate of driver uncertainty in the chlorophyll forecast.
+
+### Download future weather forecasts
+
+```{r, message=FALSE}
+# Note: New forecast only available at 5am UTC the next day - so if forecasting in real-time look for yesterday's forecast
+
+# generate forecast(s) for June 2023
+forecast_date <- as_date(max(targets$datetime))
+
+bucket <- paste0("neon4cast-drivers/noaa/gefs-v12/stage2/parquet/0/", forecast_date) 
+s3_future <- arrow::s3_bucket(bucket = bucket, endpoint_override = 'data.ecoforecast.org', anonymous = TRUE)
+
+variables <- c("air_temperature", "precipitation_flux", "eastward_wind", "northward_wind")
+
+noaa_future <- arrow::open_dataset(s3_future) |> 
+  dplyr::filter(datetime >= forecast_date,
+                site_id %in% target_sites,
+                variable %in% variables) |> 
+  collect()
+
+```
+
+The forecasts are hourly and we are interested in using daily mean air temperature for lake chlorophyll forecast generation.
+
+```{r warning=F}
+noaa_future_daily <- noaa_future |> 
+  mutate(datetime = as_date(datetime)) |> 
+  # mean daily forecasts at each site per ensemble
+  group_by(datetime, site_id, parameter, variable) |> 
+  summarize(prediction = mean(prediction)) |>
+  pivot_wider(names_from = variable, values_from = prediction) |>
+  # convert to Celsius
+  mutate(air_temperature = air_temperature - 273.15) |> 
+  select(datetime, site_id, air_temperature, precipitation_flux, eastward_wind, northward_wind, parameter)
+
+noaa_future_daily[1:10,]
+```
+
+Now we have a time series of historic data and a 30 member ensemble forecast of future air temperatures.
+
+```{r echo = T, fig.cap = c('Figure: historic and future NOAA air temeprature forecasts at lake sites', 'Figure: last two months of historic air temperature forecasts and 35 day ahead forecast')}
+ggplot(noaa_future_daily, aes(x=datetime, y=air_temperature)) +
+  geom_line(aes(group = parameter), alpha = 0.4)+
+  geom_line(data = noaa_past_mean, colour = 'darkblue') +
+  facet_wrap(~site_id, scales = 'free')
+
+ggplot(noaa_future_daily, aes(x=datetime, y=air_temperature)) +
+  geom_line(aes(group = parameter), alpha = 0.4)+
+  geom_line(data = noaa_past_mean, colour = 'darkblue') +
+  coord_cartesian(xlim = c(forecast_date - days(60),
+                           forecast_date + days(35)))+
+  facet_wrap(~site_id, scales = 'free')
+```
+
+# Model fitting
+
+We will fit a simple dynamic JAGS model with historic air temperature and the chlorophyll targets data. Using this model we can then use our future estimates of air temperature (all 30 ensembles) to forecast chlorophyll at each site. The model will estimate both process and observational uncertainty. In addition, the ensemble weather forecast will also give an estimate of driver data uncertainty.
+
+We will start by joining the historic weather data with the targets to aid in fitting the model.
+
+```{r}
+targets_lm <- targets |> 
+  pivot_wider(names_from = 'variable', values_from = 'observation') |> 
+  left_join(noaa_past_mean, 
+            by = c("datetime","site_id"))
+
+targets_lm[1050:1060,]
+```
+
+```{r}
+example_site <- 'SUGG'
+
+site_target <- targets_lm |> 
+  filter(site_id == example_site)
+
+#Find when the data for the site starts and filter to only 
+#more recent datetimes with no NAs
+first_no_na <- site_target |> 
+  filter(!is.na(air_temperature) & !is.na(chla) &  !is.na(northward_wind) &  !is.na(eastward_wind))  |> 
+  summarise(min = min(datetime)) |> 
+  pull(min)
+
+site_target <- site_target |> 
+  filter(datetime >= first_no_na)
+```
+
+We fit the model as a state-space Bayesian model. The following is BUGS code that specifies the model. Explaining the Bayesian model is beyond the scope of this tutorial.
+
+```{r }
+jags_code <- "
+model{
+
+  # Priors
+  beta1 ~ dnorm(0, 1/10000)
+  beta2 ~ dnorm(0, 1/10000)
+  beta3 ~ dnorm(0, 1/10000)
+  beta4 ~ dnorm(0, 1/10000)
+  sd_process ~ dunif(0.00001, 100)
+  
+  #Convert Standard Deviation to precision
+  tau_obs <- 1 / pow(sd_obs, 2)
+  tau_process <- 1 / pow(sd_process, 2)
+
+  #Initial conditions
+  chla_latent[1] <- chla_init
+  y[1] ~ dnorm(chla_latent[1], tau_process)  
+
+  #Loop through data points
+  for(i in 2:n){
+      # Process model
+      chla_pred[i] <- beta1 * chla_latent[i-1] + beta2 * air_temp[i]+ 
+      beta3 * north_wind[i]+ beta4 * east_wind[i]
+      chla_latent[i] ~ dnorm(chla_pred[i], tau_process)
+
+      # Data model
+      y[i]  ~ dnorm(chla_latent[i], tau_obs)
+  }
+}
+"
+```
+
+Set up the fixed inputs for the JAGS model specification. This includes the covariates, observations, loop indexes, initial conditions, and any fixed parameter values. Here we fix the standard deviation of the observations, since it is challenging to estimate without multiple measurements at the same datetime.
+
+```{r}
+data <- list(air_temp = site_target$air_temperature,
+             north_wind = site_target$northward_wind,
+             east_wind = site_target$eastward_wind,
+             y = site_target$chla,
+             n = length(site_target$northward_wind),
+             sd_obs = 0.1,
+             chla_init = site_target$chla[1])
+```
+
+Initialize random variables in JAGS model for each of the 3 chains.
+
+```{r}
+nchain <- 3
+inits <- list()
+for(i in 1:nchain){
+  inits[[i]] <- list(beta1 = rnorm(1, 0.34, 0.05), 
+                     beta2 = rnorm(1, 0.11, 0.05),
+                     beta3 = rnorm(1, 0.16, 0.05),
+                     beta4 = rnorm(1, 0.21, 0.05),
+                     sd_process = runif(1, 0.05, 0.15 ))
+}
+```
+
+Build JAGS model object and fit JAGS code
+
+```{r}
+j.model <- jags.model(file = textConnection(jags_code),
+                      data = data,
+                      inits = inits,
+                      n.chains = 3)
+
+#Run MCMC
+jags.out   <- coda.samples(model = j.model,
+                           variable.names = c("beta1", 
+                                              "beta2",
+                                              "beta3",
+                                              "beta4",
+                                              "chla_latent",
+                                              "sd_process"),
+                           n.iter = 5000)
+```
+
+Convert MCMC object to tidy data and remove iterations in burn-in. We only keep the latent state on last day for use as initial conditions in the forecast.
+
+```{r warning=F}burn_in <- 1000}
+chain <- jags.out %>%
+  tidybayes::spread_draws(beta1, beta2, beta3, beta4, sd_process, chla_latent[day]) |> 
+  filter(.iteration > burn_in) |> 
+  ungroup()
+
+max_day <- max(chain$day)
+chain <- chain |> 
+  filter(day == max_day) |> 
+  select(-day)
+
+
+```
+
+Visualize the chain to inspect for convergence.
+
+```{r}
+chain |> 
+  pivot_longer(beta1:chla_latent, names_to = "variable" , values_to = "value") |> 
+  ggplot(aes(x = .iteration, y = value, color = factor(.chain))) +
+  geom_line() +
+  facet_wrap(~variable, scale = "free")
+```
+
+## Forecast with posteriors
+
+Here we generate a forecast using 500 random draws from the posterior distributions. The following code loops over the samples and then forecasts each day in the future. It also samples from the ensembles in the NOAA weather forecast.
+
+The forecasted values is the latent state forecast with observation uncertainty added.
+
+```{r}
+num_samples <- 500
+
+noaa_future_site <- noaa_future_daily |> 
+  filter(site_id == example_site)
+
+n_days <- length(unique(noaa_future_site$datetime))
+chla_latent <- matrix(NA, num_samples, n_days)   
+y <- matrix(NA, num_samples, n_days) #y is the forecasted observation
+forecast_df <- NULL
+
+
+
+#loop over posterior samples
+for(i in 1:num_samples){
+  sample_index <- sample(x = 1:nrow(chain), size = 1, replace = TRUE)
+  noaa_ensemble <- sample(x = 1:30, size = 1)
+  noaa_future_site_ens <- noaa_future_site |> filter(parameter == noaa_ensemble)
+  #Initialize with a sample from the most recent latent state posterior distribution
+  chla_latent[i,1] <- chain$chla_latent[sample_index]
+  y[i, 1] <- rnorm(1, chla_latent[i,1], sd = data$sd_obs)
+  
+  #loop over forecast days
+  for(j in 2:n_days){
+    pred <- chla_latent[i,j-1] * chain$beta1[sample_index] +
+      noaa_future_site_ens$air_temperature[j] * chain$beta2[sample_index]+
+      noaa_future_site_ens$northward_wind[j]*chain$beta3[sample_index]
+    noaa_future_site_ens$eastward_wind[j]*chain$beta4[sample_index]
+    
+    chla_latent[i,j] <- rnorm(1, pred, chain$sd_process[sample_index])
+    y[i,j] <- rnorm(1, chla_latent[i,j], sd = data$sd_obs)
+    
+  }
+  
+  #Build formatted forecast
+  df <- tibble(datetime = noaa_future_site_ens$datetime,
+               site_id = example_site,
+               variable = "chla",
+               parameter = i,
+               prediction = y[i, ])
+  
+  forecast_df <- bind_rows(forecast_df, df)
+}
+```
+
+We now have 500 possible trajectories of chlorophyll-a at each site and each day. On this plot each line represents one of the possible trajectories and the range of forecasted trajectories is a simple quantification of the uncertainty in our forecast.
+
+Looking back at the forecasts we produced:
+
+```{r, echo = T, warning = F}
+forecast_df %>% 
+  ggplot(.,aes(x=datetime, y=prediction, group = parameter)) + 
+  geom_point(data = subset(targets, site_id == 'SUGG'),
+             aes(x=datetime, y=observation, group = 'obs'), colour = 'black') +
+  geom_line(alpha = 0.3, aes(colour = 'ensemble member (parameter)')) + 
+  facet_wrap(~site_id, scales = 'free_y') +
+  scale_x_date(expand = c(0,0), date_labels = "%d %b") +
+  labs(y = 'value') +
+  geom_vline(aes(linetype = 'reference_datetime', 
+                 xintercept = as_date(max(targets$datetime))), 
+             colour = 'blue', size = 1.5) +
+  labs(title = 'site_id', subtitle = 'variable = temperature', caption = 'prediction') + 
+  annotate("text", x = min(forecast_df$datetime) - days(10), y = 40, label = "past")  +
+  annotate("text", x = min(forecast_df$datetime) + days(12), y = 40, label = "future")  +
+  theme_bw() +
+  coord_cartesian(xlim = c(min(forecast_df$datetime) - 30, Sys.Date())) +
+  scale_linetype_manual(values = 'dashed', name = '')+
+  scale_colour_manual(name = '', values = 'red')
+```
+
+## Convert to EFI standard
+
+Forecast standards are useful for maintaining consistent formats across forecast generations. For an ensemble forecast the standards specie the y following columns:
+
+-   `datetime`: forecast time stamp for each time step
+-   `reference_datetime`: The start of the forecast; this should be 0 times steps in the future. This should only be one value of reference_datetime in the file
+-   `site_id`: NEON code for site
+-   `family`: name of probability distribution that is described by the parameter values in the parameter column; only `normal` or `ensemble` are currently allowed.
+-   `parameter`: integer value for forecast replicate (from the `.rep` in fable output);
+-   `variable`: standardized variable name from the theme
+-   `prediction`: forecasted value (from the `.sim` column in fable output)
+-   `model_id`: model name (no spaces)
+
+We need to make sure the data frame is in the correct format. This is an ensemble forecast (specified in the `family` column).
+
+```{r}
+# Remember to change the model_id when you make changes to #the model structure!
+my_model_id <- 'model_wind_temp'
+
+forecast_df_efi_wind_SUGG <- forecast_df %>%
+  mutate(model_id = my_model_id,
+         reference_datetime = as_date(min(datetime)) - days(1),
+         family = 'ensemble',
+         parameter = as.character(parameter)) %>%
+  select(model_id, datetime, reference_datetime, site_id, family, parameter, variable, prediction)
+```
+
+For the NEON forecast Challenge (including the aquatics theme) the following standards are needed for a forecast submission.
+
+Q2: What are the maximum concentrations that will occur in the next 30 days? And when will this maximum level occur?
+
+Take the 95% quantile.
+```{r}
+forecast_max <- forecast_df %>% 
+  group_by(datetime) %>% 
+  summarise(max = quantile(prediction, 0.95))
+
+forecast_max %>%
+  filter(max == max(max))
+```
+
+
+Q4: What are the chances that the lake(s) will be closed in the next month for swimming?
+ 
+```{r}
+forecast_p20 <- forecast_df %>% 
+  group_by(datetime) %>% 
+  summarise(n = n(), n_20 = sum(prediction > 20)) %>%
+  mutate(p_20 = n_20 / n) 
+
+ggplot(forecast_p20) +
+  geom_line(aes(x = datetime, y = p_20), size = 2, col = "#0C7C59", alpha = 0.8) +
+  geom_hline(yintercept=0.5, size = 0.8, linetype="dashed", color = "red") +
+    xlab("date") +
+    ylab("probability of closing the lake ([Chla] > 20 mg/L)") +
+    theme_classic()
+
+ggsave("figures/Q4_SUGG_wind.jpg")
+```

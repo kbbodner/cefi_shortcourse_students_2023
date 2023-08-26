@@ -258,9 +258,11 @@ model{
       # Process model
       chla_pred[i] <- beta1 * chla_latent[i-1] + beta2 * air_temp[i]
       chla_latent[i] ~ dnorm(chla_pred[i], tau_process)
+      chla_pred2[i] ~ dnorm(chla_pred[i], tau_process)  ### new, for one-step-ahead predicions
 
       # Data model
       y[i]  ~ dnorm(chla_latent[i], tau_obs)
+      ypred[i]  ~ dnorm(chla_pred2[i], tau_obs)  ### new, for one-step-ahead predicions
   }
 }
 "
@@ -301,6 +303,7 @@ jags.out   <- coda.samples(model = j.model,
                            variable.names = c("beta1", 
                                               "beta2",
                                               "chla_latent",
+                                              "ypred",
                                               "sd_process"),
                            n.iter = 5000)
 ```
@@ -320,6 +323,43 @@ chain <- chain |>
   filter(day == max_day) |> 
   select(-day)
 ```
+
+## assess calibration performance
+```{r}
+var.burn = window(jags.out,start=burn_in)
+var.out = as.matrix(var.burn)
+ypred.out = var.out[,which(grepl("ypred*",colnames(var.out)))]
+
+ypred.bar = apply(ypred.out,2,mean)
+resid = as.vector(ypred.bar) - as.vector(data$y[-1])
+plot(resid)
+
+## Bayesian p-values
+yquant = rep(NA,length(ypred.bar))
+for(i in seq_along(ypred.bar)){
+  yquant[i] = findInterval(data$y[i+1],vec=sort(ypred.out[,i]))/nrow(ypred.out)
+}
+
+plot(yquant)
+hist(yquant,probability = TRUE)
+
+## predictive intervals
+ypi = apply(ypred.out,2,quantile,c(0.025,0.975))
+plot(ypred.bar,ylim=range(ypi,na.rm = TRUE),type='l')
+points(data$y[-1],col=2,pch="+")
+lines(ypi[1,],col=3,lty=2)
+lines(ypi[2,],col=3,lty=2)
+
+# predicted observed plot
+plot(ypred.bar,data$y[-1])
+abline(0,1,lty=2,col=2,lwd=3)
+
+##probability of exceedence
+pex = apply(ypred.out,2,function(x){sum(x>20)/nrow(ypred.out)})
+plot(pex,type='l')
+
+```
+
 
 Visualize the chain to inspect for convergence.
 
