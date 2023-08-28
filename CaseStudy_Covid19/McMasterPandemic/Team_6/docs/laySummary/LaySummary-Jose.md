@@ -1,0 +1,6 @@
+# Lays summary (Jose)
+
+COVID 19 is a recently emerging disease that has impacted the livelihood of people in all over the world. Toronto with no with no exception has been impacted by COVID-19, and cases have been on the rise over the last couple of weeks. It is not clear how the disease will continue to spread in the population and without any pharmaceutical interventions such as a vaccine, it is challenging to protect the susceptible population to this newly emerging disease.
+We developed a simulation model to evaluate the effect of different interventions in the mitigation of the disease spread. Our model provides the expected number of cases for the next 2 weeks based on different scenarios. 
+We assumed different levels of success for the interventions implemented to reduce the disease spread. Increasing levels of success in the mitigation strategies with reduce the overall length and impact of the pandemic. 
+The predictions of our model can support the implementation of intervention strategies and provide estimates on the expected number of infected for the near future. 

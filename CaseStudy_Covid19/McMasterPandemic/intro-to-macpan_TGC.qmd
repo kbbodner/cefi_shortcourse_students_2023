@@ -25,8 +25,7 @@ The goal of this document is to get you started with the `McMasterPandemic` mode
 # mandatory setup for working with macpan and stan
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 library(McMasterPandemic)
-# source(here::here("R", "tmbstan_tools.R")) # some custom tools for connecting McMasterPandemic and Stan, they're documented fully in that file
-source("R/tmbstan_tools.R")
+source(here::here("R", "tmbstan_tools.R")) # some custom tools for connecting McMasterPandemic and Stan, they're documented fully in that file
 setup_stan() # some required set up for using Stan with McMasterPandemic
 library(rstan) # for additional R Stan tools
 
@@ -40,6 +39,8 @@ theme_set(
     base_size = 16
   )
 )
+
+
 ```
 
 `McMasterPandemic` is software that can specify and simulate compartmental models given parameters, an initial state, and a time horizon. These models can interface with Stan to fit parameters using MCMC, and then the results can be used to generate ensemble simulations of the fit or to produce a forecast.
@@ -79,18 +80,23 @@ To implement this model in `McMasterPandemic`, we start by defining the initial 
 
 # initial state, in units of individuals
 state = c(
-  S = 2000, 
-  E = 0, 
+  S = 15000000, 
+  E = 0,  
   I = 1, 
-  R = 0
+  R = 0,
+  H = 0
+#  D = 0
 )
 
 # parameters
 params = c(
   beta = 0.7,
   N = sum(state),
-  alpha = 0.05,
-  gamma = 0.06
+  alpha = 0.2,
+  lambda = 0.018, #self-calculated for March31st (see first slide)
+#  theta = 0.1, #The first wave CFR ranged from 0.004 to 0.146
+  gamma = 0.1,
+  sigma = 1/21 # Stay at hospital
 )
 ```
 
@@ -103,8 +109,8 @@ Next, we choose our simulation period by specifying the start and end dates:
 
 # start and end dates specified as strings,
 # they don't have to be Date types, but they can be
-start_date = "2020-03-01"
-end_date = "2020-05-01"
+start_date = "2020-02-07"
+end_date = "2020-03-31"
 ```
 
 Now we can initialize the `McMasterPandemic::flexmodel` object that will store our model information:
@@ -132,10 +138,14 @@ seir = (
   %>% add_rate(
     "S", # from compartment S
     "E", # to compartment I
-    ~ (1/N) * (beta) * (I) # expression for the flow in terms of parameters and state variables, as a formula
+    ~ (beta) * (1/N) * (I) # expression for the flow in terms of parameters and state variables, as a formula
   )
-  %>% add_rate("E", "I", ~ (alpha))
+  %>% add_rate("E", "I", ~ (alpha)*(1 - lambda))
   %>% add_rate("I", "R", ~ (gamma))     
+  %>% add_rate("E", "H", ~ (alpha)*(lambda)) #hospitalization
+  %>% add_rate("H", "R", ~ (sigma)) #hospitalization
+  # %>% add_rate("H", "D", ~ (theta)) # deaths
+
 )
 ```
 
@@ -164,7 +174,7 @@ This output can be transformed and plotted readily using `dplyr`, `tidyr`, and `
 plot_sim = function(model, sim_result, title){
   (sim_result
    # drop any columns where a flow rate is returned
-   %>% select(-matches("to"))
+   %>% select(-matches("to"), -S)
    # switch to long form for ease of use with ggplot
    %>% pivot_longer(-Date, names_to = "State", values_to = "Population")
    # sort state into a factor variable to enforce legend ordering based on
@@ -208,7 +218,9 @@ seir_obs_err = (seir
     S ~ poisson(),
     E ~ poisson(),
     I ~ poisson(),
-    R ~ poisson()
+    R ~ poisson(),
+    H ~ poisson(),
+    D ~ poisson()
   )
 )
 ```
@@ -247,7 +259,7 @@ seir_obs_err_inc = (seir_obs_err
   # update_ replaces previously attached error distributions
   # add_ appends
   %>% add_error_dist( 
-    incidence ~ poisson()
+    incidence ~ poisson() #change this error
   )
 )
 
@@ -274,19 +286,28 @@ When passing observed data to `McMasterPandemic`, it should be a data frame with
 ```{r}
 #| label: obs
 
-observed = (
-  seir_obs_err_inc_result
-  %>% select(-matches("to"))
-  %>% rename(date = Date)
-  %>% pivot_longer(-date, names_to = "var")
-  # keep incidence observations
-  %>% filter(var == "incidence")
-  # lob off first observation 
-  # (fitting the initial value is technically difficult and not important to figure out here)
-  %>% slice(-1)
-)
+# observed = (
+#   seir_obs_err_inc_result
+#   %>% select(-matches("to"))
+#   %>% rename(date = Date)
+#   %>% pivot_longer(-date, names_to = "var")
+#   # keep incidence observations
+#   %>% filter(var == "incidence")
+#   # lob off first observation
+#   # (fitting the initial value is technically difficult and not important to figure out here)
+#   %>% slice(-1)
+# )
 
-head(observed)
+# head(observed)
+
+observed <- read.csv("data/fitting.csv") %>%
+  mutate(
+    date = as.Date(date), # convert to date
+    var = 'incidence' # add a variable for the name of sim output
+  ) %>%
+  select(date, var, value = new_cases)
+
+#range(observed$date)[1]-1
 ```
 
 It's worth pointing out that `McMasterPandemic` can calibrate to multiple time series simultaneously, which may be useful later on in your case studies, but for now we will focus on calibrating to just one variable.
@@ -306,8 +327,8 @@ seir_obs_err_inc_to_calibrate = (seir_obs_err_inc
   %>% update_opt_params(
     # fitting log beta
     log_beta ~ log_normal(
-      -1, # log mean, so mean beta is exp(-1) = 0.36
-      0.5 # standard deviation of the log normal prior
+      -1, # log mean, so mean beta is exp(-1) = 0.36  these are the parameters for the log distribution which result on different X, see presentation
+      0.5 # standard deviation of the log normal prior 
     )
   )
 )
@@ -344,6 +365,9 @@ Note that the `fit` component is an `rstan::stanfit` object, so you can use tool
 
 fit = tidy_fit_stan(model_fit)$fit # a simple utility to attach parameter names to stan output
 rstan::summary(fit)$summary
+# exp(rstan::summary(fit)$summary["log_beta", "mean"])
+# exp(rstan::summary(fit)$summary["log_beta", "se_mean"])
+
 ```
 
 We see from the summary that the mean fitted value for `log_beta` is `r rstan::summary(fit)$summary["log_beta", "mean"]`, which implies mean `beta` is `r exp(rstan::summary(fit)$summary["log_beta", "mean"])`, which is very close to the transmission rate with which we generated the data: `r params[["beta"]]`.
@@ -387,7 +411,7 @@ The ensemble is plotted with a line for the median and a ribbon for the confiden
 #| label: fun_plot_ensemble
 
 # make a function because we'll reuse this in this doc
-plot_ensemble <- function(ens, obs, title = 'Incidence over time'){
+plot_ensemble <- function(ens, obs){
   value_type_labels <- c("Model fit", "Observed data")
   
   df = (ens
@@ -423,7 +447,7 @@ plot_ensemble <- function(ens, obs, title = 'Incidence over time'){
                           limits = value_type_labels)
     + scale_fill_manual(values = colour_palette,
                         limits = value_type_labels)
-    + labs(title = title)
+    + labs(title = "Incidence over time")
     + guides(
     color =
         guide_legend(override.aes = list(
@@ -476,7 +500,7 @@ The final modelling feature you will likely find useful in your case studies is 
 
 ```{r}
 #| label: def-new-beta
-beta_new = 2
+beta_new = 0.5
 ```
 
 For example, say we want to change the transmission rate to `r beta_new` on 1 Apr 2020. In order to do that, we set up a data frame that has the `Date` of the change, the `Symbol` of the parameter that's changing, the `Value` for the change paired with the `Type` of change:
@@ -485,10 +509,10 @@ For example, say we want to change the transmission rate to `r beta_new` on 1 Ap
 #| label: param-schedule
 
 param_schedule = data.frame(
-  Date = as.Date('2020-04-01'),
+  Date = as.Date('2020-03-25'),
   Symbol = 'beta',
   Value = beta_new,
-  Type = 'abs'
+  Type = 'rel_prev' #relative 
 )
 ```
 
@@ -506,6 +530,8 @@ seir_tv = (seir_obs_err_inc
 #| label: fig_seir-tv
 
 seir_tv_result = simulation_history(seir_tv, obs_err = TRUE)
+# seir_tv_result %>% 
+#   mutate(scenario = "")
 
 (plot_sim(seir_tv, seir_tv_result %>% select(-incidence),
          title = "Stochastic SEIR simulation\nwith time-varying transmission rate")
@@ -517,7 +543,7 @@ seir_tv_result = simulation_history(seir_tv, obs_err = TRUE)
   )
   + geom_label(
     data = (param_schedule 
-      %>% mutate(label = paste(Symbol, "changes to", Value,
+      %>% mutate(label = paste(Symbol, "prev x", Value,
                                sep = "\n"))),
     mapping = aes(x = Date, y = 900, label = label),
     colour = "black"
@@ -562,8 +588,7 @@ seir_tv_to_calibrate = (seir_tv
   %>% update_piece_wise(param_schedule_to_calibrate)
   # still fit the initial beta value
   %>% add_opt_params(
-   log_beta ~ log_normal(-1, 0.5)
-  )
+   log_beta ~ log_normal(-1, 0.5) 
   # attach prior for beta change on 2023-04-01
   %>% add_opt_tv_params(
     tv_type = "abs", # type of time-variation value, in this case absolute
