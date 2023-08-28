@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.3.353">
+<meta name="generator" content="quarto-1.3.433">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -62,21 +62,21 @@ ul.task-list li input[type="checkbox"] {
 
 </header>
 
-<section id="welcome-to-salmon-data" class="level2">
-<h2 class="anchored" data-anchor-id="welcome-to-salmon-data">Welcome to Salmon data!</h2>
-<p>Because of their anadromous lifecycle, salmon often have different-looking data than many other fish species we model in fisheries science. For most marine fish, we only have samples of their population at random points in time, either from surveys or commercial catches. From this we get a “snapshot” of a small subset of the population at a given moment in time. Oftentimes, for these populations, we have to guess at how many fish in this snapshot are going to spawn or are going to die in that year, based on what we know about their demographics and biology. Following this, we can try to estimate how many fish will be born in the next generation. Because salmon migrate into freshwater to spawn and die, we can directly sample that important subset of the population each year. Also, because they are travelling along a linear path, upstream to their natal spawning sites, they are much easier to count and sample. In some special cases we can could even get close to having a full census of the spawning population – something that never would be available in a population that only lives in the open ocean. This also simplifies the type of models we can use for these populations, since stock-recruitment dynamics are directly observed. Stock-recruitment dynamics refers to the process by which new fish are “recruited” into the population. Since we directly observe the spawning stock, we are closer to observing the expected recruitment, and therefore, have a better shot at guessing the size of the next run of spawning fish that will return one generation later.</p>
-<p>Let’s do a couple easy exercises to get ourselves acquainted with stock-recruitment modelling, and salmon data.</p>
+<section id="welcome-to-salmon-forecasting" class="level2">
+<h2 class="anchored" data-anchor-id="welcome-to-salmon-forecasting">Welcome to Salmon Forecasting!</h2>
+<p>Because of their anadromous lifecycle, salmon often have different-looking data than many other fish species we model in fisheries science. For most marine fish, we only have samples of their population at random points in time, either from surveys or commercial catches. From this we get a “snapshot” of a small subset of the population at a given moment in time. Oftentimes, for these populations, we have to guess at how many fish in this snapshot are going to spawn or are going to die in that year, based on what we know about their demographics and biology. Following this, we can try to estimate how many fish will be born in the next generation. Because salmon migrate into freshwater to spawn and die, we can directly sample that important subset of the population each year. Also, because they are travelling along a linear path, upstream to their natal spawning sites, they are much easier to count and sample. In some special cases we can even get close to having a full census of the spawning population – something that never would be available in a population that only lives in the open ocean. This also simplifies the type of models we can use for these populations, since stock-recruitment dynamics are directly observed. Stock-recruitment dynamics refers to the process by which new fish are “recruited” into the population. Since we directly observe the spawning stock, we are closer to observing the expected recruitment, and therefore, have a better shot at guessing the size of the next run of spawning fish that will return one generation later. Because most fisheries happen in “terminal” areas (targeting fish on their way to spawn), this is the number we want to estimate – the number of mature fish that are returning to their natal areas to spawn (recruits). This specific type of forecasting is unique in that we are only really interested in looking one year ahead, to plan the next fishing season.One might think that only needing to forecast one generation ahead would make this an easy task, but it’s been deceivingly difficult to do, especially in recent years, with major ocean changes taking place.</p>
+<p>Let’s do a couple of easy exercises to get ourselves acquainted with salmon data and stock-recruitment modelling.</p>
 <section id="the-ricker-model" class="level3">
 <h3 class="anchored" data-anchor-id="the-ricker-model">The Ricker Model</h3>
-<p>The Ricker model is a commonly used discrete stock-recruitment model used for Pacific Salmon. It includes two parameters (<span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span>) that capture the population’s growth rate and carrying capacity.</p>
+<p>The Ricker model is a commonly used discrete stock-recruitment model used for Pacific Salmon. It includes two parameters (<span class="math inline">\(\alpha\)</span> and <span class="math inline">\(\beta\)</span>) that capture the population’s growth rate and carrying capacity. Fun fact: DFO’s Pacific Biological Station in Nanaimo, BC, has a road looping through it called “Ricker’s Curve”, named after Bill Ricker, who worked at the station.</p>
 <p><span class="math display">\[
 R_i = \alpha S_i e^{-\beta S_i}
 \]</span></p>
-<p>This equation is often linearized to the following form, for quick parameter estimation using a linear model:</p>
+<p>This equation is often linearized to the following form, for quick parameter estimation:</p>
 <p><span class="math display">\[
 ln(R_i/S_i) = \alpha - \beta S_i
 \]</span></p>
-<p>It’s also common to parameterize this model using <span class="math inline">\(S_{max} = 1/\beta\)</span>, which is the number of spawners that produces the maximum number of recruits (the peak of the Ricker curve,) since it is more intuitive to put priors around. <span class="math display">\[
+<p>It’s also common to parameterize this model using <span class="math inline">\(S_{max} = 1/\beta\)</span>, which is the number of spawners that produces the maximum number of recruits (the peak of the curve,) since it is more intuitive to put priors around. <span class="math display">\[
 ln(R_i/S_i) = \alpha - S_i/S_{max}
 \]</span></p>
 <p>Let’s take a look at Ricker model in action</p>
@@ -97,7 +97,7 @@ ln(R_i/S_i) = \alpha - S_i/S_{max}
 </section>
 <section id="common-reference-points-used-for-salmon" class="level3">
 <h3 class="anchored" data-anchor-id="common-reference-points-used-for-salmon"><strong>Common Reference Points Used for Salmon</strong></h3>
-<p>Reference points are used in fisheries management to glean population health and status, and also as trigger points for fisheries management actions (ie change fishing rate, stop fishing etc.). Two often-used reference points for salmon, are <span class="math inline">\(S_{MSY}\)</span> and <span class="math inline">\(S_{gen}\)</span>. To understand these two reference points, let’s start with the idea of maximum sustainable yield. Maximum sustainable yield is highest catch that can be taken from a population indefinitely, at equilibrium population conditions. This is considered a “sweet spot” of productivity, and usually occurs at a stock size just before the peak of the stock-recruit curve, which occurs at <span class="math inline">\(S_{Max}\)</span>, or the number of spawners that leads to maximum recruitment (often considered “habitat capacity”, since beyond this point we start to see density dependence occur). In most fisheries we talk about <span class="math inline">\(B_{MSY}\)</span> or <span class="math inline">\(F_{MSY}\)</span> which are biomass and fishing mortality at MSY, but for salmon, since we are usually managing spawners, we use <span class="math inline">\(S_{MSY}\)</span>. <span class="math inline">\(S_{MSY}\)</span> is generally used as an upper benchmark, or a goal, for a fish stock. On the opposite end, an often-used lower benchmark or lower reference point for salmon is <span class="math inline">\(S_{gen}\)</span>, the number of spawners required to reach <span class="math inline">\(S_{MSY}\)</span> in one generation, in the absence of fishing.</p>
+<p>Reference points are used in fisheries management to glean population health and status, and also as trigger points for fisheries management actions (ie change fishing regulations). Two often-used reference points for salmon, are <span class="math inline">\(S_{MSY}\)</span> and <span class="math inline">\(S_{gen}\)</span>. To understand these two reference points, let’s start with the idea of maximum sustainable yield. Maximum sustainable yield is highest catch that can be taken from a population indefinitely, at equilibrium population conditions. This is considered a “sweet spot” of productivity, and usually occurs at a stock size just before the peak of the stock-recruit curve, which occurs at <span class="math inline">\(S_{Max}\)</span>, or the number of spawners that leads to maximum recruitment (often considered “habitat capacity”, since beyond this point we start to see density dependence occur). In most fisheries we talk about <span class="math inline">\(B_{MSY}\)</span> or <span class="math inline">\(F_{MSY}\)</span> which are biomass and fishing mortality at MSY, but for salmon, since we are usually managing spawners, we use <span class="math inline">\(S_{MSY}\)</span>. <span class="math inline">\(S_{MSY}\)</span> is generally used as an upper benchmark, or a goal, for a fish stock. On the opposite end, an often-used lower benchmark or limit reference point (LRP) for salmon is <span class="math inline">\(S_{gen}\)</span>, the number of spawners required to reach <span class="math inline">\(S_{MSY}\)</span> in one generation, in the absence of fishing.</p>
 <p>Neither of these values have straight-forward solutions when using a Ricker curve. Up until a few years ago <span class="math inline">\(S_{MSY}\)</span> was generally solved using the following approximation, which was introduced by Hilborn (1985).</p>
 <p><span class="math display">\[
 S_{MSY} \approx  \frac{log(\alpha)*(0.5-0.07*log(\alpha))}{\beta}
@@ -117,7 +117,7 @@ S_{MSY} = \alpha  S_{gen}  e^{-\beta S{gen}}
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="Intro-to-SR-Data_files/figure-html/Ricker%20Curve%20with%20BMs-1.png" class="img-fluid figure-img" width="672"></p>
-<figcaption class="figure-caption">Ricker curve with <span class="math inline">\(S_{gen}\)</span> (red) and <span class="math inline">\(S_{MSY}\)</span> overlaid</figcaption>
+<figcaption class="figure-caption">Ricker curve with <span class="math inline">\(S_{gen}\)</span> (red) and <span class="math inline">\(S_{MSY}\)</span> (green) overlaid</figcaption>
 </figure>
 </div>
 </div>

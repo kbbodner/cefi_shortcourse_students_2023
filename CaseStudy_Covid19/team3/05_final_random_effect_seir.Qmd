@@ -1,0 +1,795 @@
+---
+title: "Fitting COVID-19 case data using an SEIR model in STAN"
+format: 
+  html:
+    fig-width: 8
+    fig-height: 6
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+```{r knit options}
+#| include: false
+options(future.rng.onMisuse = "ignore")
+options(mc.cores = parallel::detectCores())
+```
+
+Set-up Stan and related libraries, as well as libraries for data and
+data visualization.
+
+```{r setup, message=FALSE, warning=FALSE}
+#| message: false
+#| warning: false
+# Bayesian computation
+library(rstan)
+library(tidybayes)
+
+# data science packages
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(readr)
+library(here)
+ymd <- lubridate::ymd
+library(lubridate)
+```
+
+# Data
+
+First, we will read in the British Columbia, Canada COVID-19
+reported-case data. 
+
+## Load the BC COVID-19 data
+
+```{r load bc data and plot}
+# load data grouped by location (HA), and age group
+covid_data <- read_csv(here("data","fitting_data.csv"))
+
+# Make a plot showing cases by region in BC over time 
+covid_data %>%
+  group_by(Reported_Date, HA) %>%
+  tally() %>%
+  ggplot(aes(x = Reported_Date, y = n, color = HA)) +
+  geom_line() +
+  theme_classic()
+
+# It appears that there is quite a bit of regional variation in infections.
+# Let's try to add a random region effect to the model to soak up some
+# of that variation. 
+
+# Making new, regionally grouped data for the random effects model 
+covid_data_gr <- covid_data %>% 
+  # Group by date of observation and geographic region
+  group_by(Reported_Date, HA) %>%
+  # Count up observed cases by date
+  tally() %>% 
+  # Reorder data by geographic region
+  arrange(HA, Reported_Date) %>% 
+  # Drop cases that occurred outside of Canada, because we can't assign a "population size" for the region
+  filter(HA != "Out of Canada") %>% 
+  # Ungroup, so we can regroup only by geographic region
+  ungroup() %>% 
+  # Regroup by geographic area
+  group_by(HA) %>% 
+  # Add a column that specifies the origin date by group
+  mutate(Origin_Date = min(Reported_Date)) %>% 
+  # Calculate distance of each observed infection from origin date, by geographic area
+  mutate(time_points_region = as.numeric(difftime(Reported_Date, Origin_Date, units = c("days")))) %>% 
+  # Add a column that contains regional populations
+  mutate(pop_size = case_when(HA == "Fraser" ~ 1957093,
+                              HA == "Interior"  ~ 820839,
+                              HA == "Northern" ~ 302514,
+                              HA == "Vancouver Coastal" ~ 1246650,
+                              HA == "Vancouver Island" ~ 867041)) %>% 
+  ungroup()
+
+# I think we actually need to make sure that every region has the same fitting dates/time_points to
+# make sure we can put them in a single matrix to loop over.
+
+# I'm going to assume that if a date was not listed for a region, there were 0 observed cases on
+# that day (either because there were actually 0 cases, or present cases were unobserved).
+
+# Here, I writing a loop that grabs the "universal" date/time points from the bc_data and joins them
+# to the regional data, filling in the missing values with 0s.
+
+# Load Total BC cases for whole province for first 60 recorded time-points
+bc_data <- read_csv(here("data","bc_fitting_data.csv"))
+
+# Keep only the bc date/time columns
+bc_dat_time <- bc_data %>% 
+  select(-n)
+
+# Vector of region names to index the loop
+regions <- unique(covid_data_gr$HA)
+
+# Make a blank data frame to assign our output 
+covid_data_bc_dat_time <- data.frame()
+
+# Loop over regions to join bc_date_time vector
+for(i in 1:length(regions)){
+  
+  # Print the region name the loop is currently on
+  print(regions[i])
+  
+  # Filter out a single region
+  reg1 <- covid_data_gr %>% 
+    filter(HA == regions[i])
+  
+  # Get the population data from that region
+  reg1_pop <- reg1$pop_size[1]
+  
+  # Left join bc_dat_time vector to the regional data
+  reg1_bc <- bc_dat_time %>% 
+    left_join(reg1) %>% 
+    mutate(HA = regions[i],
+           pop_size = reg1_pop) %>% 
+    # Replace missing values with 0s
+    mutate(n = ifelse(is.na(n), 0, n)) %>% 
+    select(-time_points_region,
+           -Origin_Date) 
+  
+  # Bind reg1_bc to our blank data frame
+  covid_data_bc_dat_time <- covid_data_bc_dat_time %>% 
+    bind_rows(reg1_bc)
+  
+}
+
+# Make a regional population vector for our data object
+covid_data_pop <- covid_data_bc_dat_time %>% 
+  group_by(HA) %>% 
+  slice(1) %>% 
+  ungroup()
+
+region_pop <- covid_data_pop$pop_size
+
+# Make a plot showing total cases in BC over time 
+bc_data %>%
+  ggplot(aes(x = Reported_Date, y = n)) +
+  geom_line() +
+  theme_classic() +
+  ggtitle("Reported cases BC (first 60 recorded time-points of pandemic)")
+```
+
+
+The task will be to use the first 30 recorded time-points of data to forecast 
+the next 30 days of cases.
+In order to do this we first need to define over what days to forecast for. As
+stan code can't handle dates in as clean a way that can be done in R, we will 
+instead generate the days to forecast as the number of days since the start of
+the data
+
+We then store the time points and cases data to load into the stan model
+
+```{r store fitting forecast data}
+
+# In the previous chunk, I created a data frame where every region has the same 
+# date/time points for fitting, filling in the gaps with 0s. I'm not sure that this 
+# was ideal, but I have no idea how to get all the regional counts into a 
+# single matrix without making sure they start with the same number of rows. 
+
+# Because every region now has the same bc_data date/time points, we can continue to
+# use the vectors derrived from the bc_data frame for model fitting.
+
+# Vector of time points for all regions
+fitting_time_points <- bc_data$time_points
+
+# Vector of forecast time points for all regions
+forecast_time_points <- seq(max(fitting_time_points) + 1,
+                            max(fitting_time_points) + 31)
+
+# Vector of forecast dates for all regions 
+forecast_dates <- seq(max(bc_data$Reported_Date) + 1,
+                      max(bc_data$Reported_Date) + 31, by = "1 day")
+
+# However, we need a vector of cases for each region, so I think we should probably create a matrix of cases
+covid_mat <- covid_data_bc_dat_time %>% 
+  select(Reported_Date,
+         n,
+         HA) %>% 
+  # Here, I'm rotating the data frame so each date is a column containing counts for 
+  # each region
+  tidyr::pivot_wider(names_from = Reported_Date, values_from = n)
+
+# Make covid_mat into an actual matrix, dropping the first column that has region names
+fitting_cases <- data.matrix(covid_mat)[,-1]
+
+```
+
+# Setting up the model
+
+We will start with a simple SEIR model with the following structure
+
+$$
+\begin{aligned}
+\frac{{dS}}{{dt}} &= -\beta \cdot S \cdot \frac{{I}}{{N}} \\
+\frac{{dE}}{{dt}} &= \beta \cdot S \cdot \frac{{I}}{{N}} - \sigma \cdot E \\
+\frac{{dI}}{{dt}} &= \sigma \cdot E - \gamma \cdot I \\
+\frac{{dR}}{{dt}} &= \gamma \cdot I
+\end{aligned}
+$$
+
+In these equations, the variables represent the following:
+
+- $S$ is the number of susceptible individuals.
+- $E$ is the number of exposed individuals (infected but not yet infectious).
+- $I$ is the number of infectious individuals.
+- $R$ is the number of recovered (or removed) individuals.
+- $N$ is the total population size.
+- $\beta$ is the infection rate (rate of transmission from infectious to susceptible individuals).
+- $\sigma$ is the incubation rate (rate of transition from the exposed to infectious state).
+- $\gamma$ is the recovery rate (rate at which infectious individuals recover or are removed).
+
+The $R_0$ can be directly derived from the above model by considering the 
+expected number of secondary infections following a primary infection in a large
+population. Since the expected infectious time is $1/\gamma$ and the rate of 
+infections in one unit time is $\beta$, then $R_0 = \beta/\gamma$. [Note that
+this assumes a large population since in order to derive this result we assume
+that $N - 1 \approx N$].
+
+We start by assuming the incubation rate and recovery rate are fixed and fitting
+the $R_0$ and the initial number of infected individuals $I_0$. The number of
+infected are assumed to have a log-normal distribution,
+
+$$\log(I_0) \sim \mathcal{N}(\mu_{I0},\sigma_{I0}),$$ 
+In addition, the $R_0$ is assumed to be normally distributed on the positive
+real half,
+
+$$R_0 \sim \mathcal{N}(\mu_{R0},\sigma_{R0}).$$
+
+Finally for the observation process it is assumed that the number of cases
+observed are Poisson distributed with a rate that is a fixed proportion of the 
+total number of infected individuals at a given time-point. The sampled fraction
+of cases ($s$) is assumed to be bounded between 0 and 1 with a mean 0.2 and standard
+deviation 0.01,
+$$s \sim \mathcal{N}(0.2,0.01)[0,1].$$
+
+Finally the likelihood can be written as,
+
+$$C_t \sim \text{Poisson}(sI_t).$$
+
+# Loading the stan model
+
+This vignette uses a fairly bare bones SEIR model implementation with a
+Poisson observation process. The following chunk
+prints the lines contained in the `stan` file
+
+```{r read stan model}
+
+code <- readLines(here(
+  "stan_models",
+  "final_seir_model.stan"
+))
+
+cat(code, sep = "\n")
+```
+
+We run the following to compile the model
+
+```{r compile stan model}
+
+model <- stan_model(here(
+  "stan_models",
+  "final_seir_model.stan"
+))
+```
+
+Note what is provided in the "data" block of the Stan code. That is what
+is expected as input at inference time. This can be provided as a `list`
+object.
+
+```{r load data into stan format}
+
+# In this random effects model, I tried to set up the data objects so that their 
+# names would match the original naming conventions in the code. The only major
+# changes (I think), are that fitting cases is now a matrix, and the population 
+# is now a vector of regional populations. We also added some new values for 
+# additional hyperpriors and an n_sites object. 
+
+stan_data <- list(
+  T = length(fitting_time_points), # number of data points
+  y1 = fitting_cases[1,], # observed infection cases, region 1
+  y2 = fitting_cases[2,], # observed infection cases, region 2
+  y3 = fitting_cases[3,], # observed infection cases, region 3
+  y4 = fitting_cases[4,], # observed infection cases, region 4
+  y5 = fitting_cases[5,], # observed infection cases, region 5
+  ts = fitting_time_points, # Time points
+  forecast_T = length(forecast_time_points), # number of forecast points
+  forecast_ts = forecast_time_points, # Forecast time points
+  mu_R0_vec_prior = c(2.5, 0.2), # Mean and std for the global mean of R0
+  sd_R0_vec_prior = c(2, 1), # Shape/scale for gamma of the global SD  
+  mu_i0_vec_prior = c(8, 1.0), # Mean and std for the global mean of i0
+  sd_i0_vec_prior = c(2, 1), # Shape/scale for gamma of the global SD  
+  gamma = 1 / 7, # recovery rate
+  sigma = 1 / 5, # incubation rate
+  pop_size = region_pop, # vector of regional populations
+  t0 = -1,
+  n_sites = length(regions) # number of regions in BC
+)
+```
+
+# Run the inference
+
+```{r fit the stan model}
+
+fit <- sampling(model,
+  data = stan_data,
+  iter = 10000, # number of iterations in the chain
+  seed = 42, # fix seed to recreate results
+  chains = 2, # number of chains
+  control = list(adapt_delta = 0.9) # adaptation of chains
+)
+
+# Save stan fit with no masking
+saveRDS(fit, "output/STAN_model_fit_0maskeff.rds")
+
+# Save stan fit with 90% mask effectiveness
+# saveRDS(fit, "output/STAN_model_fit_90maskeff.rds")
+
+# Save stan fit with 60% mask effectiveness
+# saveRDS(fit, "output/STAN_model_fit_60maskeff.rds")
+
+# # Save stan fit with 50% mask effectiveness
+# saveRDS(fit, "output/STAN_model_fit_50maskeff.rds")
+
+# Read in stan fit with 90% mask effectiveness
+# fit <- readRDS("output/STAN_model_fit_90maskeff.rds")
+
+# Read in stan fit with 60% mask effectiveness
+# fit <- readRDS("output/STAN_model_fit_60maskeff.rds")
+
+# Read in stan fit with 50% mask effectiveness
+# fit <- readRDS("output/STAN_model_fit_50maskeff.rds")
+
+```
+
+Examine the summary of the posterior
+
+```{r summarize posterior}
+
+summary(fit, c("R0", "i0", "sample_frac"))
+```
+
+Run shinystan to diagnose posterior samples and check convergence
+
+```{r launch shinystan}
+
+shinystan::launch_shinystan(fit)
+
+```
+
+Look at pairs plot
+
+```{r pair plots}
+
+# These plots help us to look at problematic correlations between two parameters.
+# Here, we are looking at correlation between the mean and sd of our R0 hyperprior.
+
+bayesplot::mcmc_pairs(fit,pars=c("mu_R0","sd_R0"))
+```
+
+
+
+# Examining the model output
+
+Compare the output of the different states in the model,
+
+```{r compare state trends}
+
+# These plots only look at the change in the "I" (infected) state over time in 
+# our model. Change the state "I" in each model to "S", "E", "R" to see 
+# different state dynamics. 
+
+state_dictionary <- tribble(
+  ~i, ~state,
+  1, "S",
+  2, "E",
+  3, "I",
+  4, "R"
+)
+
+time_dictionary <- bc_data %>%
+  select(Reported_Date) %>%
+  mutate(t = 1:n())
+
+# Region 1
+fit %>%
+  spread_draws(y_hat1[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary, by = "t") %>%
+  filter(state == "I") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat1), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer()
+
+# Region 2
+fit %>%
+  spread_draws(y_hat2[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary, by = "t") %>%
+  filter(state == "I") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat2), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer()
+
+# Region 3
+fit %>%
+  spread_draws(y_hat3[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary, by = "t") %>%
+  filter(state == "I") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat3), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer()
+
+# Region 4
+fit %>%
+  spread_draws(y_hat4[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary, by = "t") %>%
+  filter(state == "I") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat4), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer()
+
+# Region 5
+fit %>%
+  spread_draws(y_hat5[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary, by = "t") %>%
+  filter(state == "I") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat5), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer()
+```
+
+Compare posterior predictive distribution of cases to actual cases,
+
+```{r model data fit}
+
+time_dictionary <- bc_data %>%
+  select(Reported_Date) %>%
+  mutate(t = 1:n())
+
+# Fraser - Region 1
+fraser <- covid_data_bc_dat_time %>% 
+  filter(HA == "Fraser")
+
+fit %>%
+  spread_draws(cases1[t]) %>%
+  left_join(time_dictionary, by = "t") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = cases1), .width = c(.99, .95, .8, .5), color = "#08519C") +
+  scale_fill_brewer() +
+  geom_point(data = fraser, aes(x = Reported_Date, y = n)) +
+  labs(title = "Fraser", x = "Reported Date", y = "Number of Cases")
+
+# Interior - Region 2
+interior <- covid_data_bc_dat_time %>% 
+  filter(HA == "Interior")
+
+fit %>%
+  spread_draws(cases2[t]) %>%
+  left_join(time_dictionary, by = "t") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = cases2), .width = c(.99, .95, .8, .5), color = "#08519C") +
+  scale_fill_brewer() +
+  geom_point(data = interior, aes(x = Reported_Date, y = n)) +
+  labs(title = "Interior", x = "Reported Date", y = "Number of Cases")
+
+# Northern - Region 3
+northern <- covid_data_bc_dat_time %>% 
+  filter(HA == "Northern")
+
+fit %>%
+  spread_draws(cases3[t]) %>%
+  left_join(time_dictionary, by = "t") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = cases3), .width = c(.99, .95, .8, .5), color = "#08519C") +
+  scale_fill_brewer() +
+  geom_point(data = northern, aes(x = Reported_Date, y = n))+
+  labs(title = "Northern", x = "Reported Date", y = "Number of Cases")
+
+# Vancouver Coastal - Region 4
+vancoast <- covid_data_bc_dat_time %>% 
+  filter(HA == "Vancouver Coastal")
+
+fit %>%
+  spread_draws(cases4[t]) %>%
+  left_join(time_dictionary, by = "t") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = cases4), .width = c(.99, .95, .8, .5), color = "#08519C") +
+  scale_fill_brewer() +
+  geom_point(data = vancoast, aes(x = Reported_Date, y = n))+
+  labs(title = "Vancouver Coastal", x = "Reported Date", y = "Number of Cases")
+
+# Vancouver Island - Region 5
+vanisle <- covid_data_bc_dat_time %>% 
+  filter(HA == "Vancouver Island")
+
+fit %>%
+  spread_draws(cases5[t]) %>%
+  left_join(time_dictionary, by = "t") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = cases5), .width = c(.99, .95, .8, .5), color = "#08519C") +
+  scale_fill_brewer() +
+  geom_point(data = vanisle, aes(x = Reported_Date, y = n))+
+  labs(title = "Vancouver Island", x = "Reported Date", y = "Number of Cases")
+```
+
+```{r prep data for predicted distributions}
+
+# Read in our validation data 
+val_dat <- read.csv("data/validation_data.csv")
+
+# Make the Reported Date column a date class column
+val_dat$Reported_Date <- ymd(val_dat$Reported_Date)
+
+# Bind our fitting data with the validation set 
+full_dat <- bind_rows(covid_data, val_dat)
+
+# Making new, regionally grouped data for the random effects model 
+full_data_gr <- full_dat %>% 
+  # Group by date of observation and geographic region
+  group_by(Reported_Date, HA) %>%
+  # Count up observed cases by date
+  tally() %>% 
+  # Reorder data by geographic region
+  arrange(HA, Reported_Date) %>% 
+  # Drop cases that occurred outside of Canada, because we can't assign a "population size" for the region
+  filter(HA != "Out of Canada") %>% 
+  # Ungroup, so we can regroup only by geographic region
+  ungroup()
+
+# Here, I'm making regional subsets of our data for the plots below 
+
+# Fraser - Region 1
+fraser <- full_data_gr %>% 
+  filter(HA == "Fraser")
+
+# Interior - Region 2
+interior <- full_data_gr %>% 
+  filter(HA == "Interior")
+
+# Northern - Region 3
+northern <- full_data_gr %>% 
+  filter(HA == "Northern")
+
+# Vancouver Coastal - Region 4
+vancoast <- full_data_gr %>% 
+  filter(HA == "Vancouver Coastal")
+
+# Vancouver Island - Region 5
+vanisle <- full_data_gr %>% 
+  filter(HA == "Vancouver Island")
+
+
+```
+
+Compare the forecasted predictive distribution of cases to actual cases,
+
+```{r fraser predictions}
+
+# Fraser
+
+time_dictionary_fitting <- bc_data %>%
+  select(Reported_Date) %>%
+  mutate(
+    t = 1:n(),
+    .variable = "cases1"
+  )
+time_dictionary_forecasting <- tibble(Reported_Date = forecast_dates) %>%
+  mutate(
+    t = 1:n(),
+    .variable = "forecasted_cases1"
+  )
+
+time_dictionary <- time_dictionary_fitting %>%
+  bind_rows(time_dictionary_forecasting)
+
+fit %>%
+  tidybayes::gather_draws(cases1[t], forecasted_cases1[t]) %>%
+  left_join(time_dictionary, by = c("t", ".variable")) %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = .value, group = .variable),
+    color = "#08519C",
+    .width = c(0.95, .8, .5)
+  ) +
+  scale_fill_brewer() +
+  geom_point(data = fraser, aes(x = Reported_Date, y = n))+
+  labs(title = "Fraser", x = "Reported Date", y = "Number of Cases")
+
+
+
+```
+
+```{r interior predictions}
+
+time_dictionary_fitting <- bc_data %>%
+  select(Reported_Date) %>%
+  mutate(
+    t = 1:n(),
+    .variable = "cases2"
+  )
+time_dictionary_forecasting <- tibble(Reported_Date = forecast_dates) %>%
+  mutate(
+    t = 1:n(),
+    .variable = "forecasted_cases2"
+  )
+
+time_dictionary <- time_dictionary_fitting %>%
+  bind_rows(time_dictionary_forecasting)
+
+fit %>%
+  tidybayes::gather_draws(cases2[t], forecasted_cases2[t]) %>%
+  left_join(time_dictionary, by = c("t", ".variable")) %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = .value, group = .variable),
+    color = "#08519C",
+    .width = c(0.95, .8, .5)
+  ) +
+  scale_fill_brewer() +
+  geom_point(data = interior, aes(x = Reported_Date, y = n))+
+  labs(title = "Interior", x = "Reported Date", y = "Number of Cases")
+
+```
+
+```{r northern predictions}
+
+time_dictionary_fitting <- bc_data %>%
+  select(Reported_Date) %>%
+  mutate(
+    t = 1:n(),
+    .variable = "cases3"
+  )
+time_dictionary_forecasting <- tibble(Reported_Date = forecast_dates) %>%
+  mutate(
+    t = 1:n(),
+    .variable = "forecasted_cases3"
+  )
+
+time_dictionary <- time_dictionary_fitting %>%
+  bind_rows(time_dictionary_forecasting)
+
+fit %>%
+  tidybayes::gather_draws(cases3[t], forecasted_cases3[t]) %>%
+  left_join(time_dictionary, by = c("t", ".variable")) %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = .value, group = .variable),
+    color = "#08519C",
+    .width = c(0.95, .8, .5)
+  ) +
+  scale_fill_brewer() +
+  geom_point(data = northern, aes(x = Reported_Date, y = n))+
+  labs(title = "Northern", x = "Reported Date", y = "Number of Cases")
+```
+
+```{r vancouver coastal predictions}
+
+time_dictionary_fitting <- bc_data %>%
+  select(Reported_Date) %>%
+  mutate(
+    t = 1:n(),
+    .variable = "cases4"
+  )
+time_dictionary_forecasting <- tibble(Reported_Date = forecast_dates) %>%
+  mutate(
+    t = 1:n(),
+    .variable = "forecasted_cases4"
+  )
+
+time_dictionary <- time_dictionary_fitting %>%
+  bind_rows(time_dictionary_forecasting)
+
+fit %>%
+  tidybayes::gather_draws(cases4[t], forecasted_cases4[t]) %>%
+  left_join(time_dictionary, by = c("t", ".variable")) %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = .value, group = .variable),
+    color = "#08519C",
+    .width = c(0.95, .8, .5)
+  ) +
+  scale_fill_brewer() +
+  geom_point(data = vancoast, aes(x = Reported_Date, y = n))+
+  labs(title = "Vancouver Coastal", x = "Reported Date", y = "Number of Cases")
+```
+
+```{r vancouver island predictions}
+
+time_dictionary_fitting <- bc_data %>%
+  select(Reported_Date) %>%
+  mutate(
+    t = 1:n(),
+    .variable = "cases5"
+  )
+time_dictionary_forecasting <- tibble(Reported_Date = forecast_dates) %>%
+  mutate(
+    t = 1:n(),
+    .variable = "forecasted_cases5"
+  )
+
+time_dictionary <- time_dictionary_fitting %>%
+  bind_rows(time_dictionary_forecasting)
+
+fit %>%
+  tidybayes::gather_draws(cases5[t], forecasted_cases5[t]) %>%
+  left_join(time_dictionary, by = c("t", ".variable")) %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = .value, group = .variable),
+    color = "#08519C",
+    .width = c(0.95, .8, .5)
+  ) +
+  scale_fill_brewer() +
+  geom_point(data = vanisle, aes(x = Reported_Date, y = n))+
+  labs(title = "Vancouver Island", x = "Reported Date", y = "Number of Cases")
+
+```
+
+
+The base model indicates a period of unbounded growth. In addition,
+The posterior predictive distribution of cases does not seem to match the
+pattern of observed cases. Bayesian p-values and residuals can be used to 
+investigate these differences. What are some of the underlying causes of this? 
+
+# Decision maker request
+
+Policy makers are considering a number of potential public health measures to 
+reduce the transmission of COVID-19 and the number of cases. The main measure 
+currently being considered is requiring masking in indoor public settings
+
+What would be the projected number of cases over the next 30 days under this 
+scenario? If the intervention is not introduced, what would be the projected 
+number of cases over the next 30 days?
+
+In addition to the outlined questions, further directions for the case
+study, which may enhance the model forecast are given below.
+
+# Model extensions
+
+## Reported cases
+
+The number of reported cases is not necessarily a fixed relationship
+with the number of infections. Factors such as the severity of cases,
+the age distribution of infections, and testing policies among others
+will play a role in what infections are detected. Expand the model to
+consider the observation process of generated cases from infections. Could this
+process be over-dispersed? In addition consider whether this varies over time by
+different factors and whether observations are over-dispersed.
+
+## Adding covariates
+
+The rate of transmission depends on many factors such as the rate of
+contact within the population, including the setting and type of
+contact. The observation of cases from infections also depends on many
+factors including weekday/weekend, which may impact when testing
+locations are open and people's ability to seek testing. Consider how to
+extend the model to include covariates for the transmission rate and
+testing rate. What implications for public health policy can be made by
+these inferences? This may involve the incorporation of external data, such as
+policy stringency measures or measures of mobility. See the 
+[Our World in Data page](https://ourworldindata.org/policy-responses-covid) for 
+some potential resources.
+
+## Contact rate breakpoints
+
+Changes in public policy and population behavior impacts the
+transmission rate. Further policies such as self-isolation following
+symptom onset or testing positive can additionally impact the expected
+time that an individual is infectious. Expand the model to consider
+varying behavior and policy. Can changes in behavior be inferred from
+these case data?
+
+## Geographic differences
+
+Population structure is important when considering where an outbreak
+emerges and how it develops. Extend the model to incorporate different
+health regions. What would be the impact of introducing public health
+measures that differentially impacts different populations?
+
+## Population age structure
+
+Age structure is often considered through the
+who-aquires-infection-from-whom matrix (WAIFM). Extend the model to
+incorporate age structure and consider how measures such as those which
+impact school-aged children would impact the total observed numbers of
+cases.

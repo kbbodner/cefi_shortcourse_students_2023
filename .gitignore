@@ -2,4 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
-Lectures/reproducibility_talk/*
+*Rproj
+.DS_Store
+
