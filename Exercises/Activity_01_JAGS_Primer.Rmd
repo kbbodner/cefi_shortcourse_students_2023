@@ -19,7 +19,7 @@ The standard Bayesian regression model assumes a Normal likelihood, a multivaria
 
 $$P(b,\sigma^2 \vert X, y) \propto N_n(y \vert Xb,\sigma^2 I) N_p(b \vert b_0, V_b) IG(\sigma^2 \vert s_1,s_2)$$
 
-As a reminder, a Normal prior is not used on the variance because variances must be non-negative. The inverse gamma prior on the variance (equivalent to a gamma prior on the precision) has the advantage of being conjugate and having relatively interpretable parameters (s_1 and s_2 are proportional to the prior sample size and sum of squares, respectively; see Box 5.1) 
+As a reminder, a Normal prior is not used on the variance because variances must be non-negative. The inverse gamma prior on the variance (equivalent to a gamma prior on the precision) has the advantage of being conjugate and having relatively interpretable parameters ($s_1$ and $s_2$ are proportional to the prior sample size and sum of squares, respectively; see Box 5.1) 
 
 Within the Gibbs sampler we will be iteratively sampling from each of the conditional posterior distributions:
 
@@ -51,14 +51,14 @@ Any data analysis begins with loading and organizing the data into a list so we 
 
 ```{r}
 ### Part 1: simulate data from a known model
-n <- 100  			## define the sample size
+n <- 100  			        ## define the sample size
 b0 <- 10				## define the intercept
 b1 <- 2					## define the slope
 beta <- matrix(c(b0,b1),2,1)		## put “true” regression parameters in a matrix
 sigma <- 4				## define the standard deviation
 ```
 
-In this first part we define the true parameters of our model that we're going to simulate from.  In the next block we will first simulate our covariate, x1, by assuming that it is uniformly distributed over the range that we're interested in (0,20) and then create our design matrix, x, which is a matrix with the first column of all 1's (which will multiplied by the intercept) and the second column being our covariate pseudodata (which will be multiplied by the slope).  To combine these two columns we use the _cbind_ command, which creates a matrix assuming that the vectors passed to the function are the columns of the matrix.  When we use matrix multiplication to multiply the design matrix, x, by the parameter vector, beta, the first column (all 1's) is multiplied by the first element in the beta vector, b1, which is the intercept.  The second column in the design matrix, which is our covariate x, is multiplied by the second beta, b1, the slope.  Together this gives the calculation we desire, b0 + b1*x1, which is our linear regression model.  This calculation is also the expected value of the response variable, y, at that x1.
+In this first part we define the true parameters of our model that we're going to simulate from.  In the next block we will first simulate our covariate, `x1`, by assuming that it is uniformly distributed over the range that we're interested in (0,20) and then create our design matrix, `x`, which is a matrix with the first column of all 1's (which will multiplied by the intercept) and the second column being our covariate pseudodata (which will be multiplied by the slope).  To combine these two columns we use the `cbind()` command, which creates a matrix assuming that the vectors passed to the function are the columns of the matrix.  When we use matrix multiplication to multiply the design matrix, `x`, by the parameter vector, beta, the first column (all 1's) is multiplied by the first element in the beta vector, `b1`, which is the intercept.  The second column in the design matrix, which is our covariate `x`, is multiplied by the second beta, `b1`, the slope.  Together this gives the calculation we desire, $b0 + b1*x1$, which is our linear regression model.  This calculation is also the expected value of the response variable, `y`, at that `x1`.
 
 ```{r}
 x1 <- runif(n,0,20)
@@ -66,7 +66,7 @@ x <- cbind(rep(1,n),x1)
 y <- rnorm(n,x%*%beta,sigma)
 ```
 
-As you can see, in the third line of this code we generate pseudodata for the response variable, y, by taking n samples from a random normal distribution that has a mean that is the expected value of our regression model and the standard deviation we specified above.
+As you can see, in the third line of this code we generate pseudodata for the response variable, `y`, by taking `n` samples from a random normal distribution that has a mean that is the expected value of our regression model and the standard deviation we specified above.
 
   Once we've generated our pseudodata lets do some “exploratory data analysis” to look at the data we've generated and the model that it came from
 
@@ -84,17 +84,17 @@ data <- list(x = x1, y = y, n = n)
 
 ## Specify model
 
-Our JAGS model for regression is very similar to our model from Exercise 5. However, rather than having a single, fixed mu (expected value of y), we now index mu to vary by observation. We then add a linear process model to predict how mu changes as a function of x. Finally, we add a multivariate normal prior on the regression parameters (beta).
+Here, rather than having a single, fixed mu (expected value of `y`) as we could have in a simpler example, we want index mu to vary by observation. We then add a linear process model to predict how `mu` changes as a function of `x`. Finally, we add a multivariate normal prior on the regression parameters (`beta`).
 
 ```{r}
 univariate_regression <- "
 model{
 
   beta ~ dmnorm(b0,Vb)  	## multivariate Normal prior on vector of regression params
-  prec ~ dgamma(s1,s2)    ## prior precision
+  prec ~ dgamma(s1,s2)          ## prior precision
 
   for(i in 1:n){
-	  mu[i] <- beta[1] + beta[2]*x[i]   	## process model
+	  mu[i] <- beta[1] + beta[2]*x[i]   	        ## process model
 	  y[i]  ~ dnorm(mu[i],prec)		        ## data model
   }
 }
@@ -105,7 +105,7 @@ model{
 
 Now that we have “data” and the model, the next task in setting up the analysis is to specify the parameters for the prior distributions.  
 
-Since beta is a vector, the prior mean, b0, is also a vector, and the prior variance is a matrix.  Since we have no prior conceptions about our data we'll select relatively weak priors, assuming a prior mean of 0 and a prior variance matrix that is diagonal (i.e. no covariances) and with a moderately large variance of 10000 (s.d. of 100).  We'll use the _diag_ command to set up a diagonal matrix that has a size of 2 and values of 10000 along the diagonal.  In practice, JAGS requires that we specify the multivariate normal in terms of a precision matrix, therefore we will compute the inverse of the prior variance matrix, vinvert,  using the _solve_ function.  For the residual error, we will specify an uninformative gamma prior on the precision with parameters s1 = 0.1 and s2 = 0.1. Finally, we'l add all of these prior parameters to the `data` object so we can pass them in to the JAGS model
+Since `beta` is a vector, the prior mean, `b0`, is also a vector, and the prior variance is a matrix.  Since we have no prior conceptions about our data we'll select relatively weak priors, assuming a prior mean of 0 and a prior variance matrix that is diagonal (i.e. no covariances) and with a moderately large variance of 10000 (s.d. of 100).  We'll use the `diag()` command to set up a diagonal matrix that has a size of 2 and values of 10000 along the diagonal.  In practice, JAGS requires that we specify the multivariate normal in terms of a precision matrix, therefore we will compute the inverse of the prior variance matrix, vinvert,  using the `solve()` function.  For the residual error, we will specify an uninformative gamma prior on the precision with parameters `s1 = 0.1` and `s2 = 0.1`. Finally, we'l add all of these prior parameters to the `data` object so we can pass them in to the JAGS model
 
 ```{r}
 ## specify priors
@@ -119,7 +119,7 @@ Note: If you want to fit a regression with more covariates (and thus more betas)
 
 ## Specify initial conditions
 
-The last thing we need to do to prep for the MCMC loop is to specify the **initial conditions**. As with Exercise 5, we'll want to put these in a list. Here we're specifying multiple initial conditions and creating a list of lists so that we can give different initial conditions to each chain.
+The last thing we need to do to prep for the MCMC loop is to specify the **initial conditions**. We'll want to put these in a list. Here we're specifying multiple initial conditions and creating a list of lists so that we can give different initial conditions to each chain.
 
 ```{r}
 ## initial conditions
@@ -132,8 +132,7 @@ for(i in 1:nchain){
 
 # MCMC loop
 
-As in Exercise 5, we'll pass the model, data, and inits to the `jags.model` function in order to compile and initialize the model
-
+We'll pass the model, data, and inits to the `jags.model` function in order to compile and initialize the model
 ```{r}
 j.model   <- jags.model(file = textConnection(univariate_regression),
                              data = data,
@@ -141,7 +140,7 @@ j.model   <- jags.model(file = textConnection(univariate_regression),
                              n.chains = nchain)
 ```
 
-And then we'll use the coda.samples function to sample from the posterior
+And then we'll use the `coda.samples` function to sample from the posterior
 
 ```{r}
 var.out   <- coda.samples (model = j.model,
@@ -172,7 +171,7 @@ cor(var.mat)    ## correlation matrix among model parameters
 * Evaluate the MCMC chain for convergence. Include relevant diagnostics and plots. Determine and remove burnin e.g. ```var.burn <- window(var.out,start=burnin)```
 * Report parameter summary table and plot marginal distributions
 * Describe and explain the parameter covariances that you observe in the pairs plot and parameter correlation matrix.
-* Compare the summary statistics for the Bayesian regression model to those from the classical regression:  summary(lm( y ~ x1 )).  This should include a comparison of the means and uncertainties of **all 3 model parameters**
+* Compare the summary statistics for the Bayesian regression model to those from the classical regression:  `summary(lm( y ~ x1 ))`.  This should include a comparison of the means and uncertainties of **all 3 model parameters**
 * Compare the fit parameters to the “true” parameters we used to generate the pseudo-data.  How well does the statistical analysis recover the true model?
 
 # Regression Credible Intervals
@@ -188,7 +187,7 @@ for(i in 1:10){
 ```
 
 
-You can see within the loop that we're plotting our process model – b0 + b1*x – for pairs of regression parameters from the MCMC which created a distribution of models.  The reason that we use pairs of values from the posterior (i.e. rows in bgibbs) rather than simulating values from the posterior of each parameter independently is to account for the covariance structure of the parameters.  As we saw in the pairs plot above, the covariance of the slope and intercept is considerable, and thus independent sapling of their marginal posterior distributions would lead to credible intervals that are substantially too large.
+You can see within the loop that we're plotting our process model – $b0 + b1*x$ – for pairs of regression parameters from the MCMC which created a distribution of models.  The reason that we use pairs of values from the posterior (i.e. rows in bgibbs) rather than simulating values from the posterior of each parameter independently is to account for the covariance structure of the parameters.  As we saw in the pairs plot above, the covariance of the slope and intercept is considerable, and thus independent sapling of their marginal posterior distributions would lead to credible intervals that are substantially too large.
 	This distribution of models is by itself not easy to interpret, especially if we added lines for EVERY pair of points in our posterior, so instead we'll calculate the quantiles of the posterior distribution of all of these lines.  To do this we'll need to first make the predictions for all of these lines and then look at the posterior distribution of predicted y values given our sequence of x values.
 	Before we dive into that, lets also consider the other quantity we're interested in calculating, the predictive interval, since it is easiest to calculate both at the same time.  While the credible interval was solely concerned about the uncertainty in the model parameters, the predictive interval is also concerned about the residual error between the model and the data.  When we make a prediction with a model and want to evaluate how well the model matches data we obviously need to consider our data model.  How we do this numerically is to generate pseudodata from our model, conditioned on the current value of not only the regression parameters but also the variance parameters, and then look at the distribution of predictions.
 	In R we'll begin the calculation of our credible and predictive intervals by setting up data structures to store all the calculations
@@ -203,7 +202,7 @@ ypred <- matrix(0.0,nrow=nsamp,ncol=npred)	## storage for predictive interval
 ycred <- matrix(0.0,nrow=nsamp,ncol=npred)	## storage for credible interval
 ```
 
-Next we'll set up a loop where we'll calculate the expected value of y at each x for each pair of regression parameters and then add additional random error from the data model.  When looping through the posterior MCMC we'll obviously want to account for any burn-in period and thinning 
+Next we'll set up a loop where we'll calculate the expected value of `y` at each `x` for each pair of regression parameters and then add additional random error from the data model.  When looping through the posterior MCMC we'll obviously want to account for any burn-in period and thinning 
 
 ```{r}
 for(g in seq_len(nsamp)){
@@ -213,7 +212,7 @@ for(g in seq_len(nsamp)){
 }
 ```
 
-Once we have the full matrix of predicted values we'll calculate the quantiles by column (ie for each x value) and then plot them vs. the data.  By selecting the 2.5% and 97.5% quantiles we are generating a 95% interval, because 95% of the calculated values fall in the middle and 2.5% fall in each of the upper and lower tails.  We could construct alternative interval estimates by just calculating different quantiles, for example the 5% and 95% quantiles would provide a 90% interval estimate. 
+Once we have the full matrix of predicted values we'll calculate the quantiles by column (ie for each `x` value) and then plot them vs. the data.  By selecting the 2.5% and 97.5% quantiles we are generating a 95% interval, because 95% of the calculated values fall in the middle and 2.5% fall in each of the upper and lower tails.  We could construct alternative interval estimates by just calculating different quantiles, for example the 5% and 95% quantiles would provide a 90% interval estimate. 
 
 ```{r}
 ci <- apply(ycred,2,quantile,c(0.025,0.5,0.975))  ## credible interval and median

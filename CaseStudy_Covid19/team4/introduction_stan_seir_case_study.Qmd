@@ -1,0 +1,425 @@
+---
+title: "Fitting COVID-19 case data using an SEIR model in STAN"
+format: 
+  html:
+    fig-width: 8
+    fig-height: 6
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+```{r knit options}
+#| include: false
+options(future.rng.onMisuse = "ignore")
+options(mc.cores = parallel::detectCores())
+```
+
+Set-up Stan and related libraries, as well as libraries for data and
+data visualization.
+
+```{r setup, message=FALSE, warning=FALSE}
+#| message: false
+#| warning: false
+# Bayesian computation
+library(rstan)
+library(tidybayes)
+
+# data science packages
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(readr)
+library(here)
+ymd <- lubridate::ymd
+```
+
+# Data
+
+First, we will read in the British Columbia, Canada COVID-19
+reported-case data. 
+
+## Load the BC COVID-19 data
+
+```{r load bc data}
+# load data grouped by location (HA), and age group
+covid_data <- read_csv("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/data/fitting_data.csv")
+
+
+covid_data %>%
+  group_by(Reported_Date, HA) %>%
+  tally() %>%
+  ggplot(aes(x = Reported_Date, y = n, color = HA)) +
+  geom_line() +
+  theme_classic()
+
+
+
+# Load Total BC cases for whole province for first 60 recorded time-points
+bc_data <- read_csv("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/data/bc_fitting_data.csv")
+
+
+
+bc_data %>%
+  ggplot(aes(x = Reported_Date, y = n)) +
+  geom_line() +
+  theme_classic() +
+  ggtitle("Reported cases BC (first 60 recorded time-points of pandemic)")
+```
+
+
+The task will be to use the first 30 recorded time-points of data to forecast 
+the next 30 days of cases.
+In order to do this we first need to define over what days to forecast for. As
+stan code can't handle dates in as clean a way that can be done in R, we will 
+instead generate the days to forecast as the number of days since the start of
+the data
+
+We then store the time points and cases data to load into the stan model
+
+```{r store fitting forecast data}
+fitting_time_points <- bc_data$time_points
+fitting_cases <- bc_data$n
+forecast_time_points <- seq(max(fitting_time_points) + 1,
+                            max(fitting_time_points) + 31)
+
+forecast_dates <- seq(max(bc_data$Reported_Date) + 1,
+                      max(bc_data$Reported_Date) + 31, by = "1 day")
+```
+
+# Setting up the model
+
+We will start with a simple SEIR model with the following structure
+
+$$
+\begin{aligned}
+\frac{{dS}}{{dt}} &= -\beta \cdot S \cdot \frac{{I}}{{N}} \\
+\frac{{dE}}{{dt}} &= \beta \cdot S \cdot \frac{{I}}{{N}} - \sigma \cdot E \\
+\frac{{dI}}{{dt}} &= \sigma \cdot E - \gamma \cdot I \\
+\frac{{dR}}{{dt}} &= \gamma \cdot I
+\end{aligned}
+$$
+
+In these equations, the variables represent the following:
+
+- $S$ is the number of susceptible individuals.
+- $E$ is the number of exposed individuals (infected but not yet infectious).
+- $I$ is the number of infectious individuals.
+- $R$ is the number of recovered (or removed) individuals.
+- $N$ is the total population size.
+- $\beta$ is the infection rate (rate of transmission from infectious to susceptible individuals).
+- $\sigma$ is the incubation rate (rate of transition from the exposed to infectious state).
+- $\gamma$ is the recovery rate (rate at which infectious individuals recover or are removed).
+
+The $R_0$ can be directly derived from the above model by considering the 
+expected number of secondary infections following a primary infection in a large
+population. Since the expected infectious time is $1/\gamma$ and the rate of 
+infections in one unit time is $\beta$, then $R_0 = \beta/\gamma$. [Note that
+this assumes a large population since in order to derive this result we assume
+that $N - 1 \approx N$].
+
+We start by assuming the incubation rate and recovery rate are fixed and fitting
+the $R_0$ and the initial number of infected individuals $I_0$. The number of
+infected are assumed to have a log-normal distribution,
+
+$$\log(I_0) \sim \mathcal{N}(\mu_{I0},\sigma_{I0}),$$ 
+In addition, the $R_0$ is assumed to be normally distributed on the positive
+real half,
+
+$$R_0 \sim \mathcal{N}(\mu_{R0},\sigma_{R0}).$$
+
+Finally for the observation process it is assumed that the number of cases
+observed are Poisson distributed with a rate that is a fixed proportion of the 
+total number of infected individuals at a given time-point. The sampled fraction
+of cases ($s$) is assumed to be bounded between 0 and 1 with a mean 0.2 and standard
+deviation 0.01,
+$$s \sim \mathcal{N}(0.2,0.01)[0,1].$$
+
+Finally the likelihood can be written as,
+
+$$C_t \sim \text{Poisson}(sI_t).$$
+
+# Loading the stan model
+
+This vignette uses a fairly bare bones SEIR model implementation with a
+Poisson observation process. The following chunk
+prints the lines contained in the `stan` file
+
+```{r read stan model}
+code <- readLines("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/basic_seir_model.stan")
+
+cat(code, sep = "\n")
+
+#code_extended <- readLines("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/extended_model_cole.stan")
+
+#cat(code_extended, sep = "\n")
+```
+
+We run the following to compile the model
+
+```{r compile stan model}
+model <- stan_model("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/basic_seir_model.stan")
+
+
+#model_extended <- stan_model("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/extended_model_cole.stan")
+```
+
+Note what is provided in the "data" block of the Stan code. That is what
+is expected as input at inference time. This can be provided as a `list`
+object.
+
+```{r load data into stan format}
+stan_data <- list(
+  T = length(fitting_time_points), # number of data points
+  y = fitting_cases, # observed infection cases
+  ts = fitting_time_points, # Time points
+  forecast_T = length(forecast_time_points), # number of forecast points
+  forecast_ts = forecast_time_points, # Forecast time points
+  R0_prior = c(log(2.5), 0.2), # log Mean and std for R0
+  i0_prior = c(log(8), 1.0), # log Mean and std for i0
+  gamma = 1 / 7, # recovery rate
+  sigma = 1 / 5, # incubation rate
+  pop_size = 5e6, # population of BC
+  t0 = -1
+)
+```
+
+# Run the inference
+
+```{r}
+fit <- sampling(model,
+  data = stan_data,
+  iter = 1000,
+  seed = 42, # fix seed to recreate results
+  chains = 2,
+  control = list(adapt_delta = 0.9)
+)
+
+
+#########Extended Model##############
+#fit_extened <- sampling(model_extended,
+ # data = stan_data,
+ # iter = 500,
+ # seed = 42, # fix seed to recreate results
+ # chains = 1,
+ # control = list(adapt_delta = 0.9)
+#)
+```
+
+Examine the summary of the posterior
+
+```{r}
+summary(fit, c("R0", "i0", "sample_frac"))
+```
+
+# Examining the model output
+
+Compare the output of the different states in the model,
+
+```{r}
+state_dictionary <- tribble(
+  ~i, ~state,
+  1, "S",
+  2, "E",
+  3, "I",
+  4, "R"
+)
+
+time_dictionary <- bc_data %>%
+  select(Reported_Date) %>%
+  mutate(t = 1:n())
+
+########## Infected Individuals###########
+fit %>%
+  spread_draws(y_hat[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary, by = "t") %>%
+  filter(state == "I") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer() + ylab("Infected Individuals") + theme_bw()
+
+
+############### Exposed individuals##################
+fit %>%
+  spread_draws(y_hat[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary, by = "t") %>%
+  filter(state == "E") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer() + ylab("Exposed Indiviuals") + theme_bw()
+
+
+############### Recovered Individuals##################
+fit %>%
+  spread_draws(y_hat[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary, by = "t") %>%
+  filter(state == "R") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer() + ylab("Recovered Individuals") + theme_bw()
+
+############### Susceptible Individuals##################
+fit %>%
+  spread_draws(y_hat[t, i]) %>%
+  left_join(state_dictionary, by = "i") %>%
+  left_join(time_dictionary, by = "t") %>%
+  filter(state == "S") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
+  scale_fill_brewer() + ylab("Susceptible Individuals") + theme_bw()
+```
+
+Compare posterior predictive distribution of cases to actual cases,
+
+```{r}
+time_dictionary <- bc_data %>%
+  select(Reported_Date) %>%
+  mutate(t = 1:n())
+
+fit %>%
+  spread_draws(cases[t]) %>%
+  left_join(time_dictionary, by = "t") %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = cases), .width = c(.99, .95, .8, .5), color = "#08519C") +
+  scale_fill_brewer() +
+  geom_point(data = bc_data, aes(x = Reported_Date, y = n))
+```
+
+Compare the forecasted predictive distribution of cases to actual cases,
+
+```{r}
+time_dictionary_fitting <- bc_data %>%
+  select(Reported_Date) %>%
+  mutate(
+    t = 1:n(),
+    .variable = "cases"
+  )
+time_dictionary_forecasting <- tibble(Reported_Date = forecast_dates) %>%
+  mutate(
+    t = 1:n(),
+    .variable = "forecasted_cases"
+  )
+
+time_dictionary <- time_dictionary_fitting %>%
+  bind_rows(time_dictionary_forecasting)
+
+fit %>%
+  tidybayes::gather_draws(cases[t], forecasted_cases[t]) %>%
+  left_join(time_dictionary, by = c("t", ".variable")) %>%
+  ggplot(aes(x = Reported_Date)) +
+  stat_lineribbon(aes(y = .value, group = .variable),
+    color = "#08519C",
+    .width = c(.8, .5)
+  ) +
+  scale_fill_brewer() +
+  geom_point(data = bc_data, aes(x = Reported_Date, y = n))
+```
+
+The base model indicates a period of unbounded growth. In addition,
+The posterior predictive distribution of cases does not seem to match the
+pattern of observed cases. Bayesian p-values and residuals can be used to 
+investigate these differences. What are some of the underlying causes of this? 
+
+```{r}
+
+data.com <- fit %>%
+  tidybayes::gather_draws(cases[t]) %>%
+  left_join(time_dictionary, by = c("t", ".variable")) %>%
+  left_join(bc_data, by = "Reported_Date") %>%
+  mutate(residuals = n - .value)
+
+data.com  %>%
+  filter(.draw %in% c(2,4,5,6,7,8,9,10)) %>% 
+  ggplot(aes(x = t, y=residuals, color = as.factor(.draw))) + 
+  geom_point() + 
+  theme_bw() +
+  geom_hline(yintercept = 0, linetype="dashed")
+
+
+```
+
+Look at diagnostics in shinystan
+
+```{r}
+y_data <- bc_data$n
+shinystan::launch_shinystan(fit)
+```
+
+Do mean plot of residuals
+
+```{r}
+data.com  %>%
+  group_by(t) %>% 
+  summarise(mean_residuals = mean(residuals)) %>% 
+  ggplot(aes(x = t, y=mean_residuals)) + 
+  geom_point() + 
+  theme_bw() +
+  geom_hline(yintercept = 0, linetype="dashed")
+
+```
+
+# Decision maker request
+
+Policy makers are considering a number of potential public health measures to 
+reduce the transmission of COVID-19 and the number of cases. The main measure 
+currently being considered is requiring masking in indoor public settings
+
+What would be the projected number of cases over the next 30 days under this 
+scenario? If the intervention is not introduced, what would be the projected 
+number of cases over the next 30 days?
+
+In addition to the outlined questions, further directions for the case
+study, which may enhance the model forecast are given below.
+
+# Model extensions
+
+## Reported cases
+
+The number of reported cases is not necessarily a fixed relationship
+with the number of infections. Factors such as the severity of cases,
+the age distribution of infections, and testing policies among others
+will play a role in what infections are detected. Expand the model to
+consider the observation process of generated cases from infections. Could this
+process be over-dispersed? In addition consider whether this varies over time by
+different factors and whether observations are over-dispersed.
+
+## Adding covariates
+
+The rate of transmission depends on many factors such as the rate of
+contact within the population, including the setting and type of
+contact. The observation of cases from infections also depends on many
+factors including weekday/weekend, which may impact when testing
+locations are open and people's ability to seek testing. Consider how to
+extend the model to include covariates for the transmission rate and
+testing rate. What implications for public health policy can be made by
+these inferences? This may involve the incorporation of external data, such as
+policy stringency measures or measures of mobility. See the 
+[Our World in Data page](https://ourworldindata.org/policy-responses-covid) for 
+some potential resources.
+
+## Contact rate breakpoints
+
+Changes in public policy and population behavior impacts the
+transmission rate. Further policies such as self-isolation following
+symptom onset or testing positive can additionally impact the expected
+time that an individual is infectious. Expand the model to consider
+varying behavior and policy. Can changes in behavior be inferred from
+these case data?
+
+## Geographic differences
+
+Population structure is important when considering where an outbreak
+emerges and how it develops. Extend the model to incorporate different
+health regions. What would be the impact of introducing public health
+measures that differentially impacts different populations?
+
+## Population age structure
+
+Age structure is often considered through the
+who-aquires-infection-from-whom matrix (WAIFM). Extend the model to
+incorporate age structure and consider how measures such as those which
+impact school-aged children would impact the total observed numbers of
+cases.
