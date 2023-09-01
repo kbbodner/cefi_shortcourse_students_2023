@@ -16,24 +16,20 @@ To make the setup of this project as easy as possible, we'll be using Docker. Do
 
 ## Build the Docker image
 
-1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/). On Windows, you will also need to [install Windows Subsystem for Linux (WSL2)](https://learn.microsoft.com/en-us/windows/wsl/install).
-1. Open Docker Desktop.
-1. Open a command line (Terminal on Mac, Powershell on Windows) and navigate to the parent directory `/McMasterPandemic` that
-contains the file `Dockerfile` by running the command ```cd path/to/McMasterPandemic/``` (Just replace `/path/to` with the path on your machine relative to your command line's current working directory, which can be revealed with the command `pwd`.)
-1. Build the image with `docker build -t macpan .` If it says that the dockerfile isn't found, see [here](https://github.com/docker/buildx/issues/426#issuecomment-732980948)
+1.  Install [Docker Desktop](https://www.docker.com/products/docker-desktop/). On Windows, you will also need to [install Windows Subsystem for Linux (WSL2)](https://learn.microsoft.com/en-us/windows/wsl/install).
+2.  Open Docker Desktop.
+3.  Open a command line (Terminal on Mac, Powershell on Windows) and navigate to the parent directory `/McMasterPandemic` that contains the file `Dockerfile` by running the command `cd path/to/McMasterPandemic/` (Just replace `/path/to` with the path on your machine relative to your command line's current working directory, which can be revealed with the command `pwd`.)
+4.  Build the image with `docker build -t macpan .` If it says that the dockerfile isn't found, see [here](https://github.com/docker/buildx/issues/426#issuecomment-732980948)
 
 ## Create and run a Docker container
 
-1. Again in the command line, working out of the `McMasterPandemic` directory, launch the container with 
-    ```docker run -d -e PASSWORD=apassword -p 8787:8787 -v ${PWD}:/home/rstudio/Documents macpan:latest```
-changing "apassword" to an alternative password (and remember it!)
-1. Open a web browser and navigate to the URL `localhost:8787`. 
-1. Log in with username/password `rstudio/apassword`. 
+1.  Again in the command line, working out of the `McMasterPandemic` directory, launch the container with `docker run -d -e PASSWORD=apassword -p 8787:8787 -v ${PWD}:/home/rstudio/Documents macpan:latest` changing "apassword" to an alternative password (and remember it!)
+2.  Open a web browser and navigate to the URL `localhost:8787`.
+3.  Log in with username/password `rstudio/apassword`.
 
 You should now see an RStudio session in your browser. If you click the "Documents" folder in the `Files` pane, you should see your project files.
 
-**Note:** If you're using `docker-ce` in `WSL2`, you may need to manually mount the drive that contains the git repo in order for the Docker image to see your files. For instance, if the drive name is `Z`, you'd do 
-```sudo mount -t drvfs Z: /mnt/z```
+**Note:** If you're using `docker-ce` in `WSL2`, you may need to manually mount the drive that contains the git repo in order for the Docker image to see your files. For instance, if the drive name is `Z`, you'd do `sudo mount -t drvfs Z: /mnt/z`
 
 ## Stop and restart a Docker container
 
@@ -41,10 +37,9 @@ In order to stop or re-start a Docker container, you will need to find its name 
 
 Once you've identified the Docker container associated with the `McMasterPandemic` project (we will use the placeholder `container_name` here):
 
-1. Run ```docker stop container_name``` 
-when you're ready to stop your RStudio session. 
-1. To restart the container again, simply run ```docker start container_name```. You can use `docker container ls --all` to see all available containers, even those not currently running.
-1. Now you can navigate to the URL `localhost:8787` and log in with username/password `rstudio/apassword` as before to continue your RStudio session.
+1.  Run `docker stop container_name` when you're ready to stop your RStudio session.
+2.  To restart the container again, simply run `docker start container_name`. You can use `docker container ls --all` to see all available containers, even those not currently running.
+3.  Now you can navigate to the URL `localhost:8787` and log in with username/password `rstudio/apassword` as before to continue your RStudio session.
 
 # For Mac (ARM) machines
 
@@ -52,8 +47,8 @@ Unfortunately, there is an issue with the Docker image on Mac machines containin
 
 ## R and R Studio setup
 
-1. Ensure you're running [R version 4.3.1](https://www.r-project.org) or upgrade to it.
-1. Create an R Project in the `McMasterPandemic` directory in R Studio by going to `File > New Project...`. Choose the option `Existing Directory` and select the `McMasterPandemic` folder.
+1.  Ensure you're running [R version 4.3.1](https://www.r-project.org) or upgrade to it.
+2.  Create an R Project in the `McMasterPandemic` directory in R Studio by going to `File > New Project...`. Choose the option `Existing Directory` and select the `McMasterPandemic` folder.
 
 ## Activating the `renv` virtual environment
 
@@ -61,9 +56,7 @@ The packages and versions used for this vignette, as well as for the correspondi
 
 The `renv` environment has been set up for you already in this repository. In order to activate it, first ensure `renv` 1.0.0 is installed. Then try:
 
-```
-renv::activate()
-```
+    renv::activate()
 
 If this function is not found, do `install.packages("renv")`. If you see `[renv 0.16.0]` tagged after the project is loaded, try `renv::update("renv")`.
 
@@ -71,24 +64,20 @@ Then try `renv::activate()` again.
 
 The first time you activate the virtual environment, you will likely get a message that your session is out of sync with the lockfile. This means that you don't have the right packages installed in your session yet. To fix this, just run
 
-```
-renv::restore()
-```
+    renv::restore()
 
 This will restore the packages recorded for this project into your R session, to make sure everything is there and running at the correct version. This step may a few minutes if the system is downloading a lot of packages. However, you should only have to do this once in this R Project. The next time you open this R Project, the packages (of the right versions) will be loaded from the `renv` cache very quickly.
 
 If you attempt the above and see the following sequence of outputs
 
-```
-> renv::activate()
+    > renv::activate()
 
-Restarting R session...
+    Restarting R session...
 
-- Project '~/cefi_shortcourse_students_2023/CaseStudy_Covid19/McMasterPandemic' loaded. [renv 1.0.0]
-- One or more packages recorded in the lockfile are not installed.
-- Use `renv::status()` for more details.
-> renv::restore()
-- The library is already synchronized with the lockfile.
-```
+    - Project '~/cefi_shortcourse_students_2023/CaseStudy_Covid19/McMasterPandemic' loaded. [renv 1.0.0]
+    - One or more packages recorded in the lockfile are not installed.
+    - Use `renv::status()` for more details.
+    > renv::restore()
+    - The library is already synchronized with the lockfile.
 
 try restarting your R session and then executing `renv::activate()` followed by `renv::restore()` again. You should then see a prompt to install a number of missing packages, to which you should answer yes.

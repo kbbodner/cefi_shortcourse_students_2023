@@ -1,0 +1,341 @@
+---
+title: "Replicate model"
+format: html
+editor: visual
+---
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+# mandatory setup for working with macpan and stan
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+library(McMasterPandemic)
+# source(here::here("R", "tmbstan_tools.R")) # some custom tools for connecting McMasterPandemic and Stan, they're documented fully in that file
+source('../R/tmbstan_tools.R')
+setup_stan() # some required set up for using Stan with McMasterPandemic
+library(rstan) # for additional R Stan tools
+library(dplyr)
+library(tidyr)
+library(here)
+library(readr)
+library(ggplot2)
+library(ggpubr)
+
+theme_set(
+  theme_bw(base_size = 16)
+)
+
+fig <- list()
+forecasts <- list()
+models <- list()
+```
+
+```{r}
+#| label: Some functions used
+```
+
+
+# Read Case data
+
+```{r}
+#| label: data
+#| message: false
+
+cases = read_csv('../data/fitting.csv') # read the cases
+# Transform the cases to match format for the model
+obs <- cases %>% 
+  mutate(
+    date = as.Date(date), # convert to date
+    var = 'incidence' # add a variable for the name of sim output
+  ) %>% 
+  # mutate(new_cases = new_cases )
+  select(date, var, value = new_cases) # order the variables to match the format
+```
+
+
+# Setting up the McMaster model
+
+```{r}
+#| label: Main model parameters
+# This is a list of the main parameters for the model
+pars <- list(
+  pop = 14e9, # Population size
+  beta = 0.25,
+  log_m = -1,
+  log_sd = 0.5
+)
+```
+
+
+The next chunk just runs the model with specified parameters
+
+```{r}
+#| label: state-and-params
+
+# initial state, in units of individuals
+state = c(
+  # S = 2000,
+  S = pars$pop,
+  E = 0, 
+  I = 1, 
+  R = 0
+)
+
+# parameters
+params = c(
+  beta = pars$beta,
+  N = sum(state),
+  alpha = 0.2,
+  gamma =0.1
+)
+# Set the dates ---------------
+# start and end dates specified as strings,
+
+start_date = range(obs$date)[1] - 1
+end_date = range(obs$date)[2]
+
+# start_date = "2020-03-01"
+# end_date = "2020-05-01"
+
+# Model specification ---------
+seir = flexmodel(
+  params = params,
+  state = state,
+  start_date = start_date,
+  end_date = end_date,
+  do_hazard = TRUE # an option to ensure computations are stable when any of the state variables approach zero (keep this switched on!)
+)
+
+## Add the rates ----------
+seir = (
+  seir
+  %>% add_rate(
+    "S", # from compartment S
+    "E", # to compartment I
+    ~ (1/N) * (beta) * (I) # expression for the flow in terms of parameters and state variables, as a formula
+  )
+  %>% add_rate("E", "I", ~ (alpha))
+  %>% add_rate("I", "R", ~ (gamma))     
+)
+
+## Set the error dist ----------
+seir_obs_err = (seir
+    %>% update_error_dist(
+    S ~ poisson(),
+    E ~ poisson(),
+    I ~ poisson(),
+    R ~ poisson()
+  )
+)
+# for reproducibility
+set.seed(15)
+
+seir_obs_err_result = (seir_obs_err
+  # turn on observation error in simluation
+  %>% simulation_history(obs_error = TRUE)
+)
+## Add incidence --------
+# update model to include incidence
+seir_obs_err_inc = (seir_obs_err
+  # add an expression to calculate in the simulation report
+  %>% add_sim_report_expr("incidence", ~ (S_to_E) * (S))
+  # add_error_dist instead of update_ because 
+  # update_ replaces previously attached error distributions
+  # add_ appends
+  %>% add_error_dist( 
+    incidence ~ poisson()
+  )
+)
+
+observed <- obs
+
+# HERE IS THE CALIBRATION PART
+seir_obs_err_inc_to_calibrate = (seir_obs_err_inc
+  # attach observed data
+  %>% update_observed(
+    observed
+  )
+  # attach priors for parameters we're fitting
+  # ("optimizing" over)
+  %>% update_opt_params(
+    # fitting log beta
+    log_beta ~ log_normal(
+      # -1, # log mean, so mean beta is exp(-1) = 0.36
+      pars$log_m,
+      pars$log_sd
+      # 0.5 # standard deviation of the log normal prior
+    )
+  )
+)
+
+# Calibrate stan ---------
+model_fit = calibrate_stan(
+    model = seir_obs_err_inc, # original model object
+    model_to_calibrate = seir_obs_err_inc_to_calibrate, # model object with observed data and priors
+    chains = 2 # number of MCMC chains
+)
+
+## Stan output -------
+fit = tidy_fit_stan(model_fit)$fit # a simple utility to attach parameter names to stan output
+rstan::summary(fit)$summary
+rstan::traceplot(fit, ncol = 1)
+
+fit_ensemble_summary = (model_fit
+  %>% ensemble_stan(n_cores = 4) # generate ensemble in parallel
+  %>% summarise_ensemble_stan()
+)
+
+head(fit_ensemble_summary)
+
+plot_ensemble(fit_ensemble_summary, observed)
+```
+## Generate ensemble
+
+```{r}
+forecasts$m1 <- (model_fit
+  %>% ensemble_stan(
+    days_to_forecast = 15, # new! number of days to forecast
+    n_cores = 4
+  )
+  %>% summarise_ensemble_stan() # can specify a different quantile vector here: see documentation
+)
+
+plot_ensemble(forecasts$m1, observed, title = 'Model forecast')
+```
+
+```{r}
+m <- forecasts$m1 %>% 
+  filter(var == 'incidence')
+
+co <- 'red4'
+
+fig$curve <- ggplot() +
+  geom_ribbon(data = m, aes(x = date, ymin = lwr, ymax = upr), alpha = 0.5, fill = co) +
+  geom_line(data = m, aes(x = date, y = value), color = co) +
+  geom_point(data = obs, aes(x = date, y = value), alpha = 0.5) +
+  geom_vline(xintercept = max(obs$date), linetype = 'dashed') +
+  labs(title = 'Model forecast')
+
+stf <- m %>% 
+  filter(between(date, max(obs$date) - 7, max(obs$date) + 15))
+
+fig$stf <- fig$curve +
+  lims(x = range(stf$date), y = range(stf$value))
+
+fig$curve
+
+fig$curve +
+  lims(x = range(stf$date), y = range(stf$value)) +
+  annotation_custom(ggplotGrob(fig$curve),
+                    xmin = max(stf$upr)*0.5, xmax = max(stf$upr)*0.9, ymin = min(stf$date), ymax = min(stf$date) + 10)
+```
+
+
+This would be the distribution of beta
+
+```{r}
+rlnorm(n = 1000, meanlog = pars$log_m, sdlog = pars$log_sd) %>% hist()
+```
+# Adding the time varying parameters
+
+```{r add a time varying beta}
+beta_new = 0.9 # Define a new beta
+
+# Format the time varying param
+param_schedule = data.frame(
+  Date = as.Date('2020-03-25'),
+  Symbol = 'beta',
+  Value = beta_new,
+  Type = 'rel_orig'
+)
+# Update the model
+seir_tv <- seir_obs_err_inc %>% 
+  update_piece_wise(param_schedule)
+
+seir_tv = (seir_obs_err_inc
+  %>% update_piece_wise(param_schedule)
+)
+
+seir_tv_result = simulation_history(seir_tv, obs_err = TRUE)
+
+observed_tv <- obs
+
+param_schedule_to_calibrate = param_schedule
+param_schedule_to_calibrate$Value = NA # setting all time-varying parameter values (just one!) to NA
+
+seir_tv_to_calibrate = (seir_tv
+  %>% update_observed(observed_tv)
+  %>% update_piece_wise(param_schedule_to_calibrate)
+  # still fit the initial beta value
+  %>% add_opt_params(
+   log_beta ~ log_normal(-1, 0.5)
+  )
+  # attach prior for beta change on 2023-04-01
+  %>% add_opt_tv_params(
+    tv_type = "rel_orig", # type of time-variation value, in this case absolute
+    log_beta ~ log_normal(-1, 0.5)
+  )
+)
+
+model_fit_tv = calibrate_stan(
+    model = seir_tv, # original model object
+    model_to_calibrate = seir_tv_to_calibrate, # model object with observed data and priors
+    chains = 2 # number of MCMC chains
+)
+
+fit = tidy_fit_stan(model_fit_tv)$fit # a simple utility to attach parameter names to stan output
+rstan::summary(fit)$summary
+rstan::traceplot(fit, ncol = 1)
+
+fit_ensemble_tv = (model_fit_tv
+ %>% ensemble_stan(n_cores = 4)
+ %>% summarise_ensemble_stan()
+)
+
+plot_ensemble(fit_ensemble_tv, observed_tv)
+```
+
+```{r}
+exp(-0.02228290)
+exp(0.02786054)
+```
+
+
+## Generate ensemble
+
+```{r}
+forecasts$m2 <- model_fit_tv %>% 
+  ensemble_stan(
+    days_to_forecast = 15, # new! number of days to forecast
+    n_cores = 4
+  ) %>% 
+  summarise_ensemble_stan() # can specify a different quantile vector here: see documentation
+
+
+fig$intialFit <- ggplot() +
+  geom_ribbon(data = filter(forecasts$m1, var == 'incidence'), aes(x = date, ymin = lwr, ymax = upr), alpha = 0.5, fill = co) +
+  geom_line(data = filter(forecasts$m1, var == 'incidence'), aes(x = date, y = value), color = co) +
+  geom_ribbon(data = filter(forecasts$m2, var == 'incidence'), aes(x = date, ymin = lwr, ymax = upr), alpha = 0.5, fill = '#5F5FAF') +
+  geom_line(data = filter(forecasts$m2, var == 'incidence'), aes(x = date, y = value), color = '#5F5FAF') +
+  geom_point(data = obs, aes(x = date, y = value), alpha = 0.5) +
+  geom_vline(xintercept = max(obs$date), linetype = 'dashed') +
+  labs(title = 'Initial model fit and forecast', y = 'Incidence') +
+  lims(x = range(stf$date), y = range(stf$value)+ c(0, max(stf$upr)*0.1))
+
+fig$intialFit
+
+ggsave(fig$intialFit, filename = '../docs/figs/initialForecast.png', height = 5, width = 8)
+```
+
+# Model validation
+
+```{r}
+
+```
+
+
+
+
+

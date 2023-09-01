@@ -1,0 +1,258 @@
+---
+title: "Sockeye Salmon Returns for Early Stewart Stock 2023" 
+format:
+  revealjs: 
+    theme: moon
+slide-level: 3
+editor: visual
+---
+
+## Group 1
+
+Group members: Jake Lawlor, Yiran Wang, Emmerson Wilson, and Garland Xie
+
+# Sockeye salmon
+
+![Fraser River Watershed](./plots/background%20info/watershed2.jpeg)
+
+------------------------------------------------------------------------
+
+![Early Stuart Stock](./plots/background%20info/watershed2%20close.jpg)
+
+## 1. Basic Ricker Model
+
+::: {.content-visible unless-format="revealjs"}
+The Ricker model is a discrete stock-recruitment model that incorporates population growth ($\alpha$) and carrying capacity ($\beta$) for Pacific Salmon. Of all the available stocks, Early Stewart population was randomly chosen since it is one of many that is sensitive to environmental changes (see below models).
+
+It assumes the chosen population experiences density dependence.
+:::
+
+Consider the following model:
+
+$$
+R_i = \alpha S_i e^{-\beta S_i} 
+$$ {#eq-1}
+
+population growth ($\alpha$) and carrying capacity ($\beta$)
+
+------------------------------------------------------------------------
+
+We can linearize to obtain simpler parameters:
+
+$$
+ln(R_i) = ln(\alpha)+ ln(S_i)-S_i/S_{max}
+$$ {#eq-2}
+
+------------------------------------------------------------------------
+
+We place priors on the following:
+
+$$
+ln(\alpha) \sim normal(\mu_{\alpha}, \tau{\alpha}) 
+$$ {#eq-4}
+
+$$
+ln(S\_{max}) \sim normal(\mu_{Smax}, \tau_{Smax})
+$$ {#eq-5}
+
+$$
+\tau \sim gamma(\theta, \theta)
+$$ {#eq-6}
+
+## 2. Alternate Models {.scrollable}
+
+Power Model
+
+Power Model with environmental covariate
+
+## Alternate 1: Power model {.scrollable}
+
+::: {.content-visible unless-format="revealjs"}
+This alternate model is basically shows that log(recruiters) depends on log(spawners). This is also known as a simple power model which does not assume density dependence.
+:::
+
+based on the assumption that log(recruiters) depends on log(spawners)
+
+$$
+R_i = e^A S_i^B
+$$ {#eq-10}
+
+------------------------------------------------------------------------
+
+We can linearize equation 10 to the following: $$
+ln(R_i) = A+B*ln(S_i)
+$$ {#eq-11}
+
+------------------------------------------------------------------------
+
+This model form has normal priors for both $A$ and $B$:
+
+$$
+A \sim normal(\mu_{A}, \tau_{A}) 
+$$ {#eq-12} $$
+B \sim normal(\mu_{B}, \tau_{B})
+$$ {#eq-13}
+
+And the same gamma prior on precision as the above models (equation 6).
+
+::: {.content-visible unless-format="revealjs"}
+Note: Jake Lawlor wrote an exploratory R script where he found a significant 1:1 relationship using the lm() function. The explanatory power is 69% (R2). Seems like a promising start for trying to forecast the Early Stewart population!
+:::
+
+## Alternate 2: Power model with temperature covariate
+
+This alternate model is an extension to the previous power model that includes the average sea surface temperatures as an environmental covariate:
+
+$$
+R_i = e^{A+gEsst_{i}} S_i
+$$ {#eq-14}
+
+------------------------------------------------------------------------
+
+We can linearize this as the following: $$
+ln(R_i) = A+B*ln(S_i)+gEsst_{i}
+$$ {#eq-15}
+
+------------------------------------------------------------------------
+
+We used the same priors for $A$, $B$, as previous above models and a normal (flat) prior for $g$:
+
+$$
+g \sim normal(\mu_g, \tau_g )
+$$ {#eq-9}
+
+## 3. Model Comparisons
+
+## Create retroactive predictions
+
+We used our models to predict recruits in years 2011-2021, then check against real data to assess model performance.
+
+## 
+
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/model_fits_plot.png")
+```
+
+## Performance Metrics
+
+Metric 1: Offset from true prediction
+
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/predicted_real_offset_plot.png")
+```
+
+## Performance Metrics
+
+Metrics 2, 3, & 4:
+
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/model_performances.png")
+```
+
+## 4. Model Suggestion
+
+In all performance metrics, our **Power & Temperature Model** performed best.
+
+## 5. Practice Forecasts
+
+We proceeded to apply our three forecast models to predict 2022 recruits.
+
+## 5. Practice Forecasts
+
+::: columns
+::: {.column width="70%"}
+```{r, out.width = "80%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/pred_plot_2022_without_real_value.png")
+```
+:::
+
+::: {.column width="30%"}
+:::
+:::
+
+
+## 5. Practice Forecasts
+
+::: columns
+::: {.column width="70%"}
+```{r, out.width = "80%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/pred_plot_2022_with_real_value.png")
+```
+:::
+
+::: {.column width="30%"}
+All models slightly under-predicted recruits, but each contained the true value within uncertainty shadow.
+
+i.e., forecasts are *okay*.
+:::
+:::
+
+## 6. Forecast 2023
+
+Seeing that our forecasts were reasonable so far, we used our models to predict recruits in 2023.
+
+## 6. Forecast the future
+
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/pred_plot_2023.png")
+
+```
+
+## 6. Forecast the future
+
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/pred_plot_2023.png")
+```
+
+PANIC! - why are predicted values so low??
+
+## 6.2 Investigate unexpected predictions
+
+We investigated model parameters to identify reasons our predictions were so low. The temperature covariate model is lowest, but all 3 values are low, indicating a probable *anomaly in the S (spawners) variable*.
+
+## 6.2 Investigate unexpected predictions
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/Spawners_plot_2023.png")
+```
+2019 spawners dip will likely affect 2023 Returns. Could this spawner count really be so low??
+
+
+## 6.2 Investigate unexpected predictions
+yes. 
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/background info/landslide_screenshot.png")
+```
+
+Considering this, our projected low values of 2023 recruits are reasonable (read: not an error on our part). 
+
+::: {.incremental}
+
+## Assessment of Stock
+
+Compared to global historical mean
+
+-   **Yellow** = prediction within +/-0.5sd of global historical mean
+
+-   **Green** = prediction larger than global historical mean by more than +0.5sd
+
+-   **Red** = prediction smaller than global historical mean by more than -0.5sd
+
+:::
+
+---
+
+```{r, out.width = "100%", fig.align = "center"}
+# put graph of models being compared here
+knitr::include_graphics("plots/stock_status.png")
+```
+
+# LIMIT FISHING TO THE EXTENT POSSIBLE
