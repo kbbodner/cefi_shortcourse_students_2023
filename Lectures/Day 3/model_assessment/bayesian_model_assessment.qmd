@@ -1,0 +1,542 @@
+---
+title: "Bayesian model assessment"
+author: "Mike Irvine"
+format:
+  revealjs:
+    preload-iframes: true
+    margin: 0.05
+    chalkboard: true
+    css: slides.css
+    theme: sky
+    transition: slide
+    background-transition: fade
+    view-distance: 9
+    auto-stretch: true
+    scrollable: true
+    html-math-method: katex
+    mermaid:
+      theme: forest
+---
+
+```{r setup}
+#| include: false
+library(carData)
+data("Wells")
+kidiq <- readr::read_csv("https://raw.githubusercontent.com/avehtari/ROS-Examples/master/KidIQ/data/kidiq.csv")
+library(tidyverse)
+library(brms)
+
+# load model fits
+fit <- readRDS(here::here(
+  "model_assessment_talk", "rds",
+  "first_model_posterior.rds"
+))
+fit_prior <- readRDS(here::here(
+  "model_assessment_talk", "rds",
+  "first_model_prior.rds"
+))
+fit_kids_posterior <- readRDS(here::here(
+  "model_assessment_talk", "rds",
+  "kidsiq_posterior.rds"
+))
+fit_kids_prior <- readRDS(here::here(
+  "model_assessment_talk", "rds",
+  "kidsiq_prior.rds"
+))
+```
+
+## Introduction
+
+::: {.fragment}
+*The Bayesian approach is “the explicit use of external evidence
+in the design, monitoring, analysis, interpretation and reporting
+of a (scientific investigation)”* **(Spiegelhalter, 2004)**
+:::
+
+::: {.fragment}
+*A Bayesian is one who, vaguely expecting to see a horse and
+catching a glimpse of a donkey, strongly concludes he has seen a
+mule.* **(Senn, 1997)**
+:::
+
+::: {.notes}
+Some ideas to structure the talk
+- Follow some examples here https://www.bayesrulesbook.com/chapter-10.html
+- Follow layout in Chapter 6 of BDA3 http://www.stat.columbia.edu/~gelman/book/BDA3.pdf
+- Follow ideas in chapter 11 of Regression and Other Stories
+- Can use Bangladesh arsenic wells example in chapter 13 of Regression and other
+stories https://github.com/avehtari/ROS-Examples/tree/master/Arsenic
+- Some more ideas in [this blogpost](https://pablobernabeu.github.io/2022/bayesian-workflow-prior-determination-predictive-checks-and-sensitivity-analyses/)
+:::
+
+## Bayesian primer
+
+:::{.incremental}
+- In maximum likelihood paradigm we try and maximize 
+$Pr(\text{Data}|\text{Parameters})$ which is the *Probability of having observed the data given some fixed parameters*
+- For example, I sample (ask) three people whether they like raisin cookies. One 
+person answers yes and two people answer no.
+- Under maximum likelihood the estimated prevalence of liking raisin cookies in
+the population is 1/3. 
+- What if we wanted to ask about the probability of people in the population 
+liking raisin cookies is greater than half? Unfortunately can't answer these 
+types of questions under maximum likelihood
+:::
+
+## Bayesian primer
+
+:::{.incremental}
+- Instead we can ask *Probability of parameter having a particular value given some data*
+or $Pr(\text{Parameters}|\text{Data})$
+- Mathematically we switch this to considering the likelihood and the prior. This
+is the probability of a parameter before observing the data and represents the 
+previous scientific and expert knowledge
+:::
+
+## Bayesian primer
+
+:::{.incremental .r-fit-text}
+- Think about this in terms of a log-probabilities
+$\log Pr(\text{Parameters}|\text{Data}) = \log Pr(\text{Data}|\text{Parameters}) + \log Pr(\text{Parameters}) + C$
+- If prior probability is low then log is much less than zero. 
+- However if evidence is high then counteracts low prior probability
+- Result is a probability statement about our value of interest given the evidence
+we've observed and previous knowledge.
+:::
+
+## Example of Bangladesh Wells
+
+::: columns
+::: {.column .r-fit-text width="40%" .incremental}
+- The data are for an area of Arahazar upazila, Bangladesh. The researchers labelled each well with its level of arsenic and an indication of whether the well was “safe” or “unsafe.” 
+- Those using unsafe wells were encouraged to switch. 
+- After several years it was determined whether each household using an unsafe well had changed its well. 
+- These data are used by [Gelman and Hill (2007)](http://www.stat.columbia.edu/~gelman/arm/) for a logistic-regression example.
+:::
+
+::: {.column width="60%"}
+  ![](figs/Bangladesh_study.jpeg){fig-align="center" width="90%"}
+:::
+:::
+
+::: footer
+[Jamil, Nadia B., et al. "Effectiveness of different approaches to arsenic mitigation over 18 years in Araihazar, Bangladesh: implications for national policy." *Environmental Science & Technology* 53.10 (**2019**): 5596-5604.](https://doi.org/10.1021/acs.est.9b01375)
+:::
+
+## Data exploration
+
+```{r}
+Wells %>%
+  ggplot(aes(fill = switch, x = distance)) +
+  geom_density(alpha = 0.5) +
+  geom_rug(aes(color = switch)) +
+  xlab("Distance to closest safe well (m)")
+```
+
+## Data exploration
+
+```{r}
+Wells %>%
+  ggplot(aes(fill = switch, x = arsenic)) +
+  geom_density(alpha = 0.5) +
+  geom_rug(aes(color = switch)) +
+  xlab("the level of arsenic contamination in the\n household's original well,\n in hundreds of micrograms per liter")
+```
+
+## Data exploration
+
+```{r}
+Wells %>%
+  ggplot(aes(fill = switch, x = education)) +
+  geom_bar() +
+  xlab("Education in years of the head of the household")
+```
+
+## Data exploration
+
+```{r}
+Wells %>%
+  ggplot(aes(fill = switch, x = association)) +
+  geom_bar() +
+  xlab("Whether or not any members of the\n household participated in any community organizations")
+```
+
+## Potential first model
+
+```{mermaid}
+flowchart LR
+
+subgraph Priors
+  mean0[Mean = 0]
+  sd10[Standard Deviation = 10]
+  np[Normal Prior]
+  mean0 --> np
+  sd10 --> np
+end
+
+np --> A
+np --> C
+A[distance] --> B(inv-logit probability)
+C[arsenic] --> B
+
+subgraph Likelihood
+  B --> D{Swtich}
+end
+```
+
+:::{.incremental .r-fit-text}
+- Two covariates named arsenic and distance
+- Both covariates have a normal prior with mean 0 and standard deviation 10
+- The inverse logit probability for each observation is a linear combination of the above
+- The outcome labeled switch is a Bernoulli trial with probability being defined above
+:::
+
+## Generate first model
+
+```{r}
+#| eval: false
+#| echo: true
+bprior <- c(
+  prior_string("normal(0,10)", coef = "distance", class = "b"),
+  prior_string("normal(0,10)", coef = "arsenic", class = "b")
+)
+wells_data <- Wells %>% mutate(switch_numeric = if_else(switch == "yes", 1, 0))
+fit <- brm(switch_numeric ~ distance + arsenic,
+  data = wells_data, family = bernoulli(),
+  prior = bprior, chains = 2, iter = 1000, cores = 2
+  )
+fit %>% saveRDS(here::here(
+  "model_assessment_talk", "rds",
+  "first_model_posterior.rds"
+))
+```
+
+## First step: sanity checks
+
+```{r}
+#| eval: true
+#| echo: true
+summary(fit,priors=TRUE)
+```
+:::{.incremental .r-fit-text}
+- Does structure of the model conform with our understanding?
+- Do model estimates make sense? Can they be negative or extend over the range
+indicated by the credible interval?
+- Are generated observations from the posterior meaningful?
+:::
+
+
+## Conditional effects
+
+```{r}
+plot(conditional_effects(fit,effects="distance"), ask = FALSE)
+```
+
+## Conditional effects
+
+```{r}
+plot(conditional_effects(fit,effects="arsenic"), ask = FALSE)
+```
+
+## Prior predictive check
+
+```{mermaid}
+flowchart LR
+
+subgraph Priors
+  mean0[Mean = 0]
+  sd10[Standard Deviation = 10]
+  np[Normal Prior]
+  mean0 --> np
+  sd10 --> np
+end
+
+np --> A
+np --> C
+A[distance] --> B(inv-logit probability)
+C[arsenic] --> B
+
+subgraph Likelihood
+  B --> D{Swtich}
+end
+```
+
+- Using a generative data model, so we can always sample parameters and observations
+- Can decompose model into prior and likelihood. Pretend we haven't observed 
+any data to understand how prior influences resulting sample observations
+
+## Prior predictive check to determine appropriate scale Wells example
+
+```{r}
+#| eval: false
+#| echo: true
+bprior <- c(
+  prior_string("normal(0,10)", coef = "distance", class = "b"),
+  prior_string("normal(0,10)", coef = "arsenic", class = "b")
+)
+fit_prior <- brm(switch_numeric ~ distance + arsenic,
+  data = wells_data,
+  family = bernoulli(), prior = bprior,
+  sample_prior = "only", chains = 2, iter = 1000, cores = 2
+)
+fit_prior %>% saveRDS(here::here(
+  "model_assessment_talk", "rds",
+  "first_model_prior.rds"
+))
+```
+
+## Prior predictive check - arsenic
+
+```{r}
+expand_grid(arsenic=seq(0,10,by=1),
+            distance=seq(0,300,by=25)) %>% 
+  tidybayes::add_predicted_draws(fit_prior) %>% 
+  filter(.draw <= 10) %>% 
+  group_by(arsenic,.draw) %>% 
+  summarise(arsenic = first(arsenic),
+            predicted = mean(.prediction)) %>% 
+  mutate(.draw = as_factor(.draw)) %>% 
+  ggplot(aes(x=arsenic,y=predicted,group=.draw,color=.draw)) +
+  geom_line()
+```
+
+
+## Prior predictive check - distance
+
+```{r}
+expand_grid(arsenic=seq(0,10,by=1),
+            distance=seq(0,300,by=25)) %>% 
+  tidybayes::add_predicted_draws(fit_prior) %>% 
+  filter(.draw <= 10) %>% 
+  group_by(distance,.draw) %>% 
+  summarise(distance = first(distance),
+            predicted = mean(.prediction)) %>% 
+  mutate(.draw = as_factor(.draw)) %>% 
+  ggplot(aes(x=distance,y=predicted,group=.draw,color=.draw)) +
+  geom_line()
+```
+
+## Prior predictive check - switching
+
+```{r}
+pp_check(fit_prior)
+```
+
+## Prior predictive check
+
+- Analogy: *Checking over your shoulder before merging*
+- Can determine whether priors are providing too much or too little flexibility
+- Can spot issues in data, for example coefficients are on different scales
+
+## Assessment for a linear model
+
+```{r}
+#| eval: false
+fit_kids_prior <- brm(kid_score ~ mom_iq,
+           data = kidiq, family = gaussian(),
+           prior = c(prior_string("normal(0,10")), 
+           sample_prior = "only",
+           chains = 2, iter = 500, cores = 2
+)
+fit_kids_prior %>% saveRDS(here::here(
+  "model_assessment_talk", "rds",
+  "kidsiq_prior.rds"
+))
+
+fit_kids_posterior <- brm(kid_score ~ mom_iq,
+           data = kidiq, family = gaussian(),
+           prior = c(prior_string("normal(0,10")), chains = 2, iter = 500, cores = 2
+)
+fit_kids_posterior %>% saveRDS(here::here(
+  "model_assessment_talk", "rds",
+  "kidsiq_posterior.rds"
+))
+```
+
+```{r}
+kidiq %>% 
+  ggplot(aes(x=mom_iq,y=kid_score)) +
+  geom_point() +
+  labs(x="Mother IQ score", y="Child IQ score")
+```
+
+## Linear model - prior predictive check
+
+```{r}
+pp_check(fit_kids_prior)
+```
+
+## Linear model - prior predictive check
+
+```{r}
+kidiq %>%
+  modelr::data_grid(mom_iq = modelr::seq_range(mom_iq, n = 10)) %>%
+  # NOTE: this shows the use of ndraws to subsample within add_epred_draws()
+  # ONLY do this IF you are planning to make spaghetti plots, etc.
+  # NEVER subsample to a small sample to plot intervals, densities, etc.
+  tidybayes::add_epred_draws(fit_kids_prior, ndraws = 100) %>%   # sample 100 means from the posterior
+  ggplot(aes(x=mom_iq, y=kid_score)) +
+  geom_line(aes(y = .epred, group = .draw), alpha = 1/20, color = "#08519C") +
+  geom_point(data = kidiq) +
+  labs(x="Mother IQ score", y="Child IQ score")
+
+```
+
+## Assessing Model Performance
+
+- Information Criterion approaches (e.g. WAIC)
+- Cross validation using a k-folds approach
+- Cross-validation using leave-one-out
+
+## Leave-one-out cross-validation example
+
+```{r}
+loo(fit)
+```
+
+## LOO - linear example
+
+```{r}
+pp_check(fit_kids_posterior,type="loo_intervals")
+```
+
+## Cross-validation for time-series Leave-Future-Out (LFO)
+
+```{r}
+d <- 
+  (1:5) %>% 
+  purrr::map_df(function(y){
+    tibble(y=y - 0.5,
+           x_start = 0,
+           x_end = y*10,
+           val_start = y*10 + 1,
+           val_end = y*10 + 10) 
+  })
+
+d %>%
+  ggplot(group=y) +
+  geom_rect(aes(ymin=y+0.1, ymax = y+1-0.1, xmin=x_start,xmax=x_end),
+            fill="skyblue") +
+  geom_rect(aes(ymin=y+0.1, ymax = y+1-0.1, xmin=val_start,xmax=val_end),
+            fill="brown1")  +
+  theme_classic() +
+  labs(x = "time", y = "replicate")
+
+```
+
+::: {.notes}
+See this [blog post](http://mc-stan.org/loo/articles/loo2-lfo.html#m-step-ahead-predictions-leaving-out-all-future-values)
+:::
+
+## Posterior predictive check
+
+```{mermaid}
+flowchart LR
+
+subgraph Priors
+  mean0[Mean = 0]
+  sd10[Standard Deviation = 10]
+  np[Normal Prior]
+  mean0 --> np
+  sd10 --> np
+end
+
+np --> A
+np --> C
+A[distance] --> B(inv-logit probability)
+C[arsenic] --> B
+
+subgraph Likelihood
+  B --> D{Swtich}
+end
+```
+
+:::{.incremental .r-fit-text}
+- Posterior combines information from the prior and information from the data (likelihood)
+- Data should look "uninteresting" when compared to samples from the posterior
+:::
+
+## Linear example of posterior predictive check
+
+```{r}
+fit_kids_posterior %>% pp_check()
+```
+
+## Linear model - posterior predictive check
+
+```{r}
+kidiq %>%
+  modelr::data_grid(mom_iq = modelr::seq_range(mom_iq, n = 10)) %>%
+  # NOTE: this shows the use of ndraws to subsample within add_epred_draws()
+  # ONLY do this IF you are planning to make spaghetti plots, etc.
+  # NEVER subsample to a small sample to plot intervals, densities, etc.
+  tidybayes::add_epred_draws(fit_kids_posterior, ndraws = 100) %>%   # sample 100 means from the posterior
+  ggplot(aes(x=mom_iq, y=kid_score)) +
+  geom_line(aes(y = .epred, group = .draw), alpha = 1/20, color = "#08519C") +
+  geom_point(data = kidiq) +
+  labs(x="Mother IQ score", y="Child IQ score")
+
+```
+
+## Sensitivity Analysis
+
+- Highlight the significance of sensitivity analysis in Bayesian modeling
+- Discuss how varying model parameters can help assess the robustness of model predictions
+- Provide an example of investigating the sensitivity of disease transmission rates
+
+## Generating and interpreting residuals for a Bayesian model
+
+- Residuals can be generated in a similar way to maximum likelihood models
+- Residuals come with uncertainty due to uncertainty generated around observation process
+- Similarly residuals can be used to assess model fit, accuracy, bias, or miss-specification
+- Additionally way of generating Bayesian "p-values". 
+
+## Bayesian residuals- Linear example
+
+```{r}
+kidiq %>%
+  tidybayes::add_residual_draws(fit_kids_posterior) %>%
+  ggplot(aes(x = .row, y = .residual)) +
+  tidybayes::stat_pointinterval()
+```
+
+
+## Bayesian p-value Q-Q plot
+
+```{r}
+kidiq %>%
+  tidybayes::add_predicted_draws(fit_kids_posterior) %>%
+  summarise(
+    p_residual = mean(.prediction < kid_score),
+    z_residual = qnorm(p_residual),
+    .groups = "drop_last"
+  ) %>%
+  ggplot(aes(sample = z_residual)) +
+  geom_qq() +
+  geom_abline()
+```
+
+## Data mining the residuals
+
+:::{.incremental .r-fit-text}
+
+- Wide variety of Data Mining algorithms in use
+- Large debate about use in process modeling and forecasting
+- Potentially useful for generating hypothesis about when/where model fails
+- Potential approaches
+  - CART
+  - GAM
+  - Random Forests
+  - Boosted regression trees
+  - Artificial Neural Network
+  - Support Vector Machines
+  
+:::
+
+## Conclusion
+
+- Bayesian model construction and development similar to maximum likelihood approach
+- Check model reasoning, under- or over-fitting, bias, and miss-specification
+- In addition need to check reasoning of the prior
+
+

@@ -28,6 +28,12 @@ Pair coding, or literally coding in pairs, is a helpful exercise for those still
 
 The goal here is to walk you through key concepts such as making a pull request and reviewing code. This is essential to work through to be able to effectively work together to improve code and efficiency. There are a number of steps in this activity that require you to move back and forth between one person and the other driving the activity, so if it's just you by yourself, you'll need a bit of imagination. 
 
+### Activity 3 - MSE Activity
+
+There are two main parts to this activity. The first starts on slide 25, with an exercise that helps you work through a challenging ecological problem of your own. 
+
+After, you'll find a link to website which you'll use to walk through the MSE activity. 
+
 ### Activity 4 - Writing Lay Summaries
 
 This activity is hard to replicate asynchronously, but the goal here is to provide insight into what goes into a lay summary or a news brief, and then to give you the time and context to work through writing a lay summary for your own work. You can pick any project you're currently working on, but select one, and after reading through the beginning slides, follow the instructions to write your own summary. 
