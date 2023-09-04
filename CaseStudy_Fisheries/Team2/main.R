@@ -1,0 +1,12 @@
+# main script
+source("01_preparation.R")
+source("02_covariate_selection.R")
+source("03a_baseline_ricker.R")
+source("03b_ricker_env_covariate.R")
+source("03c_naive_model.R")
+source("03d_multiple_model.R")
+source("03e_power_model.R")
+source("03f_LM_naive_model.R")
+source("04_performance.R")
+source("05_power_uncertainty.R")
+source("06_graphs.R")

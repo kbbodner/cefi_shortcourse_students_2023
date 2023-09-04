@@ -1,0 +1,78 @@
+---
+title: "State of the Stock 2023"
+author: "Lukas Van Riel, Effie Gao, Jesus Pascual, Jack A. Goldman"
+format:
+  revealjs:
+    logo: EFI_logo.png
+    css: style.css
+    incremental: true  
+---
+
+## Fraser River Sockeye Fishery {.smaller}
+
+
+:::: {.columns}
+
+::: {.incremental}
+::: {.column width="60%"}
+- 2019 and 2020 lowest recorded Fraser Sockeye return ever
+- Management plans led to reduced fishing opportunities
+- **Early Stuart**
+  - fish that return to spawn in early summer
+- 2019 forecast found evidence of population declines
+- 2021 forecast suggest the stock will not reach recovery target
+
+:::
+
+:::
+
+::: {.column width="30%"}
+![](stuart-lake-system.png){.absolute top=100 right=-100 width="450" height="500"}
+:::
+
+::::
+
+
+##  State of the population
+
+![](state-of-pop.png){fig-align="center"}
+
+## Goals
+
+- Previous forecasting methods are old and out of date
+
+- **Goal**: develop new forecasting methods and evaluate performance
+
+
+## Candidate models
+- Five models:
+  - Basic Ricker
+  - Ricker with Env. Covariate
+  - Power Model
+  - Naive
+  - Naive Linear Model
+- We compared the performance of the models using RMSE
+
+
+## Model comparisons
+
+![](performance_plot){fig-align="center"}
+
+## Proof of Concept Forecast 
+
+![](timeseries.png){fig-align="centre"} 
+## Proof of Concept Forecast
+
+![](timeseries+pred.png){fig-align="center"}
+
+
+## Proof of Concept Forecast
+
+![](timeseries+pred+zoom.png){fig-align="center"}
+
+
+## Recommendation 
+
+![](state-of-pop.png){fig-align="left"} 
+
+## Thank you
