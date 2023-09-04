@@ -32,7 +32,7 @@ The goal here is to walk you through key concepts such as making a pull request 
 
 There are two main parts to this activity. The first starts on slide 25, with an exercise that helps you work through a challenging ecological problem of your own. 
 
-After, you'll find a link to website which you'll use to walk through the MSE activity. 
+After, you'll find a link to website which you'll use to walk through the MSE activity. Please use this content to improve your understanding, especially if you intend on working through the fisheries case study. 
 
 ### Activity 4 - Writing Lay Summaries
 
