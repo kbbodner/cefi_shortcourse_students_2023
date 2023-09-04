@@ -4,6 +4,19 @@ Welcome! This repository contains all materials from the Canadian Ecological For
 
 In the spirit of having this course be as open as possible, we have put all the course materials here on this GitHub page, including lectures, exercises and forecast modelling materials for three case studies: Infectious Disease Control, Fisheries Management, Water Quality Monitoring. For a description of the course's overall objectives, please see [here](http://www.fields.utoronto.ca/activities/23-24/forecasting).
 
+However, please note that the content here does not all belong exclusively to CEFI. CEFI-specific content presented here is governed by a CC-BY 4.0 licence, but all other content herein is owned by it's original creator and CEFI does not hold rights or permissions. 
+
+Shield: [![CC BY 4.0][cc-by-shield]][cc-by]
+
+This work is licensed under a
+[Creative Commons Attribution 4.0 International License][cc-by].
+
+[![CC BY 4.0][cc-by-image]][cc-by]
+
+[cc-by]: http://creativecommons.org/licenses/by/4.0/
+[cc-by-image]: https://i.creativecommons.org/l/by/4.0/88x31.png
+[cc-by-shield]: https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg
+
 ## How to Use This Repository
 
 All code and documentation herein is free to use! If you were unable to make it to the course in person, or simply want to go through this material on your own time, please feel free. This repository is structured into 3 main sections.
