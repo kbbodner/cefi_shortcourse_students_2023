@@ -26,7 +26,9 @@ ymd <- lubridate::ymd
 ## Load the BC COVID-19 data
 
 # load data grouped by location (HA), and age group
-covid_data <- read_csv(here("data","fitting_data.csv"))
+covid_data <- read_csv(
+  here("./CaseStudy_Covid19/covid-bc/team-3/data/fitting_data.csv")
+  )
 
 
 covid_data %>%
@@ -37,7 +39,9 @@ covid_data %>%
   theme_classic()
 
 # Load Total BC cases for whole province for first 60 recorded time-points
-bc_data <- read_csv(here("data","bc_fitting_data.csv"))
+bc_data <- read_csv(
+  here("./CaseStudy_Covid19/covid-bc/team-3/data/bc_fitting_data.csv")
+  )
 
 bc_data %>%
   ggplot(aes(x = Reported_Date, y = n)) +
