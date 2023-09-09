@@ -43,7 +43,7 @@ reported-case data.
 
 ```{r load bc data}
 # load data grouped by location (HA), and age group
-covid_data <- read_csv("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/data/validation_data.csv")
+covid_data <- read_csv(here("./CaseStudy_Covid19/covid-bc/data/validation_data.csv"))
 
 covid_data %>%
   group_by(Reported_Date, HA) %>%
@@ -53,10 +53,10 @@ covid_data %>%
   theme_classic()
 
 # Load Total BC cases for whole province for first 60 recorded time-points
-bc_data1 <- read_csv("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/data/bc_fitting_data.csv")
+bc_data1 <- read_csv(here("./CaseStudy_Covid19/covid-bc/data/bc_fitting_data.csv"))
 
 # Load Total BC cases for whole province for first 60 recorded time-points
-bc_data2 <- read_csv("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/data/bc_validation_data.csv")
+bc_data2 <- read_csv(here("./CaseStudy_Covid19/covid-bc/data/bc_validation_data.csv"))
 
 bc_data.new <- rbind(bc_data1, bc_data2)
 
@@ -148,7 +148,7 @@ Poisson observation process. The following chunk
 prints the lines contained in the `stan` file
 
 ```{r read stan model}
-code_extended <- readLines("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/extended_seir_model.stan")
+code_extended <- readLines(here("./CaseStudy_Covid19/covid-bc/stan_models/extended_seir_model.stan"))
 
 cat(code_extended, sep = "\n")
 ```
@@ -157,7 +157,7 @@ We run the following to compile the model
 
 ```{r compile stan model}
 
-model_extended <- stan_model("/Users/johnmensah/Documents/Ecological\ Forecasting_Workshop/Team\ 4/CaseStudy_Covid19/covidseir/stan_models/extended_seir_model.stan")
+model_extended <- stan_model(here("./CaseStudy_Covid19/covid-bc/stan_models/extended_seir_model.stan"))
 ```
 
 Note what is provided in the "data" block of the Stan code. That is what
@@ -219,7 +219,8 @@ time_dictionary <- bc_data.new %>%
   mutate(t = 1:n())
 
 ########## Infected Individuals###########
-ggsave("Infected.mask.jpeg", fit_extended %>%
+ggsave(here("./CaseStudy_Covid19/covid-bc/team-4/figures/Infected.mask.jpeg")
+       , fit_extended %>%
   spread_draws(y_hat[t, i]) %>%
   left_join(state_dictionary, by = "i") %>%
   left_join(time_dictionary, by = "t") %>%
@@ -230,7 +231,7 @@ ggsave("Infected.mask.jpeg", fit_extended %>%
 
 
 ############### Exposed individuals##################
-ggsave("Exposed.mask.jpeg", fit_extended %>%
+ggsave(here("./CaseStudy_Covid19/covid-bc/team-4/figures/Exposed.mask.jpeg"), fit_extended %>%
   spread_draws(y_hat[t, i]) %>%
   left_join(state_dictionary, by = "i") %>%
   left_join(time_dictionary, by = "t") %>%
@@ -241,7 +242,7 @@ ggsave("Exposed.mask.jpeg", fit_extended %>%
 
 
 ############### Recovered Individuals##################
-ggsave("Recovered.mask.jpeg", fit_extended %>%
+ggsave(here("./CaseStudy_Covid19/covid-bc/team-4/figures/Recovered.mask.jpeg"), fit_extended %>%
   spread_draws(y_hat[t, i]) %>%
   left_join(state_dictionary, by = "i") %>%
   left_join(time_dictionary, by = "t") %>%
@@ -251,7 +252,7 @@ ggsave("Recovered.mask.jpeg", fit_extended %>%
   scale_fill_brewer() + ylab("Recovered Individuals") + theme_bw() )
 
 ############### Susceptible Individuals##################
-ggsave("Susceptible.mask.jpeg", fit_extended %>%
+ggsave(here("./CaseStudy_Covid19/covid-bc/team-4/figures/Susceptible.mask.jpeg"), fit_extended %>%
   spread_draws(y_hat[t, i]) %>%
   left_join(state_dictionary, by = "i") %>%
   left_join(time_dictionary, by = "t") %>%
@@ -268,7 +269,7 @@ time_dictionary <- bc_data.new %>%
   select(Reported_Date) %>%
   mutate(t = 1:n())
 
-ggsave("fitted.mask.jpeg", fit_extended %>%
+ggsave(here("./CaseStudy_Covid19/covid-bc/team-4/figures/fitted.mask.jpeg"), fit_extended %>%
   spread_draws(cases[t]) %>%
   left_join(time_dictionary, by = "t") %>%
   ggplot(aes(x = Reported_Date)) +

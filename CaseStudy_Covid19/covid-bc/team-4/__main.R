@@ -5,8 +5,5 @@
 library(here)
 
 # run with the stan case study =================================================
-source(here("./CaseStudy_Covid19/covid-bc/team-3/R/02_prepare_data.R"))
-
-source(here("./CaseStudy_Covid19/covid-bc/team-3/R/03_negbin_seir.R"))
-
-source(here("./CaseStudy_Covid19/covid-bc/team-3/R/04_mask_seir.R"))
+source(here(
+  "./CaseStudy_Covid19/covid-bc/team-4/R/introduction_stan_seir_case_new_model_res.Qmd"))

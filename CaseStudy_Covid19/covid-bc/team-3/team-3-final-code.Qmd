@@ -321,7 +321,10 @@ fit <- sampling(model,
 )
 
 # Save stan fit with no masking
-saveRDS(fit, "output/STAN_model_fit_0maskeff.rds")
+saveRDS(
+  fit, 
+  here(
+    "./CaseStudy_Covid19/covid-bc/team-3/output/STAN_model_fit_0maskeff.rds"))
 
 # Save stan fit with 90% mask effectiveness
 # saveRDS(fit, "output/STAN_model_fit_90maskeff.rds")
