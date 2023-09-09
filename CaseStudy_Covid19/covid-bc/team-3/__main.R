@@ -4,5 +4,9 @@
 # set up =======================================================================
 library(here)
 
-# run original stan case study =================================================
+# run with the stan case study =================================================
 source(here("./CaseStudy_Covid19/covid-bc/team-3/R/02_prepare_data.R"))
+
+source(here("./CaseStudy_Covid19/covid-bc/team-3/R/03_negbin_seir.R"))
+
+source(here("./CaseStudy_Covid19/covid-bc/team-3/R/04_mask_seir.R"))

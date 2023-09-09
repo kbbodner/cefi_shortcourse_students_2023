@@ -1,14 +1,9 @@
-## Prepare data
-
-source("02_prepare_data.R")
-
 ## Setting up the model
 
 # We run the following to compile the model
 
 model <- stan_model(here(
-  "stan_models",
-  "negbin_seir_model.stan"
+  "./CaseStudy_Covid19/covid-bc/team-3/stan-models/negbin_seir_model.stan"
 ))
 
 # Note what is provided in the "data" block of the Stan code. That is what
@@ -65,7 +60,7 @@ fit %>%
   ggplot(aes(x = Reported_Date)) +
   stat_lineribbon(aes(y = y_hat), .width = c(.99, .95, .8, .5)) +
   scale_fill_brewer()
-ggsave(here("figures", "negbin_model.png"),
+ggsave(here("./CaseStudy_Covid19/covid-bc/team-3/figures/negbin_model.png"),
        width=8, height=6, units="in")
 
 # Compare posterior predictive distribution of cases to actual cases,
@@ -81,7 +76,7 @@ fit %>%
   stat_lineribbon(aes(y = cases), .width = c(.99, .95, .8, .5), color = "#08519C") +
   scale_fill_brewer() +
   geom_point(data = bc_data, aes(x = Reported_Date, y = n))
-ggsave(here("figures", "negbin_posterior.png"),
+ggsave(here("./CaseStudy_Covid19/covid-bc/team-3/figures/negbin_posterior.png"),
        width=8, height=6, units="in")
 
 # Compare the forecasted predictive distribution of cases to actual cases,
@@ -111,5 +106,6 @@ fit %>%
   ) +
   scale_fill_brewer() +
   geom_point(data = bc_data, aes(x = Reported_Date, y = n))
-ggsave(here("figures", "negbin_forecasting.png"),
+ggsave(
+  here("./CaseStudy_Covid19/covid-bc/team-3/figures/negbin_forecasting.png"),
        width=8, height=6, units="in")

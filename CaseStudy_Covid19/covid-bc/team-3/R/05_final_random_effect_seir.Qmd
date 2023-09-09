@@ -44,7 +44,8 @@ reported-case data.
 
 ```{r load bc data and plot}
 # load data grouped by location (HA), and age group
-covid_data <- read_csv(here("data","fitting_data.csv"))
+covid_data <- read_csv(
+  here("./CaseStudy_Covid19/covid-bc/team-3/data/fitting_data.csv"))
 
 # Make a plot showing cases by region in BC over time 
 covid_data %>%
@@ -94,7 +95,8 @@ covid_data_gr <- covid_data %>%
 # to the regional data, filling in the missing values with 0s.
 
 # Load Total BC cases for whole province for first 60 recorded time-points
-bc_data <- read_csv(here("data","bc_fitting_data.csv"))
+bc_data <- read_csv(
+  here("./CaseStudy_Covid19/covid-bc/team-3/data/bc_fitting_data.csv"))
 
 # Keep only the bc date/time columns
 bc_dat_time <- bc_data %>% 
@@ -257,8 +259,7 @@ prints the lines contained in the `stan` file
 ```{r read stan model}
 
 code <- readLines(here(
-  "stan_models",
-  "final_seir_model.stan"
+  "./CaseStudy_Covid19/covid-bc/team-3/stan-models/final_seir_model.stan"
 ))
 
 cat(code, sep = "\n")
@@ -269,8 +270,7 @@ We run the following to compile the model
 ```{r compile stan model}
 
 model <- stan_model(here(
-  "stan_models",
-  "final_seir_model.stan"
+  "./CaseStudy_Covid19/covid-bc/team-3/stan-models/final_seir_model.stan"
 ))
 ```
 
