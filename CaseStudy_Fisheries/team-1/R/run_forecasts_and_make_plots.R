@@ -18,8 +18,7 @@ pal <- wesanderson::wes_palette("Zissou1")[c(1,4,5)]
 # upload data -------------------------------------------------------------
 
 # full dataset
-data <- read.csv(here::here("CaseStudy_Fisheries",
-                            "DataIn","FraserSockeyeData2022.csv"))
+data <- read.csv(here::here("./CaseStudy_Fisheries/DataIn/FraserSockeyeData2022.csv"))
 # subset to Early Stuart
 ESData <- data %>%
   filter(Pop_Name == "Early Stuart")
@@ -42,8 +41,7 @@ rm(data)
 
 
 # upload environmental data
-env <- read.csv(here::here("CaseStudy_Fisheries","DataIn",
-                           "FC_Environmental_Data.csv"))
+env <- read.csv(here::here("./CaseStudy_Fisheries/DataIn/FC_Environmental_Data.csv"))
 
 # get a vector of average summer sst
 cov_sst <- env %>% 
@@ -62,8 +60,8 @@ rm(env)
 
 
 # upload functions --------------------------------------------------------
-source(here::here("CaseStudy_Fisheries","Group_1_work","Function_new.R"))
-source(here::here("CaseStudy_Fisheries","Code","Functions.R"))
+source(here::here("./CaseStudy_Fisheries/team-1/Function_new.R"))
+source(here::here("./CaseStudy_Fisheries/Code/Functions.R"))
 
 
 
@@ -231,8 +229,7 @@ ggview::ggview(full_output_plot,
 ggsave(full_output_plot,
        width = 6, height = 5,
        units = "in",
-       file = here::here("CaseStudy_Fisheries","Group_1_work",
-                         "plots","model_fits_plot.png"))
+       file = here::here("./CaseStudy_Fisheries/team-1/plots/model_fits_plot.png"))
 
 
 
@@ -316,16 +313,13 @@ ggview::ggview(offset_plot,
 ggsave(offset_plot,
        width = 6, height = 3.5,
        units = "in",
-       file = here::here("CaseStudy_Fisheries","Group_1_work",
-                         "plots","predicted_real_offset_plot.png"))
+       file = here::here("./CaseStudy_Fisheries/team-1/plots/predicted_real_offset_plot.png"))
 
 
 # save out model predictions 
 write.csv(final,
           row.names = F, 
-          file = here::here("CaseStudy_Fisheries",
-                            "Group_1_work",
-                            "model_predictions_2011_2023.csv"))
+          file = here::here("./CaseStudy_Fisheries/team-1/plots/model_predictions_2011_2023.csv"))
 
 range(final$offset, na.rm=T)
 
@@ -374,8 +368,7 @@ ggview::ggview(model_perf,
 ggsave(model_perf,
        width = 6, height = 4,
        units = "in",
-       file = here::here("CaseStudy_Fisheries","Group_1_work",
-                         "plots","model_performances.png"))
+       file = here::here("./CaseStudy_Fisheries/team-1/plots/model_performances.png"))
 
 final %>%
   tidyr::drop_na(Mod, offset) %>%
@@ -395,8 +388,7 @@ rm(last_10_pred_power, last_10_pred_powercov, last_10_pred_ricker,
 # forecast for 2022 AND CHECK-------------------------------------------------------
 
 # upload 2023 data
-data23 <- read.csv(here::here("CaseStudy_Fisheries",
-                            "DataIn","FraserSockeyeData2023_Wednesday.csv"))
+data23 <- read.csv(here::here("./CaseStudy_Fisheries/DataIn/FraserSockeyeData2023_Wednesday.csv"))
 # subset to Early Stuart
 ESData23 <- data23 %>%
   filter(Pop_Name == "Early Stuart")
@@ -488,8 +480,7 @@ ggview::ggview(pred_2022,
 ggsave(pred_2022,
        width = 5, height = 5,
        units = "in",
-       file = here::here("CaseStudy_Fisheries","Group_1_work",
-                         "plots","pred_plot_2022_without_real_value.png"))
+       file = here::here("./CaseStudy_Fisheries/team-1/plots/pred_plot_2022_without_real_value.png"))
 
 
 
@@ -545,11 +536,7 @@ ggview::ggview(pred_2022_w_real,
 ggsave(pred_2022_w_real,
        width = 5, height = 5,
        units = "in",
-       file = here::here("CaseStudy_Fisheries","Group_1_work",
-                         "plots","pred_plot_2022_with_real_value.png"))
-
-
-
+       file = here::here("./CaseStudy_Fisheries/team-1/plots/pred_plot_2022_with_real_value.png"))
 
 
 # forecast for 2023 -------------------------------------------------------
@@ -652,8 +639,7 @@ ggview::ggview(pred_2023,
 ggsave(pred_2023,
        width = 5, height = 5,
        units = "in",
-       file = here::here("CaseStudy_Fisheries","Group_1_work",
-                         "plots","pred_plot_2023.png"))
+       file = here::here("./CaseStudy_Fisheries/team-1/plots/pred_plot_2023.png"))
 
 
 
@@ -700,8 +686,7 @@ ggview::ggview(S_plot,
 ggsave(S_plot,
        width = 5, height = 3,
        units = "in",
-       file = here::here("CaseStudy_Fisheries","Group_1_work",
-                         "plots","Spawners_plot_2023.png"))
+       file = here::here("./CaseStudy_Fisheries/team-1/plots/Spawners_plot_2023.png"))
 
 rm(pred_2022, pred_2023, ribbon_data, ribbon_data_23, S_plot)
 
@@ -774,5 +759,4 @@ ggview::ggview(stock_status,
 ggsave(stock_status,
        width = 6, height = 5,
        units = "in",
-       file = here::here("CaseStudy_Fisheries","Group_1_work",
-                         "plots","stock_status.png"))
+       file = here::here("./CaseStudy_Fisheries/team-1/plots/stock_status.png"))
