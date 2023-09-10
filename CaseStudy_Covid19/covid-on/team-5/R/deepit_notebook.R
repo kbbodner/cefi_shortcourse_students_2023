@@ -2,7 +2,8 @@
 
 # try model run
 library("here")
-source(here::here("team-5/utilities.R"))
+source(here::here("./CaseStudy_Covid19/covid-on/team-5/R/utilities.R"))
+
 # initial state, in units of individuals
 state = c(
   S = 14865000, #S = susceptible
@@ -20,7 +21,7 @@ params = c(
 )
 
 
-source(here::here("team-5/models.R"))
+source(here::here("./CaseStudy_Covid19/covid-on/team-5/R/team-5/models.R"))
 
 #source(here::here("team-5/pull_data.R"))
 

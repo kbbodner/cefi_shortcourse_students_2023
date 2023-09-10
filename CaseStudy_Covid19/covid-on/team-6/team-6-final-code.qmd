@@ -4,6 +4,20 @@ format: html
 editor: visual
 ---
 
+library(rstan) \# for additional R Stan tools
+
+library(dplyr)
+
+library(tidyr)
+
+library(here)
+
+library(readr)
+
+library(ggplot2)
+
+library(ggpubr)
+
 ```{r}
 #| label: setup
 #| message: false
@@ -12,16 +26,11 @@ editor: visual
 # mandatory setup for working with macpan and stan
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 library(McMasterPandemic)
-# source(here::here("R", "tmbstan_tools.R")) # some custom tools for connecting McMasterPandemic and Stan, they're documented fully in that file
-source('../R/tmbstan_tools.R')
 setup_stan() # some required set up for using Stan with McMasterPandemic
-library(rstan) # for additional R Stan tools
-library(dplyr)
-library(tidyr)
-library(here)
-library(readr)
-library(ggplot2)
-library(ggpubr)
+
+
+# source(here::here("R", "tmbstan_tools.R")) # some custom tools for connecting McMasterPandemic and Stan, they're documented fully in that file
+source(here('./CaseStudy_Covid19/covid-on/R/tmbstan_tools.R'))
 
 theme_set(
   theme_bw(base_size = 16)
@@ -36,14 +45,13 @@ models <- list()
 #| label: Some functions used
 ```
 
-
 # Read Case data
 
 ```{r}
 #| label: data
 #| message: false
 
-cases = read_csv('../data/fitting.csv') # read the cases
+cases = read_csv(here('./CaseStudy_Covid19/covid-on/data/fitting.csv'))# read the cases
 # Transform the cases to match format for the model
 obs <- cases %>% 
   mutate(
@@ -53,7 +61,6 @@ obs <- cases %>%
   # mutate(new_cases = new_cases )
   select(date, var, value = new_cases) # order the variables to match the format
 ```
-
 
 # Setting up the McMaster model
 
@@ -67,7 +74,6 @@ pars <- list(
   log_sd = 0.5
 )
 ```
-
 
 The next chunk just runs the model with specified parameters
 
@@ -191,6 +197,7 @@ head(fit_ensemble_summary)
 
 plot_ensemble(fit_ensemble_summary, observed)
 ```
+
 ## Generate ensemble
 
 ```{r}
@@ -232,12 +239,12 @@ fig$curve +
                     xmin = max(stf$upr)*0.5, xmax = max(stf$upr)*0.9, ymin = min(stf$date), ymax = min(stf$date) + 10)
 ```
 
-
 This would be the distribution of beta
 
 ```{r}
 rlnorm(n = 1000, meanlog = pars$log_m, sdlog = pars$log_sd) %>% hist()
 ```
+
 # Adding the time varying parameters
 
 ```{r add a time varying beta}
@@ -302,7 +309,6 @@ exp(-0.02228290)
 exp(0.02786054)
 ```
 
-
 ## Generate ensemble
 
 ```{r}
@@ -326,7 +332,7 @@ fig$intialFit <- ggplot() +
 
 fig$intialFit
 
-ggsave(fig$intialFit, filename = '../docs/figs/initialForecast.png', height = 5, width = 8)
+ggsave(fig$intialFit, filename = here('./CaseStudy_Covid19/covid-on/team-6/figs/initialForecast.png'), height = 5, width = 8)
 ```
 
 # Model validation
@@ -334,8 +340,3 @@ ggsave(fig$intialFit, filename = '../docs/figs/initialForecast.png', height = 5,
 ```{r}
 
 ```
-
-
-
-
-

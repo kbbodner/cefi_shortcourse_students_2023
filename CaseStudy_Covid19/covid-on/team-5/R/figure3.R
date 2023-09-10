@@ -6,7 +6,7 @@
 
 # try model run
 library("here")
-source(here::here("team-5/utilities.R"))
+source(here::here("./CaseStudy_Covid19/covid-on/team-5/R/utilities.R"))
 
 # initial state, in units of individuals
 state = c(
@@ -25,8 +25,8 @@ params = c(
 )
 
 
-source(here::here("team-5/models.R"))
-source(here::here("team-5/pull_data.R"))
+source(here::here("./CaseStudy_Covid19/covid-on/team-5/R/models.R"))
+source(here::here("./CaseStudy_Covid19/covid-on/team-5/R/pull_data.R"))
 
 # basic SEIR model
 

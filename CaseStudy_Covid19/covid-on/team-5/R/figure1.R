@@ -23,9 +23,9 @@ params = c(
   gamma = 0.06
 )
 
-source(here::here("team-5/utilities.R"))
-source(here::here("team-5/models.R"))
-cases = read_csv(here::here("data", "fitting.csv")) 
+source(here::here("./CaseStudy_Covid19/covid-on/team-5/R/team-5/utilities.R"))
+source(here::here("./CaseStudy_Covid19/covid-on/team-5/R/team-5/models.R"))
+cases = read_csv(here::here("./CaseStudy_Covid19/covid-on/data/fitting.csv")) 
 
 
 # for reproducibility
