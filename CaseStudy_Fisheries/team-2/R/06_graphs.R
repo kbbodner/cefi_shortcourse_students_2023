@@ -26,7 +26,7 @@ ggplot(data.obs) +
   xlab("Year") +
   ggtitle("Yearly returns for Early Stuart") +
   theme_classic()
-ggsave("Presentation/timeseries.png")
+ggsave(here("./CaseStudy_Fisheries/team-2/Presentation/timeseries.png"))
 
 ggplot(data.obs) +
   geom_line(aes(x=yr, y=R_obs))+
@@ -36,7 +36,7 @@ ggplot(data.obs) +
   xlab("Year") +
   ggtitle("Yearly returns for Early Stuart") +
   theme_classic()
-ggsave("Presentation/timeseries+pred.png")
+ggsave(here("./CaseStudy_Fisheries/team-2/Presentation/timeseries+pred.png"))
 
 ggplot(data.obs[60:69,]) +
   geom_line(aes(x=yr, y=R_obs))+
@@ -46,7 +46,7 @@ ggplot(data.obs[60:69,]) +
   xlab("Year") +
   ggtitle("Yearly returns for Early Stuart") +
   theme_classic()
-ggsave("Presentation/timeseries+pred+zoom.png")
+ggsave(here("./CaseStudy_Fisheries/team-2/Presentation/timeseries+pred+zoom.png"))
   
   
 #performance plots

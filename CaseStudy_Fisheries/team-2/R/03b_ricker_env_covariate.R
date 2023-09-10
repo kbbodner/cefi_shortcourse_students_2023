@@ -1,7 +1,8 @@
 # Ricker with Env Covariate
 library("rstudioapi")
-setwd(dirname(getActiveDocumentContext()$path))
-source("03d_multiple_model.R")
+library(here)
+#setwd(dirname(getActiveDocumentContext()$path))
+source(here("./CaseStudy_Fisheries/team-2/R/03d_multiple_model.R"))
 library(dplyr)
 
 

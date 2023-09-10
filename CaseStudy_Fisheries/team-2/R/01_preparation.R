@@ -11,15 +11,16 @@ library(gsl) # need for lambert's W
 library(R2jags)
 library(data.table)
 library("rstudioapi")
+library(here)
 
 
 ###Load functions-------------
-setwd(dirname(getActiveDocumentContext()$path))
-source("../Code/Functions.R")
+#setwd(dirname(getActiveDocumentContext()$path)) # NO! BAD!
+source(here("./CaseStudy_Fisheries/Code/Functions.R"))
 
 
 ###Load data-------------
-data.raw <- read_csv("../DataIn/FraserSockeyeData2022.csv")
+data.raw <- read_csv(here("./CaseStudy_Fisheries/DataIn/FraserSockeyeData2022.csv"))
 
 #Filter on population
 selected.pop <- "Early Stuart"
@@ -29,7 +30,7 @@ data <- data.raw |>
 
 
 ###Load environmental data-----------
-data.env <- read_csv("../DataIn/FC_Environmental_Data.csv")
+data.env <- read_csv(here("./CaseStudy_Fisheries/DataIn/FC_Environmental_Data.csv"))
 
 #Join to stock data and remove real year
 
