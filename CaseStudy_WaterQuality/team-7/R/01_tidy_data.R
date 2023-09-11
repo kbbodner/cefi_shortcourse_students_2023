@@ -5,9 +5,9 @@ library(lubridate)
 library(rjags)
 
 library(here)
-folder <- here("CaseStudy_WaterQuality", "WQ-7")
+folder <- here("CaseStudy_WaterQuality", "team-7", "data-outputs")
 # load(here(folder, "data.RData"))
-load(here(folder, "data_humid.RData"))
+load(here(folder, "data_with_precipitation.RData"))
 
 noaa_past <- read_csv(here(folder, "noaa_past.csv"))
 noaa_future <- read_csv(here(folder, "noaa_future.csv"))

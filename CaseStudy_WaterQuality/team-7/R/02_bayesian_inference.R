@@ -5,8 +5,8 @@ library(lubridate)
 library(rjags)
 
 library(here)
-folder <- here("CaseStudy_WaterQuality", "WQ-7")
-load(here(folder, "data.RData"))
+folder <- here("CaseStudy_WaterQuality", "team-7", "data-outputs")
+load(here(folder, "data_with_precipitation.RData"))
 
 #source(here(folder,"toolbox.r"))
 # ggthemr::ggthemr("fresh")

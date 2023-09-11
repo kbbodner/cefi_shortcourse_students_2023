@@ -61,7 +61,7 @@ We start forecasting by first looking at the historic data - called the 'targets
 
 ```{r eval=TRUE, echo = TRUE, error=FALSE, warning=FALSE, message=FALSE}
 #read in the targets data
-targets <- read_csv('Data/targets-neon-chla.csv')
+targets <- read_csv(here("./CaseStudy_WaterQuality/team-8/Data/targets-neon-chla.csv"))
 target_sites <- targets |> 
   distinct(site_id) |> 
   pull()
@@ -598,7 +598,7 @@ forecast_max %>%
   arrange(max) %>%
   tail()
   
-evo_dt <- read.csv("data/targets-neon-chla_evaluation.csv")
+evo_dt <- read.csv(here("./CaseStudy_WaterQuality/Data/targets-neon-chla_evaluation.csv"))
 head(evo_dt)
 evo_dt_sorted <- evo_dt[order(evo_dt$observation, decreasing = TRUE),]
 head(evo_dt_sorted)
@@ -621,5 +621,5 @@ ggplot(forecast_p20) +
     ylab("probability of closing the lake ([Chla] > 20 mg/L)") +
     theme_classic()
 
-ggsave("figures/Q4.jpg")
+ggsave(here("./CaseStudy_WaterQuality/team-8/figures/Q4.jpg"))
 ```
