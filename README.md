@@ -25,7 +25,7 @@ All code and documentation herein is free to use! If you were unable to make it 
 
 First, is the `Lectures` folder, where the various lecture materials can be found for the course. These lectures were recorded, and the recording videos can be found on the [CEFI website](https://youtube.com/playlist?list=PLmpgJtGjCb06k0MMg6WFPbVIQq01O0K5X&si=VhCaBp1H4-AksiMK).
 
-![first-slide](~/Github/cefi_shortcourse_students_2023/Figs/slide-1.png)
+![first-slide](./Figs/slide-1.png)
 
 Here is the course schedule. We suggest you roughly follow along with the order of lectures here. 
 
