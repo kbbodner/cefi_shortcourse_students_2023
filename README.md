@@ -6,6 +6,8 @@ In the spirit of having this course be as open as possible, we have put all the 
 
 However, please note that the content here does not all belong exclusively to CEFI. CEFI-specific content presented here is governed by a CC-BY 4.0 licence, but all other content herein is owned by it's original creator and CEFI does not hold rights or permissions. 
 
+For any questions about the course or about this repository please email [k.bodner@mail.utoronto.ca]. 
+
 [![CC BY 4.0][cc-by-shield]][cc-by]
 
 This work is licensed under a
