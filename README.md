@@ -1,6 +1,6 @@
 ## Overview
 
-Welcome! This repository contains all materials from the Canadian Ecological Forecasting Initiative short course on Forecasting for Decision-Making: An Epidemiological & Ecological Perspective. The course took place at the Fields Institute in Toronto, ON from July 24th - 28th.
+Welcome! This repository contains all materials from the Canadian Ecological Forecasting Initiative short course on Forecasting for Decision-Making: An Epidemiological & Ecological Perspective. The course took place at the Fields Institute in Toronto, ON from July 24th - 28th 2023.
 
 In the spirit of having this course be as open as possible, we have put all the course materials here on this GitHub page, including lectures, exercises and forecast modelling materials for three case studies: Infectious Disease Control, Fisheries Management, Water Quality Monitoring. For a description of the course's overall objectives, please see [here](http://www.fields.utoronto.ca/activities/23-24/forecasting).
 
